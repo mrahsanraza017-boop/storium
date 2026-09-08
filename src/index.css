@@ -1,0 +1,262 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-manrope: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-montserrat: 'Montserrat', sans-serif;
+    --font-playfair: 'Playfair Display', Georgia, serif;
+    --color-gold: #D4AF37;
+    --color-gold-light: #E5C378;
+    --color-graphite: #0B0C0E;
+    --color-surface: #121316;
+    --color-card: #181A1F;
+    --color-border: #262930;
+    --motion-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  body {
+    font-family: var(--font-manrope);
+    background-color: #0B0C0E;
+    color: #E8E8EC;
+    overflow-x: hidden;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-gold-light);
+    outline-offset: 3px;
+  }
+}
+
+.font-serif-luxury {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-sans-ui {
+  font-family: 'Manrope', sans-serif;
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Ensure all view root containers remain transparent to smoothly reveal the 3D watch canvas animation */
+main>div>div:first-child,
+main>div>div:first-child>div:first-child {
+  background-color: transparent !important;
+}
+
+/* Luxury Typography & Glow Enhancements for Dynamic Animated Background */
+.gold-glow-heading {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95), 0 0 30px rgba(212, 175, 55, 0.35);
+}
+
+.gold-glow-subtle {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 18px rgba(212, 175, 55, 0.2);
+}
+
+.luxury-text-shadow {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95), 0 4px 20px rgba(0, 0, 0, 0.75);
+}
+
+.luxury-text-body {
+  color: #D1D5E0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* Frosted Glass Panels that float effortlessly over the 3D watch animation */
+.glass-panel {
+  background: rgba(18, 19, 22, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-subtle {
+  background: rgba(11, 12, 14, 0.58);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ─── Solid Button Variants ─────────────────────────────────────────────── */
+
+/* Primary: Gold gradient fill for main CTAs */
+.btn-solid-primary {
+  background: linear-gradient(135deg, #D4AF37 0%, #C5A059 100%);
+  color: #0B0C0E;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.28), 0 2px 6px rgba(0,0,0,0.4);
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-solid-primary:hover {
+  background: linear-gradient(135deg, #E5C378 0%, #D4AF37 100%);
+  box-shadow: 0 10px 28px rgba(212, 175, 55, 0.45), 0 4px 10px rgba(0,0,0,0.4);
+  transform: translateY(-1px);
+}
+.btn-solid-primary:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
+
+/* Secondary: Deep graphite solid for secondary choices */
+.btn-solid-secondary {
+  background: #181A1F;
+  color: #F5F5F7;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid #2A2E37;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-solid-secondary:hover {
+  background: #20242B;
+  border-color: rgba(212, 175, 55, 0.45);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,175,55,0.15);
+  transform: translateY(-1px);
+}
+.btn-solid-secondary:active { transform: translateY(0); }
+
+/* Pill: Solid filter chips — active gold vs inactive charcoal */
+.btn-solid-pill-active {
+  background: linear-gradient(135deg, #D4AF37, #C5A059);
+  color: #0B0C0E;
+  font-weight: 700;
+  border: 1px solid #D4AF37;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+}
+.btn-solid-pill-inactive {
+  background: #181A1F;
+  color: #8E929E;
+  font-weight: 600;
+  border: 1px solid #262930;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: all 0.18s ease;
+}
+.btn-solid-pill-inactive:hover {
+  background: #20242B;
+  color: #F5F5F7;
+  border-color: rgba(212,175,55,0.35);
+}
+
+/* Utility: Reset / clear / secondary text actions with solid body */
+.btn-solid-utility {
+  background: #121316;
+  color: #D4AF37;
+  font-weight: 600;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  transition: all 0.18s ease;
+}
+.btn-solid-utility:hover {
+  background: #181A1F;
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
+}
+
+/* Danger: Solid remove / sign-out actions */
+.btn-solid-danger {
+  background: #1A0F11;
+  color: #F87171;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  transition: all 0.18s ease;
+}
+.btn-solid-danger:hover {
+  background: #2A1315;
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #FCA5A5;
+}
+
+/* Nav tile: Footer directory solid button tiles */
+.btn-solid-nav {
+  background: #121316;
+  color: #8E929E;
+  border: 1px solid #1E2127;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-solid-nav:hover {
+  background: #181A1F;
+  color: #D4AF37;
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 0 0 1px rgba(212,175,55,0.1);
+  transform: translateX(2px);
+}
+
+/* Tab: Solid tab pill navigation */
+.btn-solid-tab-active {
+  background: #D4AF37;
+  color: #0B0C0E;
+  font-weight: 700;
+  border: 1px solid #D4AF37;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+}
+.btn-solid-tab-inactive {
+  background: #181A1F;
+  color: #8E929E;
+  border: 1px solid #262930;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.btn-solid-tab-inactive:hover {
+  background: #1E2127;
+  color: #E8E8EC;
+  border-color: rgba(212,175,55,0.3);
+}
+
+/* Stepper: Tactile quantity +/- buttons */
+.btn-solid-stepper {
+  background: #1E2127;
+  color: #8E929E;
+  border: none;
+  transition: all 0.15s ease;
+}
+.btn-solid-stepper:hover {
+  background: #262930;
+  color: #F5F5F7;
+}
+.btn-solid-stepper:active {
+  background: #D4AF37;
+  color: #0B0C0E;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0C0E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262930;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3E48;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
