@@ -8,6 +8,7 @@ import { QuickViewModal } from './components/product/QuickViewModal';
 import { SearchModal } from './components/search/SearchModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { WatchBackgroundCanvas } from './components/animation/WatchBackgroundCanvas';
+import { AmbientBackground } from './components/animation/AmbientBackground';
 
 // Showroom Views
 import { HomeView } from './views/HomeView';
@@ -69,6 +70,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0C0E] text-[#E8E8EC] font-sans relative">
+      {/* Ambient gold atmosphere fills the blank areas behind the animation */}
+      <AmbientBackground />
+
       {/* Global 300-Frame Scroll-Driven Watch Background Canvas */}
       <WatchBackgroundCanvas />
 
