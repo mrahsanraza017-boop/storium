@@ -4,7 +4,6 @@ import { useReducedMotion } from 'motion/react';
 const TOTAL_FRAMES = 300;
 const NATIVE_WIDTH = 1280;
 const NATIVE_HEIGHT = 720;
-const FRAME_ASPECT = NATIVE_WIDTH / NATIVE_HEIGHT;
 
 export const WatchBackgroundCanvas: React.FC = () => {
   const prefersReducedMotion = useReducedMotion();
@@ -54,26 +53,13 @@ export const WatchBackgroundCanvas: React.FC = () => {
     const canvasH = canvas.clientHeight;
     if (canvasW === 0 || canvasH === 0) return;
 
-    // CONTAIN MODE: Frame the watch beautifully centered in the viewport
-    const viewportAspect = canvasW / canvasH;
-    let drawW: number;
-    let drawH: number;
-    let drawX: number;
-    let drawY: number;
-
-    if (viewportAspect > FRAME_ASPECT) {
-      // Wide screens: scale by height
-      drawH = canvasH;
-      drawW = canvasH * FRAME_ASPECT;
-      drawX = (canvasW - drawW) / 2;
-      drawY = 0;
-    } else {
-      // Tall / mobile screens: scale by width
-      drawW = canvasW;
-      drawH = canvasW / FRAME_ASPECT;
-      drawX = 0;
-      drawY = (canvasH - drawH) / 2;
-    }
+    // COVER MODE: Scale the frame to fill the entire viewport,
+    // cropping the excess edge so the animation is never letterboxed.
+    const scale = Math.max(canvasW / NATIVE_WIDTH, canvasH / NATIVE_HEIGHT);
+    const drawW = NATIVE_WIDTH * scale;
+    const drawH = NATIVE_HEIGHT * scale;
+    const drawX = (canvasW - drawW) / 2;
+    const drawY = (canvasH - drawH) / 2;
 
     ctx.clearRect(0, 0, canvasW, canvasH);
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -253,7 +239,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
   }, [handleResize, prefersReducedMotion]);
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none w-screen h-screen overflow-hidden select-none">
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
       <canvas
         ref={canvasRef}
         className="w-full h-full block"

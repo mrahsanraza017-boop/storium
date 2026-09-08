@@ -51,23 +51,23 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2 sm:gap-4">
         {/* Mobile menu button */}
-        <div className="flex items-center lg:hidden">
+        <div className="flex items-center lg:hidden shrink-0">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-[#8E929E] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg text-[#8E929E] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors"
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
           </button>
         </div>
 
         {/* Brand Logo & Tagline */}
         <div
           onClick={() => handleNavClick('home')}
-          className="cursor-pointer flex items-center gap-3 select-none group"
+          className="cursor-pointer flex items-center gap-2 sm:gap-3 select-none group min-w-0"
         >
           <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[#D4AF37]/30 bg-[#121316] p-0.5 group-hover:border-[#D4AF37]/70 transition-all shadow-[0_0_15px_rgba(212,175,55,0.15)] flex-shrink-0">
             <img
@@ -76,14 +76,14 @@ export const Navbar: React.FC = () => {
               className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="flex flex-col items-start">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-[0.22em] text-[#F5F5F7] font-montserrat uppercase group-hover:text-white transition-colors">
+          <div className="flex flex-col items-start min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-lg sm:text-xl lg:text-2xl font-extrabold tracking-[0.15em] sm:tracking-[0.2em] lg:tracking-[0.22em] text-[#F5F5F7] font-montserrat uppercase group-hover:text-white transition-colors whitespace-nowrap truncate">
                 STORIUM
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
             </div>
-            <span className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-medium -mt-0.5">
+            <span className="hidden min-[430px]:block text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-medium -mt-0.5">
               Wear Your Presence
             </span>
           </div>
@@ -120,7 +120,7 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* Right Actions: Search, Wishlist, Account, Cart */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Quick Search */}
           <button
             type="button"
