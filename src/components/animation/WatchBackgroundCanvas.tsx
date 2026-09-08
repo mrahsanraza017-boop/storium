@@ -1,83 +1,51 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useReducedMotion } from 'motion/react';
 
-const TOTAL_FRAMES = 300;
-const NATIVE_WIDTH = 1280;
-const NATIVE_HEIGHT = 720;
-const FRAME_ASPECT = NATIVE_WIDTH / NATIVE_HEIGHT;
-
 export const WatchBackgroundCanvas: React.FC = () => {
   const prefersReducedMotion = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imagesRef = useRef<(HTMLImageElement | null)[]>(new Array(TOTAL_FRAMES).fill(null));
-  const isLoadedRef = useRef<Uint8Array>(new Uint8Array(TOTAL_FRAMES));
+  const videoRef = useRef<HTMLVideoElement>(null);
   const targetProgressRef = useRef<number>(0);
-  const currentProgressRef = useRef<number>(0);
-  const lastDrawnFrameRef = useRef<number>(-1);
 
-  const getFrameSrc = (index: number) => {
-    const num = String(index + 1).padStart(6, '0');
-    return `/frames/frame_${num}.jpg`;
-  };
-
-  const drawFrame = useCallback((frameIndex: number) => {
+  const drawVideoFrame = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+    if (video.readyState < 2) return;
+
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
-
-    // Find exact or closest available loaded frame
-    let activeIndex = Math.max(0, Math.min(TOTAL_FRAMES - 1, frameIndex));
-    if (!isLoadedRef.current[activeIndex]) {
-      let closest = -1;
-      let minDiff = Infinity;
-      for (let i = 0; i < TOTAL_FRAMES; i++) {
-        if (isLoadedRef.current[i]) {
-          const diff = Math.abs(i - activeIndex);
-          if (diff < minDiff) {
-            minDiff = diff;
-            closest = i;
-          }
-        }
-      }
-      if (closest !== -1) {
-        activeIndex = closest;
-      } else {
-        return;
-      }
-    }
-
-    const img = imagesRef.current[activeIndex];
-    if (!img) return;
 
     const canvasW = canvas.clientWidth;
     const canvasH = canvas.clientHeight;
     if (canvasW === 0 || canvasH === 0) return;
 
-    // CONTAIN MODE: Frame the watch beautifully centered in the viewport
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return;
+
+    const frameAspect = vw / vh;
     const viewportAspect = canvasW / canvasH;
+
     let drawW: number;
     let drawH: number;
     let drawX: number;
     let drawY: number;
 
-    if (viewportAspect > FRAME_ASPECT) {
-      // Wide screens: scale by height
+    if (viewportAspect > frameAspect) {
       drawH = canvasH;
-      drawW = canvasH * FRAME_ASPECT;
+      drawW = canvasH * frameAspect;
       drawX = (canvasW - drawW) / 2;
       drawY = 0;
     } else {
-      // Tall / mobile screens: scale by width
       drawW = canvasW;
-      drawH = canvasW / FRAME_ASPECT;
+      drawH = canvasW / frameAspect;
       drawX = 0;
       drawY = (canvasH - drawH) / 2;
     }
 
     ctx.clearRect(0, 0, canvasW, canvasH);
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    lastDrawnFrameRef.current = activeIndex;
+    ctx.drawImage(video, drawX, drawY, drawW, drawH);
   }, []);
 
   const handleResize = useCallback(() => {
@@ -97,32 +65,29 @@ export const WatchBackgroundCanvas: React.FC = () => {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    lastDrawnFrameRef.current = -1;
-    const currentFrame = Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1));
-    drawFrame(currentFrame);
-  }, [drawFrame]);
+    drawVideoFrame();
+  }, [drawVideoFrame]);
 
-  // Continuous RAF loop with butter-smooth easing
+  // Single RAF loop: coalesced video seeking alongside scroll tracking
   useEffect(() => {
     let animId: number;
     let isRunning = true;
 
+    const handleScroll = () => {
+      if (prefersReducedMotion) return;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      targetProgressRef.current = maxScroll > 0 ? Math.max(0, Math.min(1, scrollY / maxScroll)) : 0;
+    };
+
     const tick = () => {
       if (!isRunning) return;
 
-      const delta = targetProgressRef.current - currentProgressRef.current;
-
-      if (Math.abs(delta) > 0.0001) {
-        currentProgressRef.current += delta * 0.14; // smooth responsive tracking
-        const frame = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1))));
-        if (frame !== lastDrawnFrameRef.current) {
-          drawFrame(frame);
-        }
-      } else if (currentProgressRef.current !== targetProgressRef.current) {
-        currentProgressRef.current = targetProgressRef.current;
-        const frame = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1))));
-        if (frame !== lastDrawnFrameRef.current) {
-          drawFrame(frame);
+      const video = videoRef.current;
+      if (video && video.readyState >= 2 && Number.isFinite(video.duration) && video.duration > 0) {
+        const targetTime = targetProgressRef.current * video.duration;
+        if (Math.abs(video.currentTime - targetTime) > 1 / 60) {
+          video.currentTime = targetTime;
         }
       }
 
@@ -130,88 +95,6 @@ export const WatchBackgroundCanvas: React.FC = () => {
     };
 
     animId = requestAnimationFrame(tick);
-
-    return () => {
-      isRunning = false;
-      cancelAnimationFrame(animId);
-    };
-  }, [drawFrame]);
-
-  // High-concurrency sequential preloading
-  useEffect(() => {
-    let unmounted = false;
-
-    // Load Frame 0 immediately for instant initial visual
-    const firstImg = new Image();
-    firstImg.src = getFrameSrc(0);
-    firstImg.onload = () => {
-      if (unmounted) return;
-      imagesRef.current[0] = firstImg;
-      isLoadedRef.current[0] = 1;
-      drawFrame(0);
-    };
-
-    if (prefersReducedMotion) return;
-
-    // Preload remaining frames
-    const queue: number[] = [];
-    for (let i = 1; i < TOTAL_FRAMES; i++) {
-      queue.push(i);
-    }
-
-    const CONCURRENCY = 16;
-    let activeWorkers = 0;
-
-    const pumpQueue = () => {
-      if (unmounted) return;
-      while (activeWorkers < CONCURRENCY && queue.length > 0) {
-        const idx = queue.shift()!;
-        if (isLoadedRef.current[idx]) continue;
-
-        activeWorkers++;
-        const img = new Image();
-        img.src = getFrameSrc(idx);
-
-        img.onload = () => {
-          if (unmounted) return;
-          imagesRef.current[idx] = img;
-          isLoadedRef.current[idx] = 1;
-          activeWorkers--;
-
-          // Redraw if this frame is closest to current view
-          const currentTarget = Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1));
-          if (Math.abs(currentTarget - idx) <= 1) {
-            drawFrame(currentTarget);
-          }
-          pumpQueue();
-        };
-
-        img.onerror = () => {
-          activeWorkers--;
-          pumpQueue();
-        };
-      }
-    };
-
-    pumpQueue();
-
-    return () => {
-      unmounted = true;
-      imagesRef.current = new Array(TOTAL_FRAMES).fill(null);
-      isLoadedRef.current = new Uint8Array(TOTAL_FRAMES);
-    };
-  }, [drawFrame, prefersReducedMotion]);
-
-  // Scroll and resize listeners
-  useEffect(() => {
-    const handleScroll = () => {
-      if (prefersReducedMotion) return;
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollY = window.scrollY || window.pageYOffset || 0;
-      const progress = maxScroll > 0 ? Math.max(0, Math.min(1, scrollY / maxScroll)) : 0;
-      targetProgressRef.current = progress;
-    };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize, { passive: true });
 
@@ -219,13 +102,47 @@ export const WatchBackgroundCanvas: React.FC = () => {
     handleResize();
 
     return () => {
+      isRunning = false;
+      cancelAnimationFrame(animId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
     };
   }, [handleResize, prefersReducedMotion]);
 
+  // Redraw the canvas whenever the video presents a new frame
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const redraw = () => drawVideoFrame();
+    video.addEventListener('seeked', redraw);
+    video.addEventListener('loadeddata', redraw);
+    return () => {
+      video.removeEventListener('seeked', redraw);
+      video.removeEventListener('loadeddata', redraw);
+    };
+  }, [drawVideoFrame]);
+
+  // Reduced motion: pin to the first frame
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (prefersReducedMotion && video.readyState >= 2) {
+      video.currentTime = 0;
+    }
+  }, [prefersReducedMotion]);
+
   return (
     <div className="fixed inset-0 z-0 pointer-events-none w-screen h-screen overflow-hidden select-none">
+      {/* Offscreen video source for the scrub animation */}
+      <video
+        ref={videoRef}
+        src="/hero-animation.mp4"
+        preload="auto"
+        muted
+        playsInline
+        disablePictureInPicture
+        className="absolute top-0 left-0 w-px h-px opacity-0 pointer-events-none"
+      />
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
