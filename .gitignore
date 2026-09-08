@@ -6,5 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-# Original hi-res animation frames (kept out of the repo to stay lean)
-public/frames-hd/
