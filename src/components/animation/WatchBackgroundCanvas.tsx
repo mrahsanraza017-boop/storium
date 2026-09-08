@@ -137,39 +137,66 @@ export const WatchBackgroundCanvas: React.FC = () => {
     };
   }, [drawFrame]);
 
-  // High-concurrency sequential preloading
+  // Proximity-ordered preloading: frame 0 first, then always the next frame
+  // closest to the current scroll position so scrubbing is smooth from the start
   useEffect(() => {
     let unmounted = false;
 
     // Load Frame 0 immediately for instant initial visual
     const firstImg = new Image();
+    firstImg.decoding = 'async';
+    firstImg.setAttribute('fetchpriority', 'high');
     firstImg.src = getFrameSrc(0);
     firstImg.onload = () => {
       if (unmounted) return;
-      imagesRef.current[0] = firstImg;
-      isLoadedRef.current[0] = 1;
-      drawFrame(0);
+      const finish = () => {
+        imagesRef.current[0] = firstImg;
+        isLoadedRef.current[0] = 1;
+        drawFrame(0);
+      };
+      if (typeof firstImg.decode === 'function') {
+        firstImg.decode().then(finish).catch(finish);
+      } else {
+        finish();
+      }
     };
 
     if (prefersReducedMotion) return;
 
-    // Preload remaining frames
-    const queue: number[] = [];
+    const pending = new Set<number>();
     for (let i = 1; i < TOTAL_FRAMES; i++) {
-      queue.push(i);
+      pending.add(i);
     }
 
-    const CONCURRENCY = 16;
+    const CONCURRENCY = 32;
     let activeWorkers = 0;
+
+    // Return the unloaded frame nearest to where the user is currently scrolled
+    const takeNext = (): number => {
+      const target = Math.round(targetProgressRef.current * (TOTAL_FRAMES - 1));
+      let best = -1;
+      let bestDist = Infinity;
+      for (const idx of pending) {
+        const dist = Math.abs(idx - target);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = idx;
+        }
+      }
+      if (best !== -1) pending.delete(best);
+      return best;
+    };
 
     const pumpQueue = () => {
       if (unmounted) return;
-      while (activeWorkers < CONCURRENCY && queue.length > 0) {
-        const idx = queue.shift()!;
-        if (isLoadedRef.current[idx]) continue;
+      while (activeWorkers < CONCURRENCY && pending.size > 0) {
+        const idx = takeNext();
+        if (idx === -1) break;
 
         activeWorkers++;
         const img = new Image();
+        img.decoding = 'async';
+        img.setAttribute('fetchpriority', 'low');
         img.src = getFrameSrc(idx);
 
         img.onload = () => {
@@ -188,6 +215,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
 
         img.onerror = () => {
           activeWorkers--;
+          pending.delete(idx);
           pumpQueue();
         };
       }
