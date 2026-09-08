@@ -15,7 +15,7 @@ export const AmbientBackground: React.FC = () => {
           src="/emblem-transparent.png"
           alt=""
           draggable={false}
-          className="ambient-emblem w-[min(92vw,1200px)] max-w-none opacity-[0.05]"
+          className="ambient-emblem w-[min(92vw,1200px)] max-w-none opacity-[0.12]"
         />
       </div>
     </div>
