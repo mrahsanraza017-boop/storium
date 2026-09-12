@@ -1,0 +1,6 @@
+{
+  "name": "STORIUM",
+  "description": "STORIUM — Futuristic luxury watch showroom and premium accessories e-commerce store.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

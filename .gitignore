@@ -1,0 +1,9 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+watch_frames_30fps_high_quality.zip
