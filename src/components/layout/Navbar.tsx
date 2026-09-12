@@ -67,16 +67,24 @@ export const Navbar: React.FC = () => {
         {/* Brand Logo & Tagline */}
         <div
           onClick={() => handleNavClick('home')}
-          className="cursor-pointer flex items-center gap-2 sm:gap-3 select-none group min-w-0"
+          className="cursor-pointer flex items-center gap-2.5 sm:gap-3 select-none group min-w-0"
         >
-          <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-[#D4AF37]/30 bg-[#121316] p-0.5 group-hover:border-[#D4AF37]/70 transition-all shadow-[0_0_15px_rgba(212,175,55,0.15)] flex-shrink-0">
+          <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-[#121316] p-1 group-hover:border-[#D4AF37] transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)] flex-shrink-0 flex items-center justify-center">
             <img
-              src="/emblem.png"
-              alt="STORIUM Emblem"
-              width="48"
-              height="48"
-              className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+              src="/favicon.png"
+              alt="STORIUM Logo"
+              width="44"
+              height="44"
+              className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
             />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-serif-luxury text-base sm:text-lg font-bold tracking-[0.2em] text-white group-hover:text-[#D4AF37] transition-colors leading-none">
+              STORIUM
+            </span>
+            <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.22em] text-[#D4AF37] font-semibold mt-1">
+              HAUTE HORLOGERIE
+            </span>
           </div>
         </div>
 
