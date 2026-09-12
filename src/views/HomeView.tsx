@@ -147,7 +147,7 @@ export const HomeView: React.FC = () => {
             <MotionReveal direction="left" className="lg:col-span-5 p-8 sm:p-10 rounded-3xl glass-panel space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-[#121316] p-0.5 shadow-md flex-shrink-0">
-                  <img src="/emblem.png" alt="STORIUM Emblem" className="w-full h-full object-cover rounded-lg" />
+                  <img src="/emblem.png" alt="STORIUM Emblem" width="36" height="36" loading="lazy" decoding="async" className="w-full h-full object-cover rounded-lg" />
                 </div>
                 <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
                   The STORIUM Manifesto
@@ -268,6 +268,10 @@ export const HomeView: React.FC = () => {
                   <img
                     src={flagshipProduct.thumbnail}
                     alt={flagshipProduct.name}
+                    width="448"
+                    height="448"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C0E]/80 via-transparent to-transparent pointer-events-none" />
@@ -506,7 +510,7 @@ export const HomeView: React.FC = () => {
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="p-10 sm:p-16 rounded-3xl glass-panel space-y-8 flex flex-col items-center">
             <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[#D4AF37]/50 bg-[#0B0C0E] p-1 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
-              <img src="/emblem.png" alt="STORIUM Emblem" className="w-full h-full object-cover rounded-xl" />
+              <img src="/emblem.png" alt="STORIUM Emblem" width="64" height="64" loading="lazy" decoding="async" className="w-full h-full object-cover rounded-xl" />
             </div>
 
             <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">

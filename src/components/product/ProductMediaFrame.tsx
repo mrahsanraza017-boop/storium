@@ -30,6 +30,8 @@ export const ProductMediaFrame: React.FC<ProductMediaFrameProps> = ({
     <img
       src={media.url}
       alt={media.name || 'Product media'}
+      width="600"
+      height="600"
       className={className}
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"

@@ -4,7 +4,6 @@ import { useReducedMotion } from 'motion/react';
 const TOTAL_FRAMES = 300;
 const NATIVE_WIDTH = 854;
 const NATIVE_HEIGHT = 480;
-const KEYFRAME_STEP = 10; // 30 LOD skeleton frames loaded immediately (~600KB total for instant 360° response)
 
 export const WatchBackgroundCanvas: React.FC = () => {
   const prefersReducedMotion = useReducedMotion();
@@ -29,6 +28,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
   const rafActiveRef = useRef<boolean>(false);
   const rafIdRef = useRef<number>(0);
   const mountedRef = useRef<boolean>(true);
+  const userHasInteractedRef = useRef<boolean>(false);
 
   const getFrameSrc = (index: number) => {
     const num = String(index + 1).padStart(6, '0');
@@ -80,7 +80,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
     lastDrawnFrameRef.current = activeIndex;
   }, [getNearestLoadedFrame]);
 
-  // Fast direct image loader utilizing browser native parallel decoding
+  // Fast direct image loader utilizing native browser image caching
   const loadFrame = useCallback((index: number, priority: 'high' | 'auto' | 'low' = 'auto', onDone?: () => void) => {
     if (index < 0 || index >= TOTAL_FRAMES) return;
     if (isRequestedRef.current[index]) return;
@@ -113,19 +113,19 @@ export const WatchBackgroundCanvas: React.FC = () => {
     }
   }, [drawFrame]);
 
-  // Priority window loader for the current scroll position
+  // Request frames only around current scroll window
   const requestProximityFrames = useCallback((targetIndex: number) => {
-    // Immediately request the exact target frame and adjacent frames with high priority
+    // High priority for immediate target and adjacent frames
     loadFrame(targetIndex, 'high');
     loadFrame(targetIndex - 1, 'high');
     loadFrame(targetIndex + 1, 'high');
     loadFrame(targetIndex - 2, 'high');
     loadFrame(targetIndex + 2, 'high');
 
-    // Also request surrounding window
-    for (let r = 3; r <= 15; r++) {
-      loadFrame(targetIndex - r, 'auto');
-      loadFrame(targetIndex + r, 'auto');
+    // Low priority for wider surrounding radius
+    for (let r = 3; r <= 10; r++) {
+      loadFrame(targetIndex - r, 'low');
+      loadFrame(targetIndex + r, 'low');
     }
   }, [loadFrame]);
 
@@ -143,8 +143,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
       const delta = targetProgressRef.current - currentProgressRef.current;
 
       if (Math.abs(delta) > 0.0002) {
-        // Snappy responsive easing (0.28 LERP gives instant feel without sluggish lag)
-        currentProgressRef.current += delta * 0.28;
+        currentProgressRef.current += delta * 0.32;
         const frame = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1))));
         drawFrame(frame);
         rafIdRef.current = requestAnimationFrame(tick);
@@ -188,42 +187,60 @@ export const WatchBackgroundCanvas: React.FC = () => {
     drawFrame(currentFrame, true);
   }, [drawFrame]);
 
-  // Instant Multi-Tier Frame Loading Strategy
+  // Initial Load: Load ONLY Frame 0 eagerly so LCP is instant (<1s)
   useEffect(() => {
     mountedRef.current = true;
 
-    // TIER 1: Load Frame 0 immediately with High Priority
+    // Load Frame 0 immediately
     loadFrame(0, 'high', () => {
       drawFrame(0, true);
     });
 
-    // TIER 2: Instantly trigger all 30 LOD keyframes (Indices 0, 10, 20 ... 299)
-    // ~600KB total - loads in <150ms and provides 360° instant responsiveness anywhere on scroll
-    for (let k = 0; k < TOTAL_FRAMES; k += KEYFRAME_STEP) {
-      loadFrame(k, 'high');
+    // Defer all background preloading until after first interaction or idle time
+    const startIdlePreload = () => {
+      if (!mountedRef.current || userHasInteractedRef.current) return;
+      userHasInteractedRef.current = true;
+
+      // Preload 20 skeleton milestone angles with low priority
+      let skeletonIdx = 0;
+      const keyframes = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 299];
+      
+      const stepSkeleton = () => {
+        if (!mountedRef.current || skeletonIdx >= keyframes.length) return;
+        loadFrame(keyframes[skeletonIdx++], 'low', stepSkeleton);
+      };
+      stepSkeleton();
+    };
+
+    let idleId: number;
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(startIdlePreload, { timeout: 3500 });
+    } else {
+      idleId = window.setTimeout(startIdlePreload, 2500);
     }
-    loadFrame(TOTAL_FRAMES - 1, 'high');
 
-    // TIER 3: Progressively background-cache remaining intermediate frames
-    let backgroundBatchIdx = 1;
-    const queueInterval = window.setInterval(() => {
-      if (!mountedRef.current || backgroundBatchIdx >= TOTAL_FRAMES) {
-        clearInterval(queueInterval);
-        return;
-      }
+    // Trigger on first user scroll / touch / hover
+    const onFirstUserAction = () => {
+      startIdlePreload();
+      window.removeEventListener('scroll', onFirstUserAction);
+      window.removeEventListener('touchstart', onFirstUserAction);
+      window.removeEventListener('mousemove', onFirstUserAction);
+    };
 
-      // Load 10 frames per tick
-      for (let i = 0; i < 10 && backgroundBatchIdx < TOTAL_FRAMES; i++) {
-        if (!isRequestedRef.current[backgroundBatchIdx]) {
-          loadFrame(backgroundBatchIdx, 'low');
-        }
-        backgroundBatchIdx++;
-      }
-    }, 40);
+    window.addEventListener('scroll', onFirstUserAction, { passive: true, once: true });
+    window.addEventListener('touchstart', onFirstUserAction, { passive: true, once: true });
+    window.addEventListener('mousemove', onFirstUserAction, { passive: true, once: true });
 
     return () => {
       mountedRef.current = false;
-      clearInterval(queueInterval);
+      if (typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId);
+      }
+      window.removeEventListener('scroll', onFirstUserAction);
+      window.removeEventListener('touchstart', onFirstUserAction);
+      window.removeEventListener('mousemove', onFirstUserAction);
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
