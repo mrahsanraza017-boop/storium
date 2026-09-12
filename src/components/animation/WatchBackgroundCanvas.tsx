@@ -16,7 +16,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
 
   const getFrameSrc = (index: number) => {
     const num = String(index + 1).padStart(6, '0');
-    return `/frames/frame_${num}.jpg`;
+    return `/frames/frame_${num}.webp`;
   };
 
   const drawFrame = useCallback((frameIndex: number) => {
@@ -124,11 +124,28 @@ export const WatchBackgroundCanvas: React.FC = () => {
   }, [drawFrame]);
 
   // Proximity-ordered preloading: frame 0 first, then always the next frame
-  // closest to the current scroll position so scrubbing is smooth from the start
+  // closest to the current scroll position so scrubbing is smooth from the start.
+  //
+  // Loading strategy is deliberately conservative because this component is
+  // mounted on every page: we never want the animation frames to compete
+  // with critical resources (fonts, JS, product images) for bandwidth during
+  // initial page load. We also bail out early on slow connections or
+  // data-saver mode so the site stays fast for those users.
   useEffect(() => {
     let unmounted = false;
+    let idleHandle: number | null = null;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Load Frame 0 immediately for instant initial visual
+    // Respect Data Saver mode and slow connections (2G/slow-2G): skip the
+    // heavy 300-frame animation entirely and just show the static first frame.
+    const connection = (navigator as any).connection;
+    const isSlowConnection =
+      !!connection &&
+      (connection.saveData === true ||
+        connection.effectiveType === 'slow-2g' ||
+        connection.effectiveType === '2g');
+
+    // Load Frame 0 immediately (small, high priority) for instant initial visual
     const firstImg = new Image();
     firstImg.decoding = 'async';
     firstImg.setAttribute('fetchpriority', 'high');
@@ -147,14 +164,16 @@ export const WatchBackgroundCanvas: React.FC = () => {
       }
     };
 
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || isSlowConnection) return;
 
     const pending = new Set<number>();
     for (let i = 1; i < TOTAL_FRAMES; i++) {
       pending.add(i);
     }
 
-    const CONCURRENCY = 32;
+    // Modest concurrency so the animation frames never starve the critical
+    // rendering path (fonts, main bundle, above-the-fold images) of bandwidth.
+    const CONCURRENCY = 6;
     let activeWorkers = 0;
 
     // Return the unloaded frame nearest to where the user is currently scrolled
@@ -207,10 +226,35 @@ export const WatchBackgroundCanvas: React.FC = () => {
       }
     };
 
-    pumpQueue();
+    // Defer the bulk 299-frame preload until the browser is idle (or the
+    // page has finished loading), so it never competes with critical
+    // above-the-fold resources for the initial paint.
+    const startQueue = () => {
+      if (unmounted) return;
+      pumpQueue();
+    };
+
+    const scheduleStart = () => {
+      if ('requestIdleCallback' in window) {
+        idleHandle = (window as any).requestIdleCallback(startQueue, { timeout: 2000 });
+      } else {
+        idleTimer = setTimeout(startQueue, 1000);
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      scheduleStart();
+    } else {
+      window.addEventListener('load', scheduleStart, { once: true });
+    }
 
     return () => {
       unmounted = true;
+      window.removeEventListener('load', scheduleStart);
+      if (idleHandle !== null && 'cancelIdleCallback' in window) {
+        (window as any).cancelIdleCallback(idleHandle);
+      }
+      if (idleTimer !== null) clearTimeout(idleTimer);
       imagesRef.current = new Array(TOTAL_FRAMES).fill(null);
       isLoadedRef.current = new Uint8Array(TOTAL_FRAMES);
     };
