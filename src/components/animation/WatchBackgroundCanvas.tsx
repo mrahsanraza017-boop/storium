@@ -93,7 +93,10 @@ export const WatchBackgroundCanvas: React.FC = () => {
     img.fetchPriority = priority;
     img.src = getFrameSrc(index);
 
+    let finished = false;
     const onFinish = () => {
+      if (finished) return;
+      finished = true;
       if (!mountedRef.current) return;
       imagesRef.current[index] = img;
       isLoadedRef.current[index] = 1;
@@ -106,11 +109,14 @@ export const WatchBackgroundCanvas: React.FC = () => {
       onDone?.();
     };
 
-    if (typeof img.decode === 'function') {
-      img.decode().then(onFinish).catch(onFinish);
-    } else {
-      img.onload = onFinish;
-      img.onerror = onFinish;
+    // Belt-and-suspenders: onload is the authoritative signal (mobile Safari's
+    // img.decode() can hang on cached images), decode() is just a fast path.
+    img.onload = onFinish;
+    img.onerror = onFinish;
+    if (img.complete && (img.naturalWidth || 0) > 0) {
+      onFinish();
+    } else if (typeof img.decode === 'function') {
+      img.decode().then(onFinish).catch(() => {});
     }
   }, [drawFrame]);
 
@@ -258,8 +264,6 @@ export const WatchBackgroundCanvas: React.FC = () => {
   useEffect(() => {
     handleResize();
 
-    if (prefersReducedMotion) return;
-
     let scrollTicking = false;
     const handleScroll = () => {
       if (scrollTicking) return;
@@ -274,6 +278,16 @@ export const WatchBackgroundCanvas: React.FC = () => {
         targetProgressRef.current = progress;
         const targetFrame = Math.round(progress * (TOTAL_FRAMES - 1));
         requestProximityFrames(targetFrame);
+
+        if (prefersReducedMotion) {
+          // Reduced motion: scroll directly drives the frame with hard cuts
+          // (no RAF easing/interpolation). Keeps the visual responsive while
+          // avoiding auto-animation.
+          currentProgressRef.current = progress;
+          drawFrame(targetFrame, true);
+          return;
+        }
+
         startAnimationLoop();
       });
     };
