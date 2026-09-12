@@ -187,8 +187,8 @@ export const HomeView: React.FC = () => {
                 <img
                   src="/assets/exhibition-bench.webp"
                   alt="STORIUM Horology Craftsmanship"
-                  width={1600}
-                  height={1000}
+                  width={1376}
+                  height={768}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
@@ -206,6 +206,7 @@ export const HomeView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('about')}
+                    aria-label="Read more about STORIUM craftsmanship"
                     className="p-3 rounded-full bg-[#181A1F]/90 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-white/10 backdrop-blur-md transition-all cursor-pointer shadow-lg"
                   >
                     <ArrowRight className="w-4 h-4" />

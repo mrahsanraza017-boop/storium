@@ -19,7 +19,11 @@ const buildResponsiveAttrs = (url: string) => {
     w,
   }));
 
-  const srcset = [...candidates, { url, w: 1200 }].map(({ url: u, w }) => `${u} ${w}w`).join(', ');
+  // Use the real width requested in the URL as the native (largest) candidate.
+  const nativeMatch = url.match(/w=(\d+)/);
+  const nativeW = nativeMatch ? parseInt(nativeMatch[1], 10) : 1200;
+
+  const srcset = [...candidates, { url, w: nativeW }].map(({ url: u, w }) => `${u} ${w}w`).join(', ');
   return {
     src: url,
     srcSet: srcset,

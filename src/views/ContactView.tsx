@@ -83,9 +83,9 @@ export const ContactView: React.FC = () => {
           {/* Direct channels */}
           <div className="lg:col-span-5 space-y-6">
             <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-6">
-              <h3 className="text-base font-bold text-[#F5F5F7] font-serif-luxury uppercase tracking-wider">
+              <h2 className="text-base font-bold text-[#F5F5F7] font-serif-luxury uppercase tracking-wider">
                 Direct Communication
-              </h3>
+              </h2>
 
               <div className="space-y-4 text-xs">
                 <div className="flex items-start gap-3.5">
@@ -158,9 +158,9 @@ export const ContactView: React.FC = () => {
               {isSubmitted ? (
                 <div className="py-16 text-center space-y-4">
                   <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-                  <h3 className="text-xl font-bold font-serif-luxury text-[#F5F5F7]">
+                  <h2 className="text-xl font-bold font-serif-luxury text-[#F5F5F7]">
                     Inquiry Received
-                  </h3>
+                  </h2>
                   <p className="text-xs text-[#CBD0DC] max-w-sm mx-auto">
                     Thank you, {formData.name}. Our horology specialist will review your request and reach out shortly via phone or email.
                   </p>
@@ -189,9 +189,9 @@ export const ContactView: React.FC = () => {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold font-serif-luxury text-[#F5F5F7]">
+                    <h2 className="text-lg font-bold font-serif-luxury text-[#F5F5F7]">
                       Send Showroom Inquiry
-                    </h3>
+                    </h2>
                   </div>
 
                   <div>

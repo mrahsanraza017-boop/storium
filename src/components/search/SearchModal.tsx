@@ -143,9 +143,9 @@ export const SearchModal: React.FC = () => {
                                 &bull; {product.brand}
                               </span>
                             </div>
-                            <h4 className="text-sm font-semibold text-[#F5F5F7] group-hover:text-[#D4AF37] transition-colors">
+                            <h3 className="text-sm font-semibold text-[#F5F5F7] group-hover:text-[#D4AF37] transition-colors">
                               {product.name}
-                            </h4>
+                            </h3>
                             <p className="text-xs text-[#CBD0DC] line-clamp-1 mt-0.5">
                               {product.shortDescription}
                             </p>
@@ -169,7 +169,7 @@ export const SearchModal: React.FC = () => {
                 ) : (
                   <div className="py-12 text-center space-y-3">
                     <Watch className="w-10 h-10 text-[#3A3E48] mx-auto" />
-                    <h4 className="text-base font-semibold text-[#F5F5F7]">No timepieces match &ldquo;{searchTerm}&rdquo;</h4>
+                    <h3 className="text-base font-semibold text-[#F5F5F7]">No timepieces match &ldquo;{searchTerm}&rdquo;</h3>
                     <p className="text-xs text-[#CBD0DC] max-w-sm mx-auto">
                       Try searching for broader horological terms like &ldquo;Automatic&rdquo;, &ldquo;Titanium&rdquo;, or browse our complete showroom collection.
                     </p>

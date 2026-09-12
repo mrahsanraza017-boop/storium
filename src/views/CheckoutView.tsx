@@ -250,9 +250,9 @@ export const CheckoutView: React.FC = () => {
                 <span className="w-7 h-7 rounded-full bg-[#D4AF37] text-[#0B0C0E] font-bold text-xs flex items-center justify-center">
                   1
                 </span>
-                <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+                <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                   Nationwide Pakistan Delivery Address
-                </h3>
+                </h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -396,9 +396,9 @@ export const CheckoutView: React.FC = () => {
                 <span className="w-7 h-7 rounded-full bg-[#D4AF37] text-[#0B0C0E] font-bold text-xs flex items-center justify-center">
                   2
                 </span>
-                <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+                <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                   Payment Method
-                </h3>
+                </h2>
               </div>
 
               <div className="space-y-3">
@@ -420,9 +420,9 @@ export const CheckoutView: React.FC = () => {
                     <div className="flex items-start gap-3.5">
                       <Banknote className="w-5 h-5 text-[#D4AF37] mt-0.5" />
                       <div>
-                        <h4 className="text-sm font-bold text-[#F5F5F7]">
+                        <h3 className="text-sm font-bold text-[#F5F5F7]">
                           Cash on Delivery (Nationwide Pakistan)
-                        </h4>
+                        </h3>
                         <p className="text-xs text-[#CBD0DC] mt-0.5">
                           Inspect the parcel at your doorstep and pay the courier upon delivery.
                         </p>
@@ -451,9 +451,9 @@ export const CheckoutView: React.FC = () => {
                     <div className="flex items-start gap-3.5">
                       <CreditCard className="w-5 h-5 text-[#D4AF37] mt-0.5" />
                       <div>
-                        <h4 className="text-sm font-bold text-[#F5F5F7]">
+                        <h3 className="text-sm font-bold text-[#F5F5F7]">
                           Visa / Mastercard Debit Card
-                        </h4>
+                        </h3>
                         <p className="text-xs text-[#CBD0DC] mt-0.5">
                           Instant encrypted 256-bit bank card transaction.
                         </p>
@@ -527,9 +527,9 @@ export const CheckoutView: React.FC = () => {
           {/* Right Column: Order Summary */}
           <div className="lg:col-span-5">
             <div className="p-6 sm:p-8 rounded-2xl bg-[#121316] border border-[#262930] space-y-6 sticky top-28">
-              <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+              <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                 Order Items ({cart.length})
-              </h3>
+              </h2>
 
               {/* Items summary */}
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">

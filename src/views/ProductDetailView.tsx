@@ -342,6 +342,8 @@ export const ProductDetailView: React.FC = () => {
             <button
               type="button"
               role="tab"
+              id="tab-specs"
+              aria-controls="panel-specs"
               aria-selected={activeTab === 'specs'}
               onClick={() => setActiveTab('specs')}
               className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'specs'
@@ -354,6 +356,8 @@ export const ProductDetailView: React.FC = () => {
             <button
               type="button"
               role="tab"
+              id="tab-features"
+              aria-controls="panel-features"
               aria-selected={activeTab === 'features'}
               onClick={() => setActiveTab('features')}
               className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'features'
@@ -372,6 +376,8 @@ export const ProductDetailView: React.FC = () => {
             <button
               type="button"
               role="tab"
+              id="tab-shipping"
+              aria-controls="panel-shipping"
               aria-selected={activeTab === 'shipping'}
               onClick={() => setActiveTab('shipping')}
               className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'shipping'
@@ -384,6 +390,8 @@ export const ProductDetailView: React.FC = () => {
             <button
               type="button"
               role="tab"
+              id="tab-warranty"
+              aria-controls="panel-warranty"
               aria-selected={activeTab === 'warranty'}
               onClick={() => setActiveTab('warranty')}
               className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'warranty'
@@ -399,6 +407,9 @@ export const ProductDetailView: React.FC = () => {
           <div className="pt-8">
             <motion.div
               key={activeTab}
+              id={`panel-${activeTab}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${activeTab}`}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
@@ -440,9 +451,9 @@ export const ProductDetailView: React.FC = () => {
               {activeTab === 'shipping' && (
                 <div className="max-w-3xl space-y-4 text-sm text-[#CBD0DC] leading-relaxed">
                   <div className="p-5 rounded-2xl bg-[#121316] border border-[#262930] space-y-3">
-                    <h4 className="text-base font-bold text-[#F5F5F7]">
+                    <h3 className="text-base font-bold text-[#F5F5F7]">
                       Nationwide Courier Across Pakistan
-                    </h4>
+                    </h3>
                     <p>
                       All STORIUM orders are dispatched within 24 hours via premier express couriers with full transit insurance. Delivery times:
                     </p>
@@ -462,15 +473,15 @@ export const ProductDetailView: React.FC = () => {
               {activeTab === 'warranty' && (
                 <div className="max-w-3xl space-y-4 text-sm text-[#CBD0DC] leading-relaxed">
                   <div className="p-5 rounded-2xl bg-[#121316] border border-[#262930] space-y-3">
-                    <h4 className="text-base font-bold text-[#F5F5F7]">
+                    <h3 className="text-base font-bold text-[#F5F5F7]">
                       2-Year STORIUM International Guarantee
-                    </h4>
+                    </h3>
                     <p>
                       Each timepiece is guaranteed against movement manufacturing defects for a period of twenty-four (24) months from the purchase date. The guarantee covers movement timing accuracy, mechanical escapement, and dial assembly.
                     </p>
-                    <h4 className="text-base font-bold text-[#F5F5F7] pt-2">
+                    <h3 className="text-base font-bold text-[#F5F5F7] pt-2">
                       7-Day Inspection Guarantee
-                    </h4>
+                    </h3>
                     <p>
                       If the timepiece does not exceed your expectations upon unboxing, notify our concierge within 7 days for a hassle-free exchange or full refund.
                     </p>
@@ -489,9 +500,9 @@ export const ProductDetailView: React.FC = () => {
                 <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-1">
                   Complementary Pieces
                 </span>
-                <h3 className="text-2xl font-bold text-[#F5F5F7] font-serif-luxury">
+                <h2 className="text-2xl font-bold text-[#F5F5F7] font-serif-luxury">
                   Related Horological Creations
-                </h3>
+                </h2>
               </div>
               <button
                 type="button"

@@ -286,9 +286,9 @@ export const AccessoriesView: React.FC = () => {
             <div className="w-16 h-16 rounded-2xl bg-[#181A1F] border border-[#262930] flex items-center justify-center mx-auto text-[#D4AF37]">
               <Tag className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-[#F5F5F7] font-serif-luxury">
+            <h2 className="text-xl font-bold text-[#F5F5F7] font-serif-luxury">
               No Accessories Found
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-[#CBD0DC] max-w-md mx-auto leading-relaxed">
               We currently don&apos;t have items matching &ldquo;{selectedSubcategory}&rdquo; with your selected filters. Explore our full collection or check back soon for private showroom drops.
             </p>

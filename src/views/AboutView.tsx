@@ -67,6 +67,8 @@ export const AboutView: React.FC = () => {
           <img
             src="/assets/exhibition-bench.webp"
             alt="STORIUM Horology Craftsmanship & Atelier"
+            width={1376}
+            height={768}
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"

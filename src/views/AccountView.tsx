@@ -231,7 +231,7 @@ export const AccountView: React.FC = () => {
             {orders.length === 0 ? (
               <div className="py-16 text-center bg-[#121316] border border-[#262930] rounded-2xl p-8 space-y-4">
                 <Package className="w-12 h-12 text-[#3A3E48] mx-auto" />
-                <h3 className="text-base font-bold text-[#F5F5F7]">No Orders Recorded Yet</h3>
+                <h2 className="text-base font-bold text-[#F5F5F7]">No Orders Recorded Yet</h2>
                 <p className="text-xs text-[#8E929E] max-w-sm mx-auto">
                   When you acquire timepieces through our showroom, your tracking codes and order histories will appear here.
                 </p>
@@ -310,9 +310,9 @@ export const AccountView: React.FC = () => {
                             <span className="text-[10px] uppercase font-mono text-[#D4AF37] block">
                               {item.sku}
                             </span>
-                            <h4 className="text-xs font-semibold text-[#F5F5F7] truncate">
+                            <h3 className="text-xs font-semibold text-[#F5F5F7] truncate">
                               {item.productName}
-                            </h4>
+                            </h3>
                             <span className="text-[11px] text-[#8E929E]">
                               Qty: {item.quantity} &bull; Rs. {item.price.toLocaleString()}
                             </span>
@@ -351,7 +351,7 @@ export const AccountView: React.FC = () => {
             {wishlistProducts.length === 0 ? (
               <div className="py-16 text-center bg-[#121316] border border-[#262930] rounded-2xl p-8 space-y-4">
                 <Heart className="w-12 h-12 text-[#3A3E48] mx-auto" />
-                <h3 className="text-base font-bold text-[#F5F5F7]">Your Wishlist is Empty</h3>
+                <h2 className="text-base font-bold text-[#F5F5F7]">Your Wishlist is Empty</h2>
                 <p className="text-xs text-[#8E929E] max-w-sm mx-auto">
                   Click the heart icon on any timepiece to reserve it in your private showroom shortlist.
                 </p>
@@ -386,9 +386,9 @@ export const AccountView: React.FC = () => {
                           <span className="text-[10px] uppercase font-mono text-[#D4AF37]">
                             {p.sku}
                           </span>
-                          <h4 className="text-sm font-semibold text-[#F5F5F7] line-clamp-1">
+                          <h3 className="text-sm font-semibold text-[#F5F5F7] line-clamp-1">
                             {p.name}
-                          </h4>
+                          </h3>
                           <p className="text-sm font-bold text-[#D4AF37] mt-1">
                             Rs. {price.toLocaleString()}
                           </p>
@@ -424,9 +424,9 @@ export const AccountView: React.FC = () => {
         {activeTab === 'profile' && (
           <div className="max-w-2xl bg-[#121316] border border-[#262930] rounded-2xl p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-[#262930] pb-4">
-              <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+              <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                 Patron Credentials
-              </h3>
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsEditingProfile(!isEditingProfile)}
@@ -439,10 +439,11 @@ export const AccountView: React.FC = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[#8E929E] uppercase tracking-wider mb-1">
+                <label htmlFor="profile-full-name" className="block text-[#8E929E] uppercase tracking-wider mb-1">
                   Full Name
                 </label>
                 <input
+                  id="profile-full-name"
                   type="text"
                   disabled={!isEditingProfile}
                   value={profileForm.fullName}
@@ -454,10 +455,11 @@ export const AccountView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[#8E929E] uppercase tracking-wider mb-1">
+                <label htmlFor="profile-email" className="block text-[#8E929E] uppercase tracking-wider mb-1">
                   Email Address
                 </label>
                 <input
+                  id="profile-email"
                   type="email"
                   disabled
                   value={profileForm.email}
@@ -469,10 +471,11 @@ export const AccountView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[#8E929E] uppercase tracking-wider mb-1">
+                <label htmlFor="profile-phone" className="block text-[#8E929E] uppercase tracking-wider mb-1">
                   Contact Phone (Pakistan)
                 </label>
                 <input
+                  id="profile-phone"
                   type="tel"
                   disabled={!isEditingProfile}
                   value={profileForm.phone}
@@ -499,9 +502,9 @@ export const AccountView: React.FC = () => {
         {/* Tab 4: Delivery Addresses */}
         {activeTab === 'addresses' && (
           <div className="max-w-2xl bg-[#121316] border border-[#262930] rounded-2xl p-6 sm:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+            <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
               Primary Pakistan Shipping Destination
-            </h3>
+            </h2>
             <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#F5F5F7] text-sm">

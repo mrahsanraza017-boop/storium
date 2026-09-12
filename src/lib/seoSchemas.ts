@@ -4,7 +4,7 @@ export const BASE_SITE_URL = typeof window !== 'undefined' && window.location.or
   ? window.location.origin
   : 'https://storium.pk';
 
-export const DEFAULT_OG_IMAGE = `${BASE_SITE_URL}/favicon.png`;
+export const DEFAULT_OG_IMAGE = `${BASE_SITE_URL}/assets/exhibition-bench.webp`;
 
 /**
  * Generate Store / Organization / LocalBusiness Schema for STORIUM
@@ -24,7 +24,7 @@ export function getStoreOrganizationSchema() {
     ],
     description:
       'STORIUM is Pakistan’s premier futuristic luxury watch showroom and accessory atelier, specializing in precision Japanese and Swiss horology, aerospace titanium, 316L steel, and sapphire crystal timepieces.',
-    priceRange: 'PKR 15,000 - PKR 75,000',
+    priceRange: 'PKR 5,000 - PKR 75,000',
     currenciesAccepted: 'PKR',
     paymentAccepted: 'Cash on Delivery, Visa, MasterCard, UnionPay, Debit Card',
     areaServed: {
@@ -34,12 +34,12 @@ export function getStoreOrganizationSchema() {
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'PK',
-      addressLocality: 'Islamabad',
-      addressRegion: 'Federal Capital',
+      addressLocality: 'Lahore',
+      addressRegion: 'Punjab',
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+92-300-STORIUM',
+      telephone: '+923215993022',
       contactType: 'customer service',
       areaServed: 'PK',
       availableLanguage: ['en', 'ur'],
@@ -76,7 +76,7 @@ export function getWebSiteSchema() {
       },
       'query-input': 'required name=search_term_string',
     },
-    inLanguage: 'en-US',
+    inLanguage: 'en-PK',
   };
 }
 

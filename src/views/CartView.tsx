@@ -104,12 +104,12 @@ export const CartView: React.FC = () => {
                       <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-mono block">
                         {item.product.brand} &bull; {item.product.sku}
                       </span>
-                      <h3
+                      <h2
                         onClick={() => navigate('product', { slug: item.product.slug })}
                         className="text-base font-bold text-[#F5F5F7] hover:text-[#D4AF37] cursor-pointer transition-colors"
                       >
                         {item.product.name}
-                      </h3>
+                      </h2>
 
                       {item.selectedVariant && (
                         <p className="text-xs text-[#8E929E] mt-1">
@@ -183,9 +183,9 @@ export const CartView: React.FC = () => {
           {/* Summary Box */}
           <div className="lg:col-span-4">
             <div className="p-6 sm:p-8 rounded-2xl bg-[#121316] border border-[#262930] space-y-6 sticky top-28">
-              <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+              <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                 Order Summary
-              </h3>
+              </h2>
 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-[#8E929E]">

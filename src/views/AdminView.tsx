@@ -428,9 +428,9 @@ export const AdminView: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-4">
                   <div className="flex items-center justify-between border-b border-[#262930] pb-3">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
                       Recent Patron Orders
-                    </h3>
+                    </h2>
                     <button
                       onClick={() => setActiveTab('orders')}
                       className="text-xs text-[#D4AF37] hover:underline"
@@ -464,9 +464,9 @@ export const AdminView: React.FC = () => {
 
                 <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-4">
                   <div className="flex items-center justify-between border-b border-[#262930] pb-3">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
                       Inventory Attention Needed
-                    </h3>
+                    </h2>
                     <button
                       onClick={handleOpenAdd}
                       className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
@@ -512,6 +512,7 @@ export const AdminView: React.FC = () => {
                   <Search className="w-4 h-4 text-[#8E929E] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    aria-label="Search products by title or SKU"
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     placeholder="Search by title or SKU..."
@@ -661,6 +662,7 @@ export const AdminView: React.FC = () => {
                   <Search className="w-4 h-4 text-[#8E929E] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    aria-label="Search orders by order number, customer, or tracking"
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
                     placeholder="Search order #, customer, or tracking..."
@@ -744,6 +746,7 @@ export const AdminView: React.FC = () => {
                         </td>
                         <td className="p-4">
                           <select
+                            aria-label={`Order status for order ${o.orderNumber}`}
                             value={o.orderStatus}
                             onChange={(e) => updateOrderStatus(o.id, e.target.value as any)}
                             className="bg-[#0B0C0E] border border-[#262930] rounded-lg px-2.5 py-1 text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
@@ -794,11 +797,12 @@ export const AdminView: React.FC = () => {
                       <span className="font-mono text-xs text-[#D4AF37] font-bold">
                         {selectedOrderDetails.orderNumber}
                       </span>
-                      <h3 className="text-base font-bold text-[#F5F5F7]">Pakistani Order Consignment</h3>
+                      <h2 className="text-base font-bold text-[#F5F5F7]">Pakistani Order Consignment</h2>
                     </div>
                     <button
                       type="button"
                       onClick={() => setSelectedOrderDetails(null)}
+                      aria-label="Close order details"
                       className="p-1.5 text-[#8E929E] hover:text-[#F5F5F7]"
                     >
                       <X className="w-5 h-5" />
@@ -877,12 +881,13 @@ export const AdminView: React.FC = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="w-full max-w-2xl bg-[#121316] border border-[#262930] rounded-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between border-b border-[#262930] pb-4">
-                  <h3 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+                  <h2 className="text-lg font-bold text-[#F5F5F7] font-serif-luxury">
                     {editingProduct ? 'Edit Showroom Timepiece' : 'Add New Showroom SKU'}
-                  </h3>
+                  </h2>
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
+                    aria-label="Close product editor"
                     className="p-1.5 text-[#8E929E] hover:text-[#F5F5F7]"
                   >
                     <X className="w-5 h-5" />
@@ -892,10 +897,11 @@ export const AdminView: React.FC = () => {
                 <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-name" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         Product Name *
                       </label>
                       <input
+                        id="admin-product-name"
                         type="text"
                         required
                         value={formData.name}
@@ -906,10 +912,11 @@ export const AdminView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-sku" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         SKU Code *
                       </label>
                       <input
+                        id="admin-product-sku"
                         type="text"
                         required
                         value={formData.sku}
@@ -920,10 +927,11 @@ export const AdminView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-price" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         Regular Price (PKR) *
                       </label>
                       <input
+                        id="admin-product-price"
                         type="number"
                         required
                         value={formData.price}
@@ -933,10 +941,11 @@ export const AdminView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-sale-price" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         Sale Price (PKR, Optional)
                       </label>
                       <input
+                        id="admin-product-sale-price"
                         type="number"
                         value={formData.salePrice}
                         onChange={(e) =>
@@ -947,10 +956,11 @@ export const AdminView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-category" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         Category
                       </label>
                       <select
+                        id="admin-product-category"
                         value={formData.category}
                         onChange={(e) => {
                           const newCat = e.target.value;
@@ -970,10 +980,11 @@ export const AdminView: React.FC = () => {
 
                     {formData.category === 'mens-accessories' && (
                       <div>
-                        <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                        <label htmlFor="admin-product-subcategory" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                           Subcategory *
                         </label>
                         <select
+                          id="admin-product-subcategory"
                           value={formData.subcategory || 'Wallet'}
                           onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
                           className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37]"
@@ -988,10 +999,11 @@ export const AdminView: React.FC = () => {
                     )}
 
                     <div>
-                      <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                      <label htmlFor="admin-product-stock" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                         Stock Quantity *
                       </label>
                       <input
+                        id="admin-product-stock"
                         type="number"
                         required
                         value={formData.stockQuantity}
@@ -1004,10 +1016,11 @@ export const AdminView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                    <label htmlFor="admin-product-media" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                       Product Media (up to 3 images or videos)
                     </label>
                     <input
+                      id="admin-product-media"
                       type="file"
                       accept="image/*,video/*"
                       multiple
@@ -1019,10 +1032,11 @@ export const AdminView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                    <label htmlFor="admin-product-short-desc" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                       Short Description
                     </label>
                     <input
+                      id="admin-product-short-desc"
                       type="text"
                       value={formData.shortDescription}
                       onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
@@ -1031,10 +1045,11 @@ export const AdminView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                    <label htmlFor="admin-product-desc" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                       Detailed Description
                     </label>
                     <textarea
+                      id="admin-product-desc"
                       rows={3}
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1074,8 +1089,9 @@ export const AdminView: React.FC = () => {
                   {formData.category === 'watches' && (
                     <div className="pt-2 border-t border-[#262930] grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[#8E929E] mb-1">Movement</label>
+                        <label htmlFor="admin-product-movement" className="block text-[#8E929E] mb-1">Movement</label>
                         <input
+                          id="admin-product-movement"
                           type="text"
                           value={formData.movement}
                           onChange={(e) => setFormData({ ...formData, movement: e.target.value })}
@@ -1083,8 +1099,9 @@ export const AdminView: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-[#8E929E] mb-1">Glass</label>
+                        <label htmlFor="admin-product-glass" className="block text-[#8E929E] mb-1">Glass</label>
                         <input
+                          id="admin-product-glass"
                           type="text"
                           value={formData.glass}
                           onChange={(e) => setFormData({ ...formData, glass: e.target.value })}

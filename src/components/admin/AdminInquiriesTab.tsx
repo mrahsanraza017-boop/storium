@@ -36,6 +36,7 @@ export const AdminInquiriesTab: React.FC = () => {
           <Search className="w-4 h-4 text-[#8E929E] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
+            aria-label="Search inquiries by name, email, or message"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search inquiries by name, email, or message..."
@@ -110,6 +111,7 @@ export const AdminInquiriesTab: React.FC = () => {
                   </td>
                   <td className="p-4 whitespace-nowrap">
                     <select
+                      aria-label={`Status for inquiry from ${inq.name}`}
                       value={inq.status}
                       onChange={(event) => updateInquiryStatus(inq.id, event.target.value as ContactInquiry['status'])}
                       className="rounded-lg border border-[#262930] bg-[#0B0C0E] px-2 py-1 text-[11px] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
