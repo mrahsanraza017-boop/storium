@@ -151,12 +151,13 @@
 /* Ambient luxury background: breathing gold aurora + rotating emblem watermark */
 .ambient-aurora {
   background:
-    radial-gradient(ellipse 60% 50% at 18% 22%, rgba(212, 175, 55, 0.2), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 82% 70%, rgba(160, 120, 40, 0.16), transparent 60%),
-    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(212, 175, 55, 0.14), transparent 65%),
-    radial-gradient(ellipse 45% 38% at 50% 50%, rgba(212, 175, 55, 0.1), transparent 62%);
+    radial-gradient(ellipse 60% 50% at 18% 22%, rgba(212, 175, 55, 0.18), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 82% 70%, rgba(160, 120, 40, 0.14), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(212, 175, 55, 0.12), transparent 65%),
+    radial-gradient(ellipse 45% 38% at 50% 50%, rgba(212, 175, 55, 0.08), transparent 62%);
   animation: ambient-aurora-breathe 18s ease-in-out infinite alternate;
   will-change: transform, opacity;
+  contain: strict;
 }
 
 @keyframes ambient-aurora-breathe {
@@ -175,7 +176,8 @@
   will-change: transform;
   user-select: none;
   -webkit-user-drag: none;
-  filter: drop-shadow(0 0 35px rgba(212, 175, 55, 0.18));
+  contain: strict;
+  filter: drop-shadow(0 0 25px rgba(212, 175, 55, 0.15));
 }
 
 @keyframes ambient-emblem-rotate {
@@ -211,21 +213,23 @@ main>div>div:first-child>div:first-child {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
 }
 
-/* Frosted Glass Panels that float effortlessly over the 3D watch animation */
+/* Frosted Glass Panels that float effortlessly over the 3D watch animation with balanced GPU-friendly blur */
 .glass-panel {
-  background: rgba(18, 19, 22, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(18, 19, 22, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45);
+  contain: paint;
 }
 
 .glass-panel-subtle {
-  background: rgba(11, 12, 14, 0.58);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(11, 12, 14, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.35);
+  contain: paint;
 }
 
 /* ─── Solid Button Variants ─────────────────────────────────────────────── */
