@@ -98,7 +98,29 @@
     </script>
   </head>
   <body class="bg-[#0B0C0E] text-[#E8E8EC] antialiased selection:bg-[#D4AF37]/30 selection:text-[#F5F5F7]">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static above-the-fold hero for instant FCP/LCP. Replaced by React on mount. -->
+      <div class="relative min-h-[92vh] w-full flex items-center justify-center py-20 overflow-hidden" style="background-color:#0B0C0E">
+        <div style="position:absolute;inset:0;overflow:hidden">
+          <img src="/frames/frame_000001.webp" alt="" fetchpriority="high" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.45" />
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(212,175,55,0.10), transparent 70%)"></div>
+        </div>
+        <div class="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center flex flex-col items-center">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#E5C378] to-[#D4AF37] border border-white/20 mb-8 shadow-[0_4px_25px_rgba(212,175,55,0.4)]">
+            <span class="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span>
+            <span class="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-black font-extrabold">Pakistan's Futuristic Luxury Showroom</span>
+          </div>
+          <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white font-serif-luxury leading-[1.1] max-w-4xl gold-glow-heading drop-shadow-2xl">Wear your presence.</h1>
+          <div class="mt-6 px-6 py-3 rounded-2xl glass-panel-subtle max-w-2xl">
+            <p class="text-base sm:text-lg md:text-xl text-[#D1D5E0] font-light leading-relaxed luxury-text-shadow">Timepieces forged from aerospace titanium, surgical steel, and sapphire crystal. Designed for leaders who command authority without uttering a sound.</p>
+          </div>
+          <div class="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <span class="w-full sm:w-auto py-4 px-8 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,175,55,0.35)] flex items-center justify-center gap-2">Explore Timepieces</span>
+            <span class="w-full sm:w-auto py-4 px-8 rounded-xl bg-[#121316]/90 text-[#F5F5F7] text-xs uppercase tracking-[0.2em] font-semibold border border-[#262930] backdrop-blur-md shadow-xl">Showroom Catalog</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

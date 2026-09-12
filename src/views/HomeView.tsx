@@ -74,8 +74,8 @@ export const HomeView: React.FC = () => {
         {/* Subtle Ambient Radial Lighting */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#D4AF37]/10 via-transparent to-transparent pointer-events-none" />
 
-        {/* Hero Content Overlay */}
-        <MotionReveal className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center flex flex-col items-center">
+        {/* Hero Content Overlay — rendered fully visible for instant LCP (no opacity-0 reveal) */}
+        <div className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center flex flex-col items-center">
           {/* Brand Tagline Badge - Tagline text color explicitly BLACK */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#E5C378] to-[#D4AF37] border border-white/20 mb-8 shadow-[0_4px_25px_rgba(212,175,55,0.4)]">
             <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
@@ -135,7 +135,7 @@ export const HomeView: React.FC = () => {
               <span className="text-[10px] uppercase tracking-wider text-[#CBD0DC]">Express Pakistan COD</span>
             </div>
           </div>
-        </MotionReveal>
+        </div>
       </section>
 
       {/* 2. BRAND INTRODUCTION SECTION
