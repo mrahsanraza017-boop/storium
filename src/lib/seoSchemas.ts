@@ -17,9 +17,9 @@ export function getStoreOrganizationSchema() {
     name: 'STORIUM',
     alternateName: 'STORIUM Luxury Watches & Accessories',
     url: BASE_SITE_URL,
-    logo: `${BASE_SITE_URL}/emblem.png`,
+    logo: `${BASE_SITE_URL}/favicon.png`,
     image: [
-      `${BASE_SITE_URL}/emblem.png`,
+      `${BASE_SITE_URL}/favicon.png`,
       DEFAULT_OG_IMAGE,
     ],
     description:

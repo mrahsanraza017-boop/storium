@@ -146,8 +146,8 @@ export const HomeView: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <MotionReveal direction="left" className="lg:col-span-5 p-8 sm:p-10 rounded-3xl glass-panel space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-[#121316] p-0.5 shadow-md flex-shrink-0">
-                  <img src="/emblem.png" alt="STORIUM Emblem" width="36" height="36" loading="lazy" decoding="async" className="w-full h-full object-cover rounded-lg" />
+                <div className="w-9 h-9 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-transparent p-0.5 shadow-md flex-shrink-0 flex items-center justify-center">
+                  <img src="/favicon.png" alt="STORIUM Logo" width="36" height="36" loading="lazy" decoding="async" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
                   The STORIUM Manifesto
@@ -509,8 +509,8 @@ export const HomeView: React.FC = () => {
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="p-10 sm:p-16 rounded-3xl glass-panel space-y-8 flex flex-col items-center">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[#D4AF37]/50 bg-[#0B0C0E] p-1 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
-              <img src="/emblem.png" alt="STORIUM Emblem" width="64" height="64" loading="lazy" decoding="async" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[#D4AF37]/50 bg-transparent p-1 shadow-[0_0_25px_rgba(212,175,55,0.25)] flex items-center justify-center">
+              <img src="/favicon.png" alt="STORIUM Logo" width="64" height="64" loading="lazy" decoding="async" className="w-full h-full object-contain rounded-xl" />
             </div>
 
             <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">

@@ -15,10 +15,11 @@ export const WatchBackgroundCanvas: React.FC = () => {
   const isRequestedRef = useRef<Uint8Array>(new Uint8Array(TOTAL_FRAMES));
 
   // Cached viewport dimensions to prevent layout thrashing
-  const sizeRef = useRef<{ width: number; height: number; dpr: number }>({
+  const sizeRef = useRef<{ width: number; height: number; dpr: number; isMobile: boolean }>({
     width: typeof window !== 'undefined' ? window.innerWidth : NATIVE_WIDTH,
     height: typeof window !== 'undefined' ? window.innerHeight : NATIVE_HEIGHT,
-    dpr: typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1,
+    dpr: typeof window !== 'undefined' ? (window.innerWidth < 768 ? 1.0 : Math.min(window.devicePixelRatio || 1, 1.75)) : 1,
+    isMobile: typeof window !== 'undefined' ? window.innerWidth < 768 : false,
   });
 
   // Animation and progress trackers
@@ -122,8 +123,9 @@ export const WatchBackgroundCanvas: React.FC = () => {
     loadFrame(targetIndex - 2, 'high');
     loadFrame(targetIndex + 2, 'high');
 
-    // Low priority for wider surrounding radius
-    for (let r = 3; r <= 10; r++) {
+    // Radius adapted for mobile vs desktop
+    const radius = sizeRef.current.isMobile ? 6 : 10;
+    for (let r = 3; r <= radius; r++) {
       loadFrame(targetIndex - r, 'low');
       loadFrame(targetIndex + r, 'low');
     }
@@ -143,7 +145,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
       const delta = targetProgressRef.current - currentProgressRef.current;
 
       if (Math.abs(delta) > 0.0002) {
-        currentProgressRef.current += delta * 0.32;
+        currentProgressRef.current += delta * 0.35;
         const frame = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1))));
         drawFrame(frame);
         rafIdRef.current = requestAnimationFrame(tick);
@@ -169,9 +171,11 @@ export const WatchBackgroundCanvas: React.FC = () => {
 
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const isMobile = w < 768;
+    // On mobile screens, 1.0 DPR is pixel-sharp on 854x480 native asset and saves 65% memory/GPU
+    const dpr = isMobile ? 1.0 : Math.min(window.devicePixelRatio || 1, 1.75);
 
-    sizeRef.current = { width: w, height: h, dpr };
+    sizeRef.current = { width: w, height: h, dpr, isMobile };
 
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
@@ -180,7 +184,7 @@ export const WatchBackgroundCanvas: React.FC = () => {
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
     }
 
     const currentFrame = Math.round(currentProgressRef.current * (TOTAL_FRAMES - 1));
@@ -201,9 +205,9 @@ export const WatchBackgroundCanvas: React.FC = () => {
       if (!mountedRef.current || userHasInteractedRef.current) return;
       userHasInteractedRef.current = true;
 
-      // Preload 20 skeleton milestone angles with low priority
+      // Preload skeleton milestone angles with low priority
       let skeletonIdx = 0;
-      const keyframes = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 299];
+      const keyframes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 299];
       
       const stepSkeleton = () => {
         if (!mountedRef.current || skeletonIdx >= keyframes.length) return;
@@ -214,9 +218,9 @@ export const WatchBackgroundCanvas: React.FC = () => {
 
     let idleId: number;
     if (typeof window.requestIdleCallback === 'function') {
-      idleId = window.requestIdleCallback(startIdlePreload, { timeout: 3500 });
+      idleId = window.requestIdleCallback(startIdlePreload, { timeout: 4000 });
     } else {
-      idleId = window.setTimeout(startIdlePreload, 2500);
+      idleId = window.setTimeout(startIdlePreload, 3000);
     }
 
     // Trigger on first user scroll / touch / hover

@@ -96,8 +96,8 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
         <div className="min-h-[70vh] flex items-center justify-center bg-transparent px-4 py-16 text-[#E8E8EC]">
             <form onSubmit={handleSignIn} className="w-full max-w-md rounded-2xl border border-[#262930] bg-[#121316] p-8 shadow-2xl">
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-[#0B0C0E] p-1 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-                        <img src="/emblem.png" alt="STORIUM Emblem" className="h-full w-full object-cover rounded-xl" />
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-transparent p-1 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+                        <img src="/favicon.png" alt="STORIUM Logo" width="60" height="60" className="h-full w-full object-contain rounded-xl" />
                     </div>
                     <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37]">Restricted Access</span>
                     <h1 className="mt-2 font-serif-luxury text-2xl font-bold text-[#F5F5F7]">Admin Sign In</h1>

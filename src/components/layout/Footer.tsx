@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
               onClick={() => navigate('home')}
               className="cursor-pointer flex items-center gap-3 group select-none"
             >
-              <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-[#121316] p-1 group-hover:border-[#D4AF37] transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)] flex-shrink-0 flex items-center justify-center">
+              <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#D4AF37]/40 bg-transparent p-1 group-hover:border-[#D4AF37] transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)] flex-shrink-0 flex items-center justify-center">
                 <img
                   src="/favicon.png"
                   alt="STORIUM Logo"

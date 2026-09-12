@@ -212,8 +212,8 @@ export const CustomerAuthPanel: React.FC = () => {
         {(mode === 'sign-in' || mode === 'sign-up') && (
           <form onSubmit={handleSignInOrUp} className="relative z-10">
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-[#0B0C0E] p-1 shadow-[0_0_25px_rgba(212,175,55,0.2)]">
-                <img src="/emblem.png" alt="STORIUM Emblem" width="60" height="60" className="h-full w-full object-cover rounded-xl" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-transparent p-1 shadow-[0_0_25px_rgba(212,175,55,0.2)]">
+                <img src="/favicon.png" alt="STORIUM Logo" width="60" height="60" className="h-full w-full object-contain rounded-xl" />
               </div>
               <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37] font-semibold">
                 STORIUM Client Portal

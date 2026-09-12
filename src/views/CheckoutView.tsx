@@ -78,8 +78,8 @@ export const CheckoutView: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-xl mx-auto p-8 sm:p-10 rounded-3xl glass-panel space-y-6 text-center"
         >
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-[#0B0C0E] p-1 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
-            <img src="/emblem.png" alt="STORIUM Emblem" width="60" height="60" className="h-full w-full object-cover rounded-xl" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/50 bg-transparent p-1 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
+            <img src="/favicon.png" alt="STORIUM Logo" width="60" height="60" className="h-full w-full object-contain rounded-xl" />
           </div>
 
           <div>

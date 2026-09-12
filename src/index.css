@@ -232,6 +232,19 @@ main>div>div:first-child>div:first-child {
   contain: paint;
 }
 
+@media (max-width: 768px) {
+  .glass-panel {
+    background: rgba(18, 19, 22, 0.90);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .glass-panel-subtle {
+    background: rgba(11, 12, 14, 0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
 /* ─── Solid Button Variants ─────────────────────────────────────────────── */
 
 /* Primary: Gold gradient fill for main CTAs */
