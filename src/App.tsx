@@ -38,6 +38,17 @@ const AppContent: React.FC = () => {
   const { currentPage } = useStore();
   const prefersReducedMotion = useReducedMotion();
 
+  // Animated scroll-scrubbed watch background is decorative; skip it on functional
+  // flows (cart, checkout, account, admin, policies) to save mobile main-thread work.
+  const showWatchBackground = !prefersReducedMotion && (
+    currentPage === 'home' ||
+    currentPage === 'watches' ||
+    currentPage === 'accessories' ||
+    currentPage === 'shop' ||
+    currentPage === 'product' ||
+    currentPage === 'about'
+  );
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
   }, [currentPage, prefersReducedMotion]);
@@ -84,7 +95,7 @@ const AppContent: React.FC = () => {
       <AmbientBackground />
 
       {/* Global Scroll-Driven Watch Background Canvas */}
-      <WatchBackgroundCanvas />
+      {showWatchBackground && <WatchBackgroundCanvas />}
 
       {/* Top Luxury Navigation */}
       <div className="relative z-30">

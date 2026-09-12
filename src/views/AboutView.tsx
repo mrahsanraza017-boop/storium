@@ -65,9 +65,11 @@ export const AboutView: React.FC = () => {
         {/* Hero Visual */}
         <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[16/9] shadow-2xl">
           <img
-            src="/assets/exhibition-bench.jpg"
+            src="/assets/exhibition-bench.webp"
             alt="STORIUM Horology Craftsmanship & Atelier"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C0E] via-transparent to-transparent opacity-80" />
         </div>

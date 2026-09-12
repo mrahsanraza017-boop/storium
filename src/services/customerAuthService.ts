@@ -1,5 +1,5 @@
 import { CustomerUser } from '../types';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabase';
 import { upsertCustomerProfile } from './supabaseService';
 
 const VERIFIED_PHONES_KEY = 'storium_verified_phones';
@@ -304,6 +304,7 @@ export async function sendPasswordResetOTP(identifier: string): Promise<{
   // Also check Supabase Auth for email if local store has no record
   if (isEmail && !account) {
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase.auth.resetPasswordForEmail(targetValue);
       if (!error) {
         console.log('Supabase reset password email requested for:', targetValue);
@@ -378,6 +379,7 @@ export async function resetCustomerPassword(
 
   // Attempt to update Supabase password if session is active or via Supabase Auth
   try {
+    const supabase = await getSupabase();
     await supabase.auth.updateUser({ password: newPassword });
   } catch (e) {
     console.log('Supabase password update notice:', e);

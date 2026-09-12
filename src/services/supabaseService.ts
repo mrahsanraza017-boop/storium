@@ -1,4 +1,4 @@
-import { supabase, SUPABASE_PROJECT_ID, SUPABASE_URL } from '../lib/supabase';
+import { getSupabase, SUPABASE_PROJECT_ID, SUPABASE_URL } from '../lib/supabase';
 import { Order, ContactInquiry, Product, CustomerUser, ProductMedia, ProductReview } from '../types';
 
 export type { ContactInquiry };
@@ -287,6 +287,7 @@ WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
  */
 export async function saveOrderToSupabase(order: Order): Promise<SupabaseSyncResult> {
   try {
+    const supabase = await getSupabase();
     const payload = {
       order_number: order.orderNumber,
       customer_id: (await supabase.auth.getUser()).data.user?.id || null,
@@ -357,6 +358,8 @@ export async function saveContactToSupabase(inquiry: {
       status: 'new',
     };
 
+    const supabase = await getSupabase();
+
     // Try 'contacts' table first
     let { data, error } = await supabase
       .from('contacts')
@@ -399,12 +402,14 @@ export async function saveContactToSupabase(inquiry: {
 }
 
 export async function fetchSupabaseProducts(): Promise<Product[]> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.from('products').select('data').order('updated_at', { ascending: false });
   if (error || !data) return [];
   return data.map((row: { data: Product }) => row.data);
 }
 
 export async function uploadProductMedia(files: File[], productId: string): Promise<ProductMedia[]> {
+  const supabase = await getSupabase();
   const uploads = files.slice(0, 3).map(async (file, index) => {
     const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const path = `${productId}/${Date.now()}-${index}.${extension}`;
@@ -421,6 +426,7 @@ export async function uploadProductMedia(files: File[], productId: string): Prom
 }
 
 export async function fetchCustomerProfile(userId: string): Promise<CustomerUser | null> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.from('customer_profiles').select('*').eq('id', userId).maybeSingle();
   if (error || !data) return null;
   return {
@@ -436,6 +442,7 @@ export async function fetchCustomerProfile(userId: string): Promise<CustomerUser
 }
 
 export async function upsertCustomerProfile(profile: CustomerUser): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const payload: Record<string, any> = {
     id: profile.id,
     full_name: profile.fullName,
@@ -454,6 +461,7 @@ export async function upsertCustomerProfile(profile: CustomerUser): Promise<Supa
 }
 
 export async function upsertProductToSupabase(product: Product): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from('products')
     .upsert({ id: product.id, data: product, updated_at: new Date().toISOString() })
@@ -462,16 +470,19 @@ export async function upsertProductToSupabase(product: Product): Promise<Supabas
 }
 
 export async function deleteProductFromSupabase(productId: string): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { error } = await supabase.from('products').delete().eq('id', productId);
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true };
 }
 
 export async function updateOrderStatusInSupabase(orderId: string, status: Order['orderStatus']): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.from('orders').update({ order_status: status }).eq('id', orderId).select();
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true, data };
 }
 
 export async function updateInquiryStatusInSupabase(inquiryId: string, status: ContactInquiry['status']): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.from('contacts').update({ status }).eq('id', inquiryId).select();
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true, data };
 }
@@ -481,6 +492,7 @@ export async function updateInquiryStatusInSupabase(inquiryId: string, status: C
  */
 export async function fetchSupabaseReviews(): Promise<ProductReview[]> {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
@@ -514,6 +526,7 @@ export async function fetchSupabaseReviews(): Promise<ProductReview[]> {
  * Upsert a review to Supabase reviews table
  */
 export async function upsertReviewToSupabase(review: ProductReview): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const payload = {
     id: review.id,
     product_id: review.productId,
@@ -541,6 +554,7 @@ export async function upsertReviewToSupabase(review: ProductReview): Promise<Sup
  * Update review status (pending / approved / hidden)
  */
 export async function updateReviewStatusInSupabase(reviewId: string, status: ProductReview['status']): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from('reviews')
     .update({ status })
@@ -553,6 +567,7 @@ export async function updateReviewStatusInSupabase(reviewId: string, status: Pro
  * Toggle review featuredOnHome flag
  */
 export async function toggleReviewFeaturedInSupabase(reviewId: string, featuredOnHome: boolean): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from('reviews')
     .update({ featured_on_home: featuredOnHome })
@@ -565,6 +580,7 @@ export async function toggleReviewFeaturedInSupabase(reviewId: string, featuredO
  * Delete a review from Supabase
  */
 export async function deleteReviewFromSupabase(reviewId: string): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
   const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true };
 }
@@ -574,6 +590,7 @@ export async function deleteReviewFromSupabase(reviewId: string): Promise<Supaba
  */
 export async function fetchSupabaseOrders(): Promise<Order[]> {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('orders')
       .select('*')
@@ -618,6 +635,7 @@ export async function fetchSupabaseOrders(): Promise<Order[]> {
  */
 export async function fetchSupabaseContacts(): Promise<ContactInquiry[]> {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('contacts')
       .select('*')
@@ -648,6 +666,7 @@ export async function fetchSupabaseContacts(): Promise<ContactInquiry[]> {
  * Verify Supabase connection and table availability
  */
 export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
+  const supabase = await getSupabase();
   const result: SupabaseHealthStatus = {
     connected: false,
     ordersTableExists: false,

@@ -23,7 +23,7 @@ export default defineConfig(() => {
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
               }
-              if (id.includes('@supabase') || id.includes('@google/genai')) {
+              if (id.includes('@supabase')) {
                 return 'vendor-services';
               }
               if (id.includes('react') || id.includes('motion') || id.includes('clsx') || id.includes('tailwind')) {

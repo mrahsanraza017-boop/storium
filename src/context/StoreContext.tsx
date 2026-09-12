@@ -1,7 +1,7 @@
 // React has no local declaration file in this project; suppress the module typing diagnostic here.
 // @ts-ignore
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabase';
 import {
   Product,
   Category,
@@ -422,7 +422,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let unsubscribe: (() => void) | undefined;
     const loadSession = async () => {
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       if (!mounted || !data.session) return;
       const profile = await fetchCustomerProfile(data.session.user.id);
@@ -434,15 +436,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     } else {
       window.setTimeout(() => { void loadSession(); }, 1200);
     }
-    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session) {
-        if (mounted) setCurrentUser(null);
-        return;
-      }
-      const profile = await fetchCustomerProfile(session.user.id);
-      if (mounted && profile) setCurrentUser(profile);
+    void getSupabase().then((supabase) => {
+      if (!mounted) return;
+      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!session) {
+          if (mounted) setCurrentUser(null);
+          return;
+        }
+        const profile = await fetchCustomerProfile(session.user.id);
+        if (mounted && profile) setCurrentUser(profile);
+      });
+      unsubscribe = data.subscription.unsubscribe;
     });
-    return () => { mounted = false; data.subscription.unsubscribe(); };
+    return () => { mounted = false; unsubscribe?.(); };
   }, []);
 
   // Sync state with Supabase backend
@@ -1021,12 +1027,18 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     const isPhoneAlreadyVerified = isPhoneNumberVerified(normalizedPhone);
 
     const result = createAccount
-      ? await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { data: { full_name: fullName.trim(), phone: normalizedPhone } },
-        })
-      : await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      ? await (async () => {
+          const supabase = await getSupabase();
+          return supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: { data: { full_name: fullName.trim(), phone: normalizedPhone } },
+          });
+        })()
+      : await (async () => {
+          const supabase = await getSupabase();
+          return supabase.auth.signInWithPassword({ email: email.trim(), password });
+        })();
 
     let userId = '';
     let userEmail = email.trim();
@@ -1130,7 +1142,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logoutUser = () => {
-    void supabase.auth.signOut();
+    void getSupabase().then((supabase) => supabase.auth.signOut());
     setCurrentUser(null);
     addToast('info', 'Logged Out', 'You have been safely signed out.');
   };

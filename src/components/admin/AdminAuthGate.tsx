@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LockKeyhole, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '../../lib/supabase';
+import { getSupabase } from '../../lib/supabase';
 import { useStore } from '../../context/StoreContext';
 
 interface AdminAuthGateProps {
@@ -19,20 +19,25 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
 
     useEffect(() => {
         let mounted = true;
-        supabase.auth.getSession().then(({ data }) => {
-            if (mounted) {
-                setSession(data.session);
-                setIsLoading(false);
-            }
-        });
+        let unsubscribe: (() => void) | undefined;
+        void getSupabase().then((supabase) => {
+            if (!mounted) return;
+            supabase.auth.getSession().then(({ data }) => {
+                if (mounted) {
+                    setSession(data.session);
+                    setIsLoading(false);
+                }
+            });
 
-        const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-            if (mounted) setSession(nextSession);
+            const authData = supabase.auth.onAuthStateChange((_event, nextSession) => {
+                if (mounted) setSession(nextSession);
+            });
+            unsubscribe = authData.data.subscription.unsubscribe;
         });
 
         return () => {
             mounted = false;
-            data.subscription.unsubscribe();
+            unsubscribe?.();
         };
     }, []);
 
@@ -43,6 +48,7 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
         setError('');
         setIsSubmitting(true);
 
+        const supabase = await getSupabase();
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
@@ -62,6 +68,7 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
     };
 
     const handleSignOut = async () => {
+        const supabase = await getSupabase();
         await supabase.auth.signOut();
         addToast('info', 'Admin Session Ended', 'The administration portal has been locked.');
     };

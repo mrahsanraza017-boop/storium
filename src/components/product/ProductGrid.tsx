@@ -41,7 +41,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           viewport={{ once: true, amount: 0.12 }}
           transition={{ duration: 0.55, delay: Math.min(index * 0.06, 0.3), ease: [0.22, 1, 0.36, 1] }}
         >
-          <ProductCard product={product} />
+          <ProductCard product={product} priority={index === 0} />
         </motion.div>
       ))}
     </div>

@@ -189,6 +189,14 @@
   }
 }
 
+/* On mobile, keep the emblem static (no rotate re-composite) and drop the shadow filter. */
+@media (max-width: 768px) {
+  .ambient-emblem {
+    animation: none;
+    filter: none;
+  }
+}
+
 /* Ensure all view root containers remain transparent to smoothly reveal the 3D watch canvas animation */
 main>div>div:first-child,
 main>div>div:first-child>div:first-child {
