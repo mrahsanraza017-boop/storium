@@ -211,8 +211,10 @@ export const CheckoutView: React.FC = () => {
         return;
       }
 
-      // Card: create the order first, then send the customer to the gateway's
-      // hosted checkout. Payment is confirmed on return (see /payment/complete).
+      // Card: create the order first, then send the customer to Rapid Gateway's
+      // hosted checkout. On completion the gateway redirects back to
+      // /payment/success (accepted), /payment/failure (declined) or
+      // /payment/complete (closed), where PaymentCompleteView shows the result.
       const checkoutRes = await fetch('/api/checkout.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

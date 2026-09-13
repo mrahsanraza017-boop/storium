@@ -93,6 +93,7 @@ interface StoreContextType {
   orders: Order[];
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'date'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: Order['orderStatus']) => void;
+  markOrderPaid: (orderNumber: string) => void;
   updateInquiryStatus: (inquiryId: string, status: ContactInquiry['status']) => void;
   lastPlacedOrder: Order | null;
 
@@ -210,6 +211,9 @@ function getInitialRoute(): {
   if (path === 'checkout') return { page: 'checkout', slug: null, category: null, subcategory: null };
   if (path === 'account') return { page: 'account', slug: null, category: null, subcategory: null };
   if (path === 'wishlist') return { page: 'wishlist', slug: null, category: null, subcategory: null };
+  if (path === 'payment/success' || path === 'payment/failure' || path === 'payment/complete') {
+    return { page: 'payment-complete', slug: null, category: null, subcategory: null };
+  }
 
   // Check query params fallback (e.g. ?page=watches or ?product=slug)
   const queryPage = searchParams.get('page') as PageView | null;
@@ -875,6 +879,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     addToast('info', 'Order Status Updated', `Order marked as ${status}.`);
   };
 
+  // Called from the payment return page when Rapid Gateway confirms payment.
+  // Local copy flips instantly; the cloud copy is updated by api/webhook.php
+  // (service-role key) so it stays authoritative for admins.
+  const markOrderPaid = (orderNumber: string) => {
+    setOrders((prev) =>
+      prev.map((ord) =>
+        ord.orderNumber === orderNumber
+          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const }
+          : ord
+      )
+    );
+  };
+
   const updateInquiryStatus = (inquiryId: string, status: ContactInquiry['status']) => {
     setInquiries((prev) => prev.map((inquiry) => inquiry.id === inquiryId ? { ...inquiry, status } : inquiry));
     void updateInquiryStatusInSupabase(inquiryId, status).then((result) => {
@@ -1247,6 +1264,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         orders,
         createOrder,
         updateOrderStatus,
+        markOrderPaid,
         updateInquiryStatus,
         lastPlacedOrder,
 

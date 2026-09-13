@@ -1,20 +1,29 @@
 <?php
 // api/checkout.php — Payment-initiation endpoint for Hostinger (PHP).
-// Equivalent of the old Vercel serverless function: fetches a bearer token,
-// submits the transaction to Rapid Gateway, and returns the hosted-checkout
-// redirect URL as JSON. Card details are entered on the gateway's secure
-// page; they never reach this server or the browser bundle.
 //
-// The client calls this via: fetch('/api/checkout.php', { method: 'POST', ... })
+// Implements the Rapid Gateway server-to-server integration exactly as
+// documented in the merchant sandbox kit:
+//   1. Fetch a bearer token (OAuth2 client_credentials).
+//   2. Submit the transaction to /rapid/process-transaction.
+//   3. The gateway answers with a 302 Location: the hosted checkout URL.
+//      We do NOT follow it — we hand it back to the browser as JSON.
+//
+// The customer enters card details on the gateway's secure page; they never
+// reach this server or the browser bundle. On completion the gateway returns
+// the customer to one of the URLs set below:
+//   SUCCESS_URL  -> /payment/success
+//   FAILURE_URL  -> /payment/failure
+//   CHECKOUT_URL -> /payment/complete
+//
+// Client calls: fetch('/api/checkout.php', { method: 'POST', jsonBody })
+// Returns:      { redirectUrl, orderId } | { error }
 declare(strict_types=1);
 
 // ── Configuration ─────────────────────────────────────────────────────
-// The script reads RG_MERCHANT_ID / RG_CLIENT_SECRET from environment
-// variables. On Hostinger you can set them per-domain in hPanel:
+// Read from environment variables. On Hostinger set them in hPanel:
 //   Advanced → PHP Settings → Environment variables
 // or with `SetEnv` in a server-level .htaccess outside this repo.
-// If no env var is found, edit the fallback constants below (they stay
-// server-side and are never echoed back to the client).
+// No VITE_ prefix — these must never reach the client bundle.
 function rg_config(string $key, string $fallback): string
 {
     $value = getenv($key);
@@ -26,6 +35,10 @@ $RG_CLIENT_SECRET = rg_config('RG_CLIENT_SECRET', 'YOUR_RG_CLIENT_SECRET');
 $RG_MERCHANT_NAME = rg_config('RG_MERCHANT_NAME', 'STORIUM');
 $BASE_URL         = rg_config('BASE_URL', 'https://storium.pk');
 
+const RG_TOKEN_URL  = 'https://secure.rapid-gateway.com/oauth2/token';
+const RG_TXN_URL    = 'https://secure.rapid-gateway.com/rapid/process-transaction';
+const RG_VERSION    = 'MY_VER_1.0';
+
 function send_json(int $status, array $body): void
 {
     http_response_code($status);
@@ -36,9 +49,28 @@ function send_json(int $status, array $body): void
 }
 
 /**
- * Run a form-urlencoded POST and return the parsed headers plus body.
- * FollowLocation is disabled so the 3xx Location header can be read for
- * the hosted-checkout redirect.
+ * Normalize a Pakistani phone number to E.164 (+92...) for the gateway.
+ * Accepted forms: 03001234567, 92 300 1234567, +92 300 1234567.
+ */
+function normalize_phone_pk(string $phone): string
+{
+    $digits = preg_replace('/\D+/', '', $phone) ?? '';
+    if ($digits === '') {
+        return '';
+    }
+    if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
+        $digits = '92' . $digits;
+    } elseif (strlen($digits) === 11 && str_starts_with($digits, '03')) {
+        $digits = '92' . substr($digits, 1);
+    } elseif (strlen($digits) === 13 && str_starts_with($digits, '920')) {
+        $digits = '92' . substr($digits, 3);
+    }
+    return '+' . $digits;
+}
+
+/**
+ * Run a form-urlencoded POST. Does NOT follow redirects — the 3xx Location
+ * header (the hosted checkout) is what the caller needs.
  */
 function http_post_form(string $url, array $headers, array $fields): array
 {
@@ -48,7 +80,6 @@ function http_post_form(string $url, array $headers, array $fields): array
         CURLOPT_POSTFIELDS     => http_build_query($fields),
         CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HEADER         => true,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_TIMEOUT        => 30,
         CURLOPT_SSL_VERIFYPEER => true,
@@ -56,13 +87,15 @@ function http_post_form(string $url, array $headers, array $fields): array
     ]);
 
     $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     if ($response === false) {
         $error = curl_error($ch);
         curl_close($ch);
-        return ['error' => $error];
+        return ['status' => 0, 'headers' => [], 'body' => '', 'redirect_url' => '', 'error' => $error];
     }
 
-    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $redirectUrl = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    $headerSize  = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     curl_close($ch);
 
     $headerBlock = substr($response, 0, $headerSize);
@@ -78,7 +111,12 @@ function http_post_form(string $url, array $headers, array $fields): array
         }
     }
 
-    return ['headers' => $parsedHeaders, 'body' => $rawBody];
+    // Fallback in case CURLINFO_REDIRECT_URL is empty but a Location header exists.
+    if ($redirectUrl === '' && isset($parsedHeaders['location']) && $parsedHeaders['location'] !== '') {
+        $redirectUrl = $parsedHeaders['location'];
+    }
+
+    return ['status' => $httpCode, 'headers' => $parsedHeaders, 'body' => $rawBody, 'redirect_url' => $redirectUrl];
 }
 
 // ── Request handling ──────────────────────────────────────────────────
@@ -86,14 +124,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     send_json(405, ['error' => 'Method not allowed. Use POST.']);
 }
 
-$rawInput  = file_get_contents('php://input');
-$input     = json_decode($rawInput === false ? '' : $rawInput, true);
+$rawInput = file_get_contents('php://input');
+$input    = json_decode($rawInput === false ? '' : $rawInput, true);
 if (!is_array($input)) {
     send_json(400, ['error' => 'Invalid JSON body.']);
 }
 
 $amount  = isset($input['amount']) ? (float) $input['amount'] : 0.0;
-$phone   = isset($input['phone']) ? trim((string) $input['phone']) : '';
+$phone   = isset($input['phone']) ? normalize_phone_pk((string) $input['phone']) : '';
 $email   = isset($input['email']) ? trim((string) $input['email']) : '';
 $orderId = isset($input['orderId']) ? trim((string) $input['orderId']) : '';
 
@@ -101,7 +139,7 @@ if (!is_numeric($amount) || $amount <= 0) {
     send_json(400, ['error' => 'A valid positive amount is required.']);
 }
 if ($phone === '') {
-    send_json(400, ['error' => 'Phone number is required.']);
+    send_json(400, ['error' => 'A valid Pakistani phone number is required.']);
 }
 if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
     send_json(400, ['error' => 'A valid email is required.']);
@@ -110,21 +148,25 @@ if ($orderId === '') {
     send_json(400, ['error' => 'Order reference is required.']);
 }
 
+if (str_starts_with($RG_MERCHANT_ID, 'YOUR_') || $RG_CLIENT_SECRET === '' || str_starts_with($RG_CLIENT_SECRET, 'YOUR_')) {
+    send_json(503, ['error' => 'Rapid Gateway is not configured yet.']);
+}
+
 // ── Step 1: fetch bearer token ───────────────────────────────────────
 $creds     = base64_encode($RG_MERCHANT_ID . ':' . $RG_CLIENT_SECRET);
 $tokenResp = http_post_form(
-    'https://secure.rapid-gateway.com/oauth2/token',
+    RG_TOKEN_URL,
     ['Authorization: Basic ' . $creds, 'Content-Type: application/x-www-form-urlencoded'],
     ['grant_type' => 'client_credentials']
 );
 
-if (isset($tokenResp['error'])) {
+if (isset($tokenResp['error']) || $tokenResp['status'] >= 400) {
     send_json(502, ['error' => 'Could not reach the payment gateway.']);
 }
 
-$tokenData   = json_decode($tokenResp['body'], true);
-$accessToken = is_array($tokenData) && isset($tokenData['access_token'])
-    ? (string) $tokenData['access_token']
+$tokenData = json_decode($tokenResp['body'], true);
+$accessToken = is_array($tokenData) && isset($tokenData['access_token']) && is_string($tokenData['access_token'])
+    ? $tokenData['access_token']
     : '';
 
 if ($accessToken === '') {
@@ -133,20 +175,22 @@ if ($accessToken === '') {
 
 // ── Step 2: submit the transaction ───────────────────────────────────
 $txnResp = http_post_form(
-    'https://secure.rapid-gateway.com/rapid/process-transaction',
+    RG_TXN_URL,
     ['Authorization: Bearer ' . $accessToken, 'Content-Type: application/x-www-form-urlencoded'],
     [
         'MERCHANT_ID'            => $RG_MERCHANT_ID,
         'MERCHANT_NAME'          => $RG_MERCHANT_NAME,
-        'TXNAMT'                 => (string) round($amount),
+        'TXNAMT'                 => (string) (int) round($amount), // PKR whole rupees
         'CURRENCY_CODE'          => 'PKR',
         'CUSTOMER_MOBILE_NO'     => $phone,
         'CUSTOMER_EMAIL_ADDRESS' => $email,
         'BASKET_ID'              => $orderId,
-        'SUCCESS_URL'            => rtrim($BASE_URL, '/') . '/payment/success',
-        'FAILURE_URL'            => rtrim($BASE_URL, '/') . '/payment/failure',
-        'CHECKOUT_URL'           => rtrim($BASE_URL, '/') . '/payment/complete',
-        'VERSION'                => 'MY_VER_1.0',
+        'TXNDESC'                => $RG_MERCHANT_NAME . ' order ' . $orderId,
+        'ORDER_DATE'             => date('Y-m-d'),
+        'SUCCESS_URL'            => rtrim($BASE_URL, '/') . '/payment/success?order=' . urlencode($orderId),
+        'FAILURE_URL'            => rtrim($BASE_URL, '/') . '/payment/failure?order=' . urlencode($orderId),
+        'CHECKOUT_URL'           => rtrim($BASE_URL, '/') . '/payment/complete?order=' . urlencode($orderId),
+        'VERSION'                => RG_VERSION,
         'PROCCODE'               => '0',
     ]
 );
@@ -155,13 +199,13 @@ if (isset($txnResp['error'])) {
     send_json(502, ['error' => 'Payment gateway is unreachable. Please try again.']);
 }
 
-$redirect = $txnResp['headers']['location'] ?? '';
+$redirect = $txnResp['redirect_url'];
 
 // Some gateway builds echo the checkout URL in the response body instead.
 if ($redirect === '') {
     $payJson = json_decode($txnResp['body'], true);
     if (is_array($payJson)) {
-        foreach (['redirect_url', 'url', 'payment_url'] as $key) {
+        foreach (['redirect_url', 'url', 'payment_url', 'checkout_url'] as $key) {
             if (isset($payJson[$key]) && is_string($payJson[$key]) && $payJson[$key] !== '') {
                 $redirect = $payJson[$key];
                 break;

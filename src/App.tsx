@@ -27,6 +27,7 @@ const ContactView = lazy(() => import('./views/ContactView').then((m) => ({ defa
 const ShippingPolicyView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.ShippingPolicyView })));
 const ReturnPolicyView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.ReturnPolicyView })));
 const TermsView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.TermsView })));
+const PaymentCompleteView = lazy(() => import('./views/PaymentCompleteView').then((m) => ({ default: m.PaymentCompleteView })));
 
 const ViewLoadingFallback = () => (
   <div className="w-full min-h-[60vh] flex items-center justify-center">
@@ -84,6 +85,8 @@ const AppContent: React.FC = () => {
         return <ReturnPolicyView />;
       case 'terms':
         return <TermsView />;
+      case 'payment-complete':
+        return <PaymentCompleteView />;
       default:
         return <HomeView />;
     }

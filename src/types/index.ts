@@ -167,4 +167,5 @@ export type PageView =
   | 'contact'
   | 'shipping-policy'
   | 'return-policy'
-  | 'terms';
+  | 'terms'
+  | 'payment-complete';
