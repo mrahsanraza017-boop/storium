@@ -33,7 +33,7 @@ function rg_config(string $key, string $fallback): string
 $RG_MERCHANT_ID   = rg_config('RG_MERCHANT_ID', 'YOUR_RG_MERCHANT_ID');
 $RG_CLIENT_SECRET = rg_config('RG_CLIENT_SECRET', 'YOUR_RG_CLIENT_SECRET');
 $RG_MERCHANT_NAME = rg_config('RG_MERCHANT_NAME', 'STORIUM');
-$BASE_URL         = rg_config('BASE_URL', 'https://storium.pk');
+$BASE_URL         = rg_config('BASE_URL', 'https://storium.online');
 
 const RG_TOKEN_URL  = 'https://secure.rapid-gateway.com/oauth2/token';
 const RG_TXN_URL    = 'https://secure.rapid-gateway.com/rapid/process-transaction';

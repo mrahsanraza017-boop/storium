@@ -368,7 +368,7 @@ export async function resetCustomerPassword(
     // If not in local list, create client record
     saveClientAccount({
       id: 'usr_' + Math.random().toString(36).substring(2, 9),
-      email: isEmail ? targetValue : `${targetValue.replace(/\D/g, '')}@storium.pk`,
+      email: isEmail ? targetValue : `${targetValue.replace(/\D/g, '')}@storium.online`,
       phone: !isEmail ? targetValue : '',
       fullName: 'Valued Client',
       passwordHash: newPassword,

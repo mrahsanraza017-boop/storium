@@ -258,7 +258,7 @@ export const CustomerAuthPanel: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="patron@storium.pk"
+                  placeholder="patron@storium.online"
                   aria-label="Email Address"
                   className="w-full rounded-xl border border-[#262930] bg-[#0B0C0E] px-4 py-3 text-xs sm:text-sm text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37] transition-colors"
                 />
@@ -488,7 +488,7 @@ export const CustomerAuthPanel: React.FC = () => {
                     required
                     value={forgotIdentifier}
                     onChange={(e) => setForgotIdentifier(e.target.value)}
-                    placeholder="patron@storium.pk or 0300 1234567"
+                    placeholder="patron@storium.online or 0300 1234567"
                     aria-label="Registered Email or Phone Number"
                     className="w-full rounded-xl border border-[#262930] bg-[#0B0C0E] px-4 py-3 text-xs sm:text-sm text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37] transition-colors"
                   />

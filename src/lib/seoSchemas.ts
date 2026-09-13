@@ -2,7 +2,7 @@ import { Product, ProductReview } from '../types';
 
 export const BASE_SITE_URL = typeof window !== 'undefined' && window.location.origin
   ? window.location.origin
-  : 'https://storium.pk';
+  : 'https://storium.online';
 
 export const DEFAULT_OG_IMAGE = `${BASE_SITE_URL}/assets/exhibition-bench.webp`;
 

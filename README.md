@@ -57,7 +57,7 @@ variables** (domain level) — never use a `VITE_` prefix, and never hardcode th
 | `RG_MERCHANT_ID`          | Rapid Gateway merchant id (e.g. `102`)                            |
 | `RG_CLIENT_SECRET`        | Rapid Gateway client secret                                       |
 | `RG_MERCHANT_NAME`        | Store name sent to the gateway (default: STORIUM)                 |
-| `BASE_URL`                | Public site URL for the return pages, e.g. `https://storium.pk`   |
+| `BASE_URL`                | Public site URL for the return pages, e.g. `https://storium.online`   |
 | `RG_WEBHOOK_SECRET`       | **Optional** — webhook HMAC secret (if your gateway sends events) |
 | `SUPABASE_URL`            | **Optional** — Supabase project URL (webhook order update)        |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Optional** — Supabase service role key (webhook order update) |

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://storium.pk/sitemap.xml
+Sitemap: https://storium.online/sitemap.xml
