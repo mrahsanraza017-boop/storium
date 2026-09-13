@@ -16,7 +16,7 @@ export const AmbientBackground: React.FC = () => {
       {/* Oversized slow-rotating STORIUM emblem watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img
-          src="/emblem-transparent.png"
+          src="/logo.png"
           alt=""
           loading="lazy"
           decoding="async"

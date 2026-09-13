@@ -40,13 +40,13 @@ export const AboutView: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
         {/* Header */}
         <div className="text-center space-y-6 glass-panel p-10 sm:p-12 rounded-3xl shadow-2xl flex flex-col items-center">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-[#D4AF37]/40 p-2 bg-transparent shadow-[0_0_30px_rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 p-2 bg-transparent flex items-center justify-center flex-shrink-0">
             <img
-              src="/favicon.png"
+              src="/logo.png"
               alt="Maison STORIUM Logo"
               width="100"
               height="100"
-              className="w-full h-full object-contain rounded-xl"
+              className="w-full h-full object-contain"
             />
           </div>
           <div>
