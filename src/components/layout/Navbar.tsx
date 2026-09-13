@@ -78,15 +78,7 @@ export const Navbar: React.FC = () => {
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="flex flex-col">
-            <span className="font-serif-luxury text-base sm:text-lg font-bold tracking-[0.2em] text-white group-hover:text-[#D4AF37] transition-colors leading-none">
-              STORIUM
-            </span>
-            <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.22em] text-[#D4AF37] font-semibold mt-1">
-              HAUTE HORLOGERIE
-            </span>
           </div>
-        </div>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-8">
