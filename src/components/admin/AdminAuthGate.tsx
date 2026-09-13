@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LockKeyhole, LogIn, LogOut, ShieldCheck } from 'lucide-react';
+import { LockKeyhole, LogIn, LogOut } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { getSupabase } from '../../lib/supabase';
 import { useStore } from '../../context/StoreContext';

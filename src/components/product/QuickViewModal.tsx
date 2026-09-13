@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Heart, Shield, Truck, ArrowRight } from 'lucide-react';
+import { X, Heart, Shield, Truck, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ProductGallery } from './ProductGallery';
 

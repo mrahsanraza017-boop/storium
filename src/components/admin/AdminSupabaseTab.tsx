@@ -7,7 +7,6 @@ import {
   Copy,
   Check,
   ExternalLink,
-  ShieldCheck,
   Terminal,
   Zap,
 } from 'lucide-react';
@@ -16,7 +15,7 @@ import {
   checkSupabaseHealth,
   SUPABASE_SQL_SCHEMA,
 } from '../../services/supabaseService';
-import { SUPABASE_PROJECT_ID, SUPABASE_ANON_KEY } from '../../lib/supabase';
+import { SUPABASE_PROJECT_ID } from '../../lib/supabase';
 
 export const AdminSupabaseTab: React.FC = () => {
   const { orders, inquiries, reviews, syncWithSupabase, isSupabaseSyncing, addToast } = useStore();

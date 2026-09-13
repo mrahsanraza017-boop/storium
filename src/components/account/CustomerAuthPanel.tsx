@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   LogIn,
   UserPlus,
-  ShieldCheck,
   Phone,
   Mail,
   Lock,

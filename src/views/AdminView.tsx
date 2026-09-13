@@ -1,26 +1,18 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  Package,
-  ShoppingBag,
-  TrendingUp,
-  AlertTriangle,
   Plus,
   Trash2,
   Edit2,
-  Check,
   Search,
   X,
-  ExternalLink,
-  DollarSign,
-  Truck,
   Eye,
   Database,
   MessageSquare,
   Star,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { Product, Order, Category, ACCESSORY_SUBCATEGORIES } from '../types';
+import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
 import { AdminSupabaseTab } from '../components/admin/AdminSupabaseTab';
 import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
@@ -32,7 +24,6 @@ export const AdminView: React.FC = () => {
   const {
     products,
     orders,
-    categories,
     inquiries,
     reviews,
     addProduct,

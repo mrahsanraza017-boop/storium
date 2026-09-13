@@ -7,9 +7,6 @@ import {
   User,
   Menu,
   X,
-  Compass,
-  Watch,
-  Sparkles,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';

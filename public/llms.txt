@@ -3,18 +3,18 @@
 > STORIUM is Pakistan's futuristic luxury watch showroom and accessory atelier. Precision Japanese and Swiss mechanical timepieces, aerospace titanium, surgical steel, and sapphire crystal. Nationwide express delivery and cash on delivery.
 
 ## Company
-- [STORIUM Home](https://storium-av9p.vercel.app/)
-- [About STORIUM](https://storium-av9p.vercel.app/about)
+- [STORIUM Home](https://storium.pk/)
+- [About STORIUM](https://storium.pk/about)
 
 ## Catalog
-- [Luxury Watches](https://storium-av9p.vercel.app/watches)
-- [Men's Accessories](https://storium-av9p.vercel.app/accessories)
-- [Full Showroom Catalog](https://storium-av9p.vercel.app/shop)
+- [Luxury Watches](https://storium.pk/watches)
+- [Men's Accessories](https://storium.pk/accessories)
+- [Full Showroom Catalog](https://storium.pk/shop)
 
 ## Policies
-- [Shipping Policy](https://storium-av9p.vercel.app/shipping-policy)
-- [Return Policy](https://storium-av9p.vercel.app/return-policy)
-- [Terms & Conditions](https://storium-av9p.vercel.app/terms)
+- [Shipping Policy](https://storium.pk/shipping-policy)
+- [Return Policy](https://storium.pk/return-policy)
+- [Terms & Conditions](https://storium.pk/terms)
 
 ## Contact
-- [Contact the Concierge](https://storium-av9p.vercel.app/contact)
+- [Contact the Concierge](https://storium.pk/contact)

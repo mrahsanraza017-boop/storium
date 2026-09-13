@@ -8,10 +8,7 @@ import {
   RotateCcw,
   Check,
   ChevronRight,
-  Sparkles,
   Share2,
-  Watch,
-  Layers,
   ArrowRight,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';

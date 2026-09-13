@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { SlidersHorizontal, ArrowUpDown, Check } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 

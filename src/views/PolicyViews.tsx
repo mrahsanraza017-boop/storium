@@ -1,12 +1,9 @@
 import React from 'react';
 import { Truck, ShieldCheck, RefreshCcw, Check, Clock } from 'lucide-react';
-import { useStore } from '../context/StoreContext';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, getFAQPageSchema } from '../lib/seoSchemas';
 
 export const ShippingPolicyView: React.FC = () => {
-  const { navigate } = useStore();
-
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
     { name: 'Shipping Policy', url: '/shipping-policy' },

@@ -30,7 +30,6 @@ import {
   updateReviewStatusInSupabase,
   toggleReviewFeaturedInSupabase,
   deleteReviewFromSupabase,
-  checkSupabaseHealth,
 } from '../services/supabaseService';
 import {
   isPhoneNumberVerified,

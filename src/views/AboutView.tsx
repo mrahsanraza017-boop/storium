@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, Compass, Shield, Watch, ArrowRight } from 'lucide-react';
+import { Award, Shield, Watch } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 import { SEOHead } from '../components/seo/SEOHead';

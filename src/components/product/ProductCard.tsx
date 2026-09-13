@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Eye, ShoppingBag, Heart, Check, Sparkles } from 'lucide-react';
+import { Eye, ShoppingBag, Heart, Check } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { ProductMediaFrame } from './ProductMediaFrame';

@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  ShieldCheck,
-  Truck,
   CreditCard,
   Banknote,
-  CheckCircle2,
   Lock,
   ArrowRight,
   Package,
@@ -26,8 +23,8 @@ export const CheckoutView: React.FC = () => {
     cartTotal,
     createOrder,
     currentUser,
-    lastPlacedOrder,
     navigate,
+    addToast,
   } = useStore();
 
   const allowedPaymentMethods = useMemo(() => {
@@ -52,12 +49,6 @@ export const CheckoutView: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card'>(
     allowedPaymentMethods.includes('cod') ? 'cod' : allowedPaymentMethods[0] || 'cod'
   );
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: '',
-    cardHolder: '',
-    expiry: '',
-    cvv: '',
-  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
@@ -181,12 +172,6 @@ export const CheckoutView: React.FC = () => {
     if (!formData.address.trim()) errors.address = 'Street address is required';
     if (!formData.city.trim()) errors.city = 'Please specify your city';
 
-    if (paymentMethod === 'card') {
-      if (!cardDetails.cardNumber.trim()) errors.cardNumber = 'Card number required';
-      if (!cardDetails.expiry.trim()) errors.expiry = 'Expiry date required';
-      if (!cardDetails.cvv.trim()) errors.cvv = 'CVV required';
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -216,13 +201,43 @@ export const CheckoutView: React.FC = () => {
         shippingFee: cartShippingFee,
         total: cartTotal,
         paymentMethod,
-        paymentStatus: paymentMethod === 'card' ? 'paid' : 'pending',
+        paymentStatus: 'pending',
         orderStatus: 'Pending',
       });
 
-      setConfirmedOrder(newOrder);
+      // COD: order is confirmed immediately, payment settles at the doorstep.
+      if (paymentMethod === 'cod') {
+        setConfirmedOrder(newOrder);
+        return;
+      }
+
+      // Card: create the order first, then send the customer to the gateway's
+      // hosted checkout. Payment is confirmed on return (see /payment/complete).
+      const checkoutRes = await fetch('/api/checkout.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: cartTotal,
+          phone: formData.phone,
+          email: formData.email,
+          orderId: newOrder.orderNumber,
+        }),
+      });
+
+      const checkoutData = (await checkoutRes.json().catch(() => ({}))) as {
+        redirectUrl?: string;
+        error?: string;
+      };
+
+      if (!checkoutRes.ok || !checkoutData.redirectUrl) {
+        throw new Error(checkoutData.error || 'Payment initiation failed. Please try again.');
+      }
+
+      window.location.assign(checkoutData.redirectUrl);
     } catch (err) {
       console.error('Order submission error:', err);
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      addToast('error', 'Payment Could Not Be Started', message);
     } finally {
       setIsSubmitting(false);
     }
@@ -455,7 +470,7 @@ export const CheckoutView: React.FC = () => {
                           Visa / Mastercard Debit Card
                         </h3>
                         <p className="text-xs text-[#CBD0DC] mt-0.5">
-                          Instant encrypted 256-bit bank card transaction.
+                          Redirected to our secure bank gateway — no card details are stored on our servers.
                         </p>
                       </div>
                     </div>
@@ -466,57 +481,6 @@ export const CheckoutView: React.FC = () => {
                       {paymentMethod === 'card' && (
                         <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Debit card form fields when selected */}
-                {paymentMethod === 'card' && allowedPaymentMethods.includes('card') && (
-                  <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-3 text-xs pt-4">
-                    <div>
-                      <label htmlFor="checkout-card-number" className="block text-[#CBD0DC] mb-1">Card Number</label>
-                      <input
-                        id="checkout-card-number"
-                        type="text"
-                        value={cardDetails.cardNumber}
-                        onChange={(e) =>
-                          setCardDetails({ ...cardDetails, cardNumber: e.target.value })
-                        }
-                        placeholder="0000 0000 0000 0000"
-                        aria-label="Card Number"
-                        className="w-full py-2.5 px-3 rounded-lg bg-[#121316] border border-[#262930] text-[#F5F5F7]"
-                      />
-                      {formErrors.cardNumber && (
-                        <p className="text-rose-400 text-[10px] mt-1">{formErrors.cardNumber}</p>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label htmlFor="checkout-card-expiry" className="block text-[#CBD0DC] mb-1">Expiry (MM/YY)</label>
-                        <input
-                          id="checkout-card-expiry"
-                          type="text"
-                          value={cardDetails.expiry}
-                          onChange={(e) =>
-                            setCardDetails({ ...cardDetails, expiry: e.target.value })
-                          }
-                          placeholder="MM/YY"
-                          aria-label="Card Expiry MM/YY"
-                          className="w-full py-2.5 px-3 rounded-lg bg-[#121316] border border-[#262930] text-[#F5F5F7]"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="checkout-card-cvv" className="block text-[#CBD0DC] mb-1">Security Code (CVV)</label>
-                        <input
-                          id="checkout-card-cvv"
-                          type="text"
-                          value={cardDetails.cvv}
-                          onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
-                          placeholder="123"
-                          aria-label="Security Code CVV"
-                          className="w-full py-2.5 px-3 rounded-lg bg-[#121316] border border-[#262930] text-[#F5F5F7]"
-                        />
-                      </div>
                     </div>
                   </div>
                 )}

@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import {
-  MessageSquare,
   Search,
-  CheckCircle2,
-  Mail,
-  Phone,
-  Clock,
   Database,
-  ExternalLink,
-  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ContactInquiry } from '../../types';

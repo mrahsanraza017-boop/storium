@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown, X, Tag } from 'lucide-react';
+import { Search, X, Tag } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { ACCESSORY_SUBCATEGORIES } from '../types';

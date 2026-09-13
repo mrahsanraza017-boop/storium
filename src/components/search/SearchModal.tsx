@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, X, ArrowRight, Watch, Tag, Sparkles } from 'lucide-react';
+import { Search, X, ArrowRight, Watch } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 export const SearchModal: React.FC = () => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Search, SlidersHorizontal, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 
@@ -8,7 +8,7 @@ import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
 export const ShopView: React.FC = () => {
-  const { products, categories, activeCategoryFilter, navigate } = useStore();
+  const { products, categories, activeCategoryFilter } = useStore();
 
   const [selectedCategory, setSelectedCategory] = useState<string>(
     activeCategoryFilter || 'all'

@@ -4,21 +4,12 @@ import {
   Package,
   Heart,
   MapPin,
-  Clock,
   ShieldCheck,
-  CheckCircle,
   Truck,
-  ExternalLink,
   Edit2,
   Save,
-  Phone,
-  X,
-  RefreshCw,
-  Check,
-  AlertCircle,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
 import { CustomerAuthPanel } from '../components/account/CustomerAuthPanel';
 
 export const AccountView: React.FC = () => {
@@ -33,9 +24,6 @@ export const AccountView: React.FC = () => {
     navigate,
     addToast,
     logoutUser,
-    sendPhoneVerificationCode,
-    verifyPhoneCode,
-    isPhoneVerified,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'profile' | 'addresses'>('orders');
@@ -49,23 +37,6 @@ export const AccountView: React.FC = () => {
     city: currentUser?.city || 'Lahore',
   });
 
-  // Mobile Verification Modal States
-  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [verifyError, setVerifyError] = useState('');
-  const [verifyTimer, setVerifyTimer] = useState(0);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (verifyTimer > 0) {
-      interval = setInterval(() => {
-        setVerifyTimer((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [verifyTimer]);
-
   useEffect(() => {
     if (!currentUser) return;
     setProfileForm({
@@ -78,51 +49,6 @@ export const AccountView: React.FC = () => {
   }, [currentUser]);
 
   if (!currentUser) return <CustomerAuthPanel />;
-
-  const isCurrentPhoneVerified = Boolean(
-    currentUser.phoneVerified || (currentUser.phone && isPhoneVerified(currentUser.phone))
-  );
-
-  const handleOpenPhoneVerification = async () => {
-    if (!currentUser.phone) {
-      addToast('error', 'No Phone Number', 'Please enter a contact phone number first.');
-      return;
-    }
-    setVerifyError('');
-    setVerificationCode('');
-    setIsVerifyModalOpen(true);
-    setVerifyTimer(60);
-    await sendPhoneVerificationCode(currentUser.phone);
-  };
-
-  const handleConfirmVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verificationCode || verificationCode.trim().length < 6) {
-      setVerifyError('Please enter the 6-digit verification code.');
-      return;
-    }
-    setVerifyError('');
-    setIsVerifyingCode(true);
-
-    const res = await verifyPhoneCode(currentUser.phone, verificationCode);
-    if (res.success) {
-      setIsVerifyModalOpen(false);
-    } else {
-      setVerifyError(res.message || 'Verification failed. Please check the code.');
-    }
-    setIsVerifyingCode(false);
-  };
-
-  const handleResendModalOTP = async () => {
-    if (verifyTimer > 0 || !currentUser.phone) return;
-    setVerifyError('');
-    const res = await sendPhoneVerificationCode(currentUser.phone);
-    if (res.success) {
-      setVerifyTimer(60);
-    } else {
-      setVerifyError(res.message || 'Failed to resend code.');
-    }
-  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();

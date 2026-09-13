@@ -3,12 +3,7 @@ import {
   ArrowRight,
   Shield,
   Truck,
-  Sparkles,
-  Watch,
   Award,
-  Layers,
-  Compass,
-  CheckCircle2,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
