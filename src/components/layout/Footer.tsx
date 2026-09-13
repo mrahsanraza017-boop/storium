@@ -113,12 +113,12 @@ export const Footer: React.FC = () => {
               onClick={() => navigate('home')}
               className="cursor-pointer flex items-center gap-3 group select-none"
             >
-              <div className="relative w-11 h-11 bg-transparent p-1 flex-shrink-0 flex items-center justify-center">
+              <div className="relative w-14 h-14 bg-transparent p-1 flex-shrink-0 flex items-center justify-center">
                 <img
                   src="/logo.png"
                   alt="STORIUM Logo"
-                  width="44"
-                  height="44"
+                  width="56"
+                  height="56"
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"

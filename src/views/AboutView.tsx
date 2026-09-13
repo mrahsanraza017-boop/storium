@@ -40,12 +40,12 @@ export const AboutView: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
         {/* Header */}
         <div className="text-center space-y-6 glass-panel p-10 sm:p-12 rounded-3xl shadow-2xl flex flex-col items-center">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 p-2 bg-transparent flex items-center justify-center flex-shrink-0">
+          <div className="w-32 h-32 sm:w-36 sm:h-36 p-2 bg-transparent flex items-center justify-center flex-shrink-0">
             <img
               src="/logo.png"
               alt="Maison STORIUM Logo"
-              width="100"
-              height="100"
+              width="144"
+              height="144"
               className="w-full h-full object-contain"
             />
           </div>

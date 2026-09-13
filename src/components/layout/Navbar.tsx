@@ -69,12 +69,12 @@ export const Navbar: React.FC = () => {
           onClick={() => handleNavClick('home')}
           className="cursor-pointer flex items-center gap-2.5 sm:gap-3 select-none group min-w-0"
         >
-          <div className="relative w-10 h-10 sm:w-11 sm:h-11 bg-transparent p-1 flex-shrink-0 flex items-center justify-center">
+          <div className="relative w-12 h-12 sm:w-14 sm:h-14 bg-transparent p-1 flex-shrink-0 flex items-center justify-center">
             <img
               src="/logo.png"
               alt="STORIUM Logo"
-              width="44"
-              height="44"
+              width="56"
+              height="56"
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           </div>
