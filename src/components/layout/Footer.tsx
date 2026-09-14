@@ -263,7 +263,7 @@ export const Footer: React.FC = () => {
                   <ShieldCheck className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />
                   <div>
                     <span className="block text-[#8E929E]">Support Email:</span>
-                    <a href="mailto:concierge@storium.online" className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors">concierge@storium.online</a>
+                    <a href="mailto:Storium.store@gmail.com" className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors">Storium.store@gmail.com</a>
                   </div>
                 </div>
               </div>

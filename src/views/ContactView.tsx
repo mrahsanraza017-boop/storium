@@ -112,10 +112,10 @@ export const ContactView: React.FC = () => {
                   <div>
                     <span className="text-[#8E929E] block">Electronic Correspondence</span>
                     <a
-                      href="mailto:concierge@storium.online"
+                      href="mailto:Storium.store@gmail.com"
                       className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37]"
                     >
-                      concierge@storium.online
+                      Storium.store@gmail.com
                     </a>
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export const ContactView: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[#8E929E] block">Showroom Hub &amp; Fulfillment</span>
-                    <span className="text-[#CBD0DC]">Gulberg III, Lahore &amp; Clifton, Karachi (Pakistan)</span>
+                    <span className="text-[#CBD0DC]">ANWAR SHAHID COLONY RENALA</span>
                   </div>
                 </div>
               </div>
