@@ -886,7 +886,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setOrders((prev) =>
       prev.map((ord) =>
         ord.orderNumber === orderNumber
-          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const }
+          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
           : ord
       )
     );

@@ -91,9 +91,12 @@ export interface Order {
   shippingFee: number;
   total: number;
   paymentMethod: 'cod' | 'card';
-  paymentStatus: 'pending' | 'paid';
+  paymentStatus: 'pending' | 'paid' | 'failed';
   orderStatus: 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   trackingNumber?: string;
+  rgTransactionRef?: string;
+  paidAt?: string;
+  paymentFailedAt?: string;
   supabaseSynced?: boolean;
 }
 

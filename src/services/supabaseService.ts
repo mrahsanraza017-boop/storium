@@ -116,6 +116,14 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 ALTER TABLE public.orders
     ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
+-- Backfill: add Rapid Gateway transaction reference + payment timestamps (safe for existing installs)
+ALTER TABLE public.orders
+    ADD COLUMN IF NOT EXISTS rg_transaction_ref TEXT;
+ALTER TABLE public.orders
+    ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
+ALTER TABLE public.orders
+    ADD COLUMN IF NOT EXISTS payment_failed_at TIMESTAMPTZ;
+
 -- Backfill: add phone_verified column to customer_profiles if missing
 ALTER TABLE public.customer_profiles
     ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false;
@@ -622,6 +630,9 @@ export async function fetchSupabaseOrders(): Promise<Order[]> {
       paymentStatus: row.payment_status,
       orderStatus: row.order_status,
       trackingNumber: row.tracking_number,
+      rgTransactionRef: row.rg_transaction_ref || undefined,
+      paidAt: row.paid_at || undefined,
+      paymentFailedAt: row.payment_failed_at || undefined,
       supabaseSynced: true,
     }));
   } catch (err) {

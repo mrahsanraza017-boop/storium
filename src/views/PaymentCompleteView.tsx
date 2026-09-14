@@ -7,15 +7,18 @@ type PaymentStatus = 'checking' | 'paid' | 'pending' | 'failed' | 'not-found';
 
 /**
  * Landing page after Rapid Gateway redirects the customer back to
- * /payment/complete?order=STM-PK-12345. The webhook is the source of truth,
- * so we pull the latest order state from Supabase (which the webhook updates)
- * and only claim success once the order is actually marked paid.
+ * /payment/success, /payment/failure or /payment/complete.
+ *
+ * The verified webhook is the ONLY source of truth for payment confirmation.
+ * SUCCESS_URL must never be treated as proof of payment, so this view polls the
+ * order status from Supabase (which the webhook updates) and only shows
+ * "paid" once the order is actually marked paid there.
  */
 export const PaymentCompleteView: React.FC = () => {
-  const { orders, navigate, isSupabaseSyncing, syncWithSupabase, markOrderPaid } = useStore();
+  const { orders, navigate, isSupabaseSyncing, syncWithSupabase } = useStore();
 
   // The gateway drops the customer on one of three paths after checkout:
-  //   /payment/success   -> payment accepted
+  //   /payment/success   -> payment accepted (but NOT proof — wait for webhook)
   //   /payment/failure   -> payment declined/expired
   //   /payment/complete  -> checkout finished (outcome via order/webhook)
   const incomingPath = useMemo(() => {
@@ -34,15 +37,18 @@ export const PaymentCompleteView: React.FC = () => {
   const [status, setStatus] = useState<PaymentStatus>('checking');
   const [pollCount, setPollCount] = useState(0);
   const syncedRef = useRef(false);
-  const markedPaidRef = useRef(false);
 
   const order = useMemo(
     () => orders.find((o) => o.orderNumber === orderId),
     [orders, orderId]
   );
 
+  // Only ~8 seconds of polling is worth block the page; the webhook usually
+  // lands within a few seconds of the redirect.
+  const MAX_POLLS = 4;
+
   // Re-sync order state from Supabase shortly after returning from the
-  // gateway so a webhook (payment.succeeded) has a chance to land.
+  // gateway so a webhook (transaction.completed) has a chance to land.
   useEffect(() => {
     if (orderId === '') {
       setStatus('not-found');
@@ -54,53 +60,78 @@ export const PaymentCompleteView: React.FC = () => {
       void syncWithSupabase().then(() => setPollCount((c) => c + 1));
     };
     sync();
-  }, [orderId, syncWithSupabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
-  // One confirmation poll a few seconds later; then settle on a final state.
+  // Poll a few times with a delay, then settle on a final state.
   useEffect(() => {
-    if (pollCount !== 1) return;
+    if (pollCount === 0 || pollCount >= MAX_POLLS) return;
     const timer = window.setTimeout(() => {
       void syncWithSupabase().then(() => {
         setPollCount((c) => c + 1);
       });
-    }, 3500);
+    }, 3000);
     return () => window.clearTimeout(timer);
-  }, [pollCount, syncWithSupabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollCount]);
 
   useEffect(() => {
     if (orderId === '') {
       setStatus('not-found');
       return;
     }
-    // A success or failure redirect is immediately trustworthy; /payment/complete
-    // waits for the poll so the order/webhook can confirm.
-    if (incomingPath === 'failure' || explicitStatus.toLowerCase().includes('fail') || explicitStatus.toLowerCase().includes('cancel')) {
+
+    // A failure or cancelled redirect is a strong (but not authoritative)
+    // signal — the definitive status still comes from the webhook. We show
+    // "failed" immediately for these since the order won't flip to paid.
+    const failedHint =
+      incomingPath === 'failure' ||
+      explicitStatus.toLowerCase().includes('fail') ||
+      explicitStatus.toLowerCase().includes('cancel');
+
+    // Wait for at least the first sync before settling anything.
+    if (pollCount === 0) {
+      setStatus('checking');
+      return;
+    }
+
+    // The verified order state (updated by the webhook) is authoritative.
+    if (order) {
+      if (order.paymentStatus === 'paid') {
+        setStatus('paid');
+        return;
+      }
+      if (order.paymentStatus === 'failed') {
+        setStatus('failed');
+        return;
+      }
+    }
+
+    // For a failed/cancelled return, assume failure once our polling window
+    // has closed without a paid status.
+    if (failedHint && pollCount >= 2) {
       setStatus('failed');
       return;
     }
-    if (incomingPath === 'success') {
-      if (order) {
-        setStatus('paid');
-        if (!markedPaidRef.current) {
-          markedPaidRef.current = true;
-          markOrderPaid(order.orderNumber);
-        }
-      } else if (pollCount >= 2) {
-        setStatus('paid');
-      }
+
+    // Success return: only claim paid once the order is actually marked paid
+    // by the webhook. Until then keep showing the confirming state.
+    if (pollCount < MAX_POLLS) {
+      setStatus('checking');
       return;
     }
-    if (pollCount < 2) return;
+
+    // Polling window closed. Settle on the best available state.
+    if (failedHint) {
+      setStatus('failed');
+      return;
+    }
     if (!order) {
-      setStatus('pending');
+      setStatus('not-found');
       return;
     }
-    if (order.paymentStatus === 'paid') {
-      setStatus('paid');
-    } else {
-      setStatus('pending');
-    }
-  }, [order, orderId, pollCount, incomingPath, explicitStatus, markOrderPaid]);
+    setStatus('pending');
+  }, [order, orderId, pollCount, incomingPath, explicitStatus]);
 
   if (status === 'checking') {
     return (
@@ -175,7 +206,7 @@ export const PaymentCompleteView: React.FC = () => {
             <div className="flex justify-between border-b border-[#262930] pb-3">
               <span className="text-[#8E929E] text-xs">Payment Status:</span>
               <span className={`text-xs font-bold uppercase ${success ? 'text-emerald-400' : 'text-[#D4AF37]'}`}>
-                {success ? 'Paid' : order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus === 'failed' ? 'Failed' : 'Pending'}
               </span>
             </div>
             <div className="flex justify-between pt-1">
@@ -202,12 +233,12 @@ export const PaymentCompleteView: React.FC = () => {
                 : 'bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E]'
               }`}
           >
-            {failure ? 'Contact Concierge' : 'Continue Browsing'}
+            {failure ? 'Contact Concierge' : status === 'pending' ? 'View Order Status' : 'Continue Browsing'}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {isSupabaseSyncing && pollCount < 2 && (
+        {isSupabaseSyncing && pollCount < MAX_POLLS && (
           <p className="text-[11px] text-[#626673] flex items-center justify-center gap-2">
             <Loader2 className="w-3 h-3 animate-spin" />
             Syncing payment status with the cloud…

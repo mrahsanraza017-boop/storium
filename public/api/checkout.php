@@ -4,7 +4,7 @@
 // Implements the Rapid Gateway server-to-server integration exactly as
 // documented in the merchant sandbox kit:
 //   1. Fetch a bearer token (OAuth2 client_credentials).
-//   2. Submit the transaction to /rapid/process-transaction.
+//   2. Submit the transaction to /sandbox/process-transaction.
 //   3. The gateway answers with a 302 Location: the hosted checkout URL.
 //      We do NOT follow it — we hand it back to the browser as JSON.
 //
@@ -34,9 +34,11 @@ $RG_MERCHANT_ID   = rg_config('RG_MERCHANT_ID', 'YOUR_RG_MERCHANT_ID');
 $RG_CLIENT_SECRET = rg_config('RG_CLIENT_SECRET', 'YOUR_RG_CLIENT_SECRET');
 $RG_MERCHANT_NAME = rg_config('RG_MERCHANT_NAME', 'STORIUM');
 $BASE_URL         = rg_config('BASE_URL', 'https://storium.online');
+$SUPABASE_URL     = rtrim(rg_config('SUPABASE_URL', 'https://jvghdtlfwijbkhwwpdft.supabase.co'), '/');
+$SUPABASE_SERVICE_ROLE_KEY = rg_config('SUPABASE_SERVICE_ROLE_KEY', 'YOUR_SUPABASE_SERVICE_ROLE_KEY');
 
 const RG_TOKEN_URL  = 'https://secure.rapid-gateway.com/oauth2/token';
-const RG_TXN_URL    = 'https://secure.rapid-gateway.com/rapid/process-transaction';
+const RG_TXN_URL    = 'https://secure.rapid-gateway.com/sandbox/process-transaction';
 const RG_VERSION    = 'MY_VER_1.0';
 
 function send_json(int $status, array $body): void
@@ -119,6 +121,41 @@ function http_post_form(string $url, array $headers, array $fields): array
     return ['status' => $httpCode, 'headers' => $parsedHeaders, 'body' => $rawBody, 'redirect_url' => $redirectUrl];
 }
 
+/**
+ * Fetch order from Supabase to verify the amount server-side.
+ * Returns the trusted order total, or null if the order is not found / cannot be verified.
+ */
+function fetch_order_from_supabase(string $orderNumber): ?array
+{
+    global $SUPABASE_URL, $SUPABASE_SERVICE_ROLE_KEY;
+    if (str_starts_with($SUPABASE_SERVICE_ROLE_KEY, 'YOUR_') || $SUPABASE_SERVICE_ROLE_KEY === '') {
+        return null;
+    }
+    $url = $SUPABASE_URL . '/rest/v1/orders?order_number=eq.' . urlencode($orderNumber) . '&select=total,payment_status,order_number';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization: Bearer ' . $SUPABASE_SERVICE_ROLE_KEY,
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ]);
+    $body = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    if ($code < 200 || $code >= 300 || $body === false) {
+        return null;
+    }
+    $rows = json_decode($body, true);
+    if (!is_array($rows) || count($rows) === 0) {
+        return null;
+    }
+    return $rows[0];
+}
+
 // ── Request handling ──────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     send_json(405, ['error' => 'Method not allowed. Use POST.']);
@@ -130,26 +167,36 @@ if (!is_array($input)) {
     send_json(400, ['error' => 'Invalid JSON body.']);
 }
 
-$amount  = isset($input['amount']) ? (float) $input['amount'] : 0.0;
 $phone   = isset($input['phone']) ? normalize_phone_pk((string) $input['phone']) : '';
 $email   = isset($input['email']) ? trim((string) $input['email']) : '';
 $orderId = isset($input['orderId']) ? trim((string) $input['orderId']) : '';
 
-if (!is_numeric($amount) || $amount <= 0) {
-    send_json(400, ['error' => 'A valid positive amount is required.']);
-}
 if ($phone === '') {
     send_json(400, ['error' => 'A valid Pakistani phone number is required.']);
 }
 if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
     send_json(400, ['error' => 'A valid email is required.']);
 }
-if ($orderId === '') {
-    send_json(400, ['error' => 'Order reference is required.']);
+if ($orderId === '' || !preg_match('/^STM-PK-\d{5}$/', $orderId)) {
+    send_json(400, ['error' => 'Invalid order reference format.']);
 }
 
 if (str_starts_with($RG_MERCHANT_ID, 'YOUR_') || $RG_CLIENT_SECRET === '' || str_starts_with($RG_CLIENT_SECRET, 'YOUR_')) {
     send_json(503, ['error' => 'Rapid Gateway is not configured yet.']);
+}
+
+// ── Step 0: verify order from Supabase (never trust browser-supplied amount) ──
+$orderRow = fetch_order_from_supabase($orderId);
+if ($orderRow === null) {
+    send_json(400, ['error' => 'Order not found.']);
+}
+$trustedAmount = (float) ($orderRow['total'] ?? 0);
+if ($trustedAmount <= 0) {
+    send_json(400, ['error' => 'Invalid order total.']);
+}
+// Prevent duplicate payment attempts on already-paid orders
+if (($orderRow['payment_status'] ?? '') === 'paid') {
+    send_json(400, ['error' => 'This order has already been paid.']);
 }
 
 // ── Step 1: fetch bearer token ───────────────────────────────────────
@@ -180,7 +227,7 @@ $txnResp = http_post_form(
     [
         'MERCHANT_ID'            => $RG_MERCHANT_ID,
         'MERCHANT_NAME'          => $RG_MERCHANT_NAME,
-        'TXNAMT'                 => (string) (int) round($amount), // PKR whole rupees
+        'TXNAMT'                 => (string) (int) round($trustedAmount), // PKR whole rupees, verified from Supabase
         'CURRENCY_CODE'          => 'PKR',
         'CUSTOMER_MOBILE_NO'     => $phone,
         'CUSTOMER_EMAIL_ADDRESS' => $email,

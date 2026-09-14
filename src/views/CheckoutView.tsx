@@ -219,7 +219,6 @@ export const CheckoutView: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: cartTotal,
           phone: formData.phone,
           email: formData.email,
           orderId: newOrder.orderNumber,
