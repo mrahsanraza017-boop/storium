@@ -18,7 +18,7 @@ function rg_config(string $key, string $fallback): string
     return is_string($value) && $value !== '' ? $value : $fallback;
 }
 
-$RG_WEBHOOK_SECRET = rg_config('RG_WEBHOOK_SECRET', 'YOUR_RG_WEBHOOK_SECRET');
+$RG_WEBHOOK_SECRET = rg_config('RG_WEBHOOK_SECRET', '3f722ec331a29665da9ce96a5bd50b7578a10725bfb4d9b90977ffcc483c6e2d');
 $SUPABASE_URL      = rtrim(rg_config('SUPABASE_URL', 'https://jvghdtlfwijbkhwwpdft.supabase.co'), '/');
 $SUPABASE_SERVICE_ROLE_KEY = rg_config('SUPABASE_SERVICE_ROLE_KEY', 'YOUR_SUPABASE_SERVICE_ROLE_KEY');
 
@@ -45,7 +45,7 @@ function verify_signature(string $rawBody, ?string $signature): bool
     if (str_contains($candidate, '=')) {
         $candidate = substr($candidate, strpos($candidate, '=') + 1);
     }
-    $expected = hash_hmac('sha256', $rawBody, rg_config('RG_WEBHOOK_SECRET', ''));
+    $expected = hash_hmac('sha256', $rawBody, rg_config('RG_WEBHOOK_SECRET', '3f722ec331a29665da9ce96a5bd50b7578a10725bfb4d9b90977ffcc483c6e2d'));
     return hash_equals($expected, strtolower(trim($candidate)));
 }
 
