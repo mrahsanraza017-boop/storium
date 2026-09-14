@@ -25,6 +25,7 @@ import {
   upsertProductToSupabase,
   deleteProductFromSupabase,
   updateOrderStatusInSupabase,
+  deleteOrderFromSupabase,
   updateInquiryStatusInSupabase,
   upsertReviewToSupabase,
   updateReviewStatusInSupabase,
@@ -94,6 +95,8 @@ interface StoreContextType {
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'date'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: Order['orderStatus']) => void;
   markOrderPaid: (orderNumber: string) => void;
+  deleteOrder: (orderNumber: string) => Promise<void>;
+  deleteOrdersByNumber: (orderNumbers: string[]) => Promise<void>;
   updateInquiryStatus: (inquiryId: string, status: ContactInquiry['status']) => void;
   lastPlacedOrder: Order | null;
 
@@ -892,6 +895,23 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
+  // Delete one order from local state (public + admin) and Supabase.
+  const deleteOrder = async (orderNumber: string) => {
+    setOrders((prev) => prev.filter((o) => o.orderNumber !== orderNumber));
+    const result = await deleteOrderFromSupabase(orderNumber);
+    if (!result.success) {
+      addToast('error', 'Order Delete Failed', result.error || 'The order could not be removed from the cloud.');
+    }
+  };
+
+  // Bulk delete by order numbers (state + Supabase). Used by admin cleanup actions.
+  const deleteOrdersByNumber = async (orderNumbers: string[]) => {
+    if (orderNumbers.length === 0) return;
+    const toDelete = new Set(orderNumbers);
+    setOrders((prev) => prev.filter((o) => !toDelete.has(o.orderNumber)));
+    await Promise.all(orderNumbers.map((num) => deleteOrderFromSupabase(num)));
+  };
+
   const updateInquiryStatus = (inquiryId: string, status: ContactInquiry['status']) => {
     setInquiries((prev) => prev.map((inquiry) => inquiry.id === inquiryId ? { ...inquiry, status } : inquiry));
     void updateInquiryStatusInSupabase(inquiryId, status).then((result) => {
@@ -1265,6 +1285,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         createOrder,
         updateOrderStatus,
         markOrderPaid,
+        deleteOrder,
+        deleteOrdersByNumber,
         updateInquiryStatus,
         lastPlacedOrder,
 

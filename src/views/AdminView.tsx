@@ -30,6 +30,8 @@ export const AdminView: React.FC = () => {
     updateProduct,
     deleteProduct,
     updateOrderStatus,
+    deleteOrder,
+    deleteOrdersByNumber,
     navigate,
     addToast,
   } = useStore();
@@ -252,6 +254,37 @@ export const AdminView: React.FC = () => {
     return matchesStatus && matchesSearch;
   });
 
+  const deliveredOrders = orders.filter((o) => o.orderStatus === 'Delivered');
+  const deliveredRevenue = deliveredOrders.reduce((acc, o) => acc + o.total, 0);
+
+  const handleDeleteOrder = async (orderNumber: string) => {
+    if (!confirm(`Delete order ${orderNumber}? This removes it from the admin panel and the public customer history.`)) return;
+    await deleteOrder(orderNumber);
+    addToast('success', 'Order Removed', `Order ${orderNumber} was removed.`);
+  };
+
+  const handleRemoveAllRecent = async () => {
+    if (orders.length === 0) {
+      addToast('info', 'No Orders', 'There are no orders to remove.');
+      return;
+    }
+    if (!confirm(`Remove all ${orders.length} orders? This removes them from the admin panel and the public customer history.`)) return;
+    await deleteOrdersByNumber(orders.map((o) => o.orderNumber));
+    addToast('success', 'Orders Removed', `Removed ${orders.length} orders from the store.`);
+  };
+
+  const handleRemoveDelivered = async () => {
+    if (deliveredOrders.length === 0) {
+      addToast('info', 'No Delivered Orders', 'There are no Delivered orders to remove.');
+      return;
+    }
+    if (!confirm(
+      `Remove all ${deliveredOrders.length} Delivered orders totalling Rs. ${deliveredRevenue.toLocaleString()}?\nTheir revenue will be removed from the dashboard.`
+    )) return;
+    await deleteOrdersByNumber(deliveredOrders.map((o) => o.orderNumber));
+    addToast('success', 'Delivered Orders Removed', `Removed ${deliveredOrders.length} orders and Rs. ${deliveredRevenue.toLocaleString()} from revenue.`);
+  };
+
   return (
     <AdminAuthGate>
       <div className="w-full bg-transparent min-h-screen text-[#E8E8EC] py-12">
@@ -418,36 +451,54 @@ export const AdminView: React.FC = () => {
               {/* Quick Actions & Recent Orders preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#262930] pb-3">
+                  <div className="flex items-center justify-between border-b border-[#262930] pb-3 gap-2">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
                       Recent Patron Orders
                     </h2>
-                    <button
-                      onClick={() => setActiveTab('orders')}
-                      className="text-xs text-[#D4AF37] hover:underline"
-                    >
-                      View All &rarr;
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleRemoveAllRecent}
+                        title="Remove all orders from the store"
+                        className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/10 border border-rose-500/30"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove All</span>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('orders')}
+                        className="text-xs text-[#D4AF37] hover:underline"
+                      >
+                        View All &rarr;
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
                     {orders.slice(0, 4).map((o) => (
                       <div
                         key={o.id}
-                        className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between text-xs gap-2"
                       >
-                        <div>
+                        <div className="min-w-0">
                           <span className="font-mono font-bold text-[#D4AF37]">{o.orderNumber}</span>
                           <span className="text-[#8E929E] block">
                             {o.customer.fullName} &bull; {o.customer.city}
                           </span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0">
                           <span className="font-bold text-[#F5F5F7]">
                             Rs. {o.total.toLocaleString()}
                           </span>
                           <span className="block text-[10px] text-emerald-400">{o.orderStatus}</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrder(o.orderNumber)}
+                          title={`Delete order ${o.orderNumber}`}
+                          className="p-1.5 rounded-lg bg-[#181A1F] text-[#8E929E] hover:text-rose-400 border border-[#262930] flex-shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -677,6 +728,16 @@ export const AdminView: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveDelivered}
+                  className="flex-shrink-0 py-2 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-400 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2"
+                  title="Remove all Delivered orders and their revenue from the dashboard"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove Delivered ({deliveredOrders.length})</span>
+                </button>
               </div>
 
               {/* Orders Table */}
@@ -749,7 +810,7 @@ export const AdminView: React.FC = () => {
                             <option value="Cancelled">Cancelled</option>
                           </select>
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-4 text-right space-x-2">
                           <button
                             type="button"
                             onClick={() => setSelectedOrderDetails(o)}
@@ -757,6 +818,14 @@ export const AdminView: React.FC = () => {
                             title="View Order Details"
                           >
                             <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(o.orderNumber)}
+                            className="p-1.5 rounded-lg bg-[#181A1F] text-[#8E929E] hover:text-rose-400 border border-[#262930]"
+                            title="Delete Order"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </motion.tr>

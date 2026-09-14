@@ -180,6 +180,11 @@ ON public.orders FOR UPDATE
 USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
 WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
+DROP POLICY IF EXISTS "Allow admin orders delete" ON public.orders;
+CREATE POLICY "Allow admin orders delete"
+ON public.orders FOR DELETE
+USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
 -- ================================================================
 -- 10. Contacts policies
 -- ================================================================
@@ -591,6 +596,15 @@ export async function deleteReviewFromSupabase(reviewId: string): Promise<Supaba
   const supabase = await getSupabase();
   const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true };
+}
+
+/**
+ * Delete an order from Supabase by order_number
+ */
+export async function deleteOrderFromSupabase(orderNumber: string): Promise<SupabaseSyncResult> {
+  const supabase = await getSupabase();
+  const { data, error } = await supabase.from('orders').delete().eq('order_number', orderNumber).select();
+  return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' || error.code === '42504' } : { success: true, data };
 }
 
 /**
