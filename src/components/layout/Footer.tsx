@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Users, FileText, Phone } from 'lucide-react';
+import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Users, FileText, Phone, Mail, MapPin, ThumbsUp, Camera, Play, Music2 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
 
 export const Footer: React.FC = () => {
-  const { navigate, addToast } = useStore();
+  const { navigate, addToast, businessSettings } = useStore();
   const [emailInput, setEmailInput] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
 
@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
     e.preventDefault();
     if (!emailInput) return;
     setIsSubscribed(true);
-    addToast('success', 'Private Access Granted', 'You are now registered for private timepiece drops.');
+    addToast('success', 'Subscribed', `You have joined the ${businessSettings.businessName} newsletter list.`);
     setEmailInput('');
   };
 
@@ -127,17 +127,17 @@ export const Footer: React.FC = () => {
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-1.5">
                   <span className="text-2xl font-extrabold tracking-[0.22em] text-[#F5F5F7] font-montserrat uppercase group-hover:text-white transition-colors">
-                    STORIUM
+                    {businessSettings.businessName}
                   </span>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
                 </div>
                 <p className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37] font-medium">
-                  &ldquo;Wear your presence&rdquo;
+                  {businessSettings.tagline}
                 </p>
               </div>
             </div>
             <p className="text-xs text-[#CBD0DC] leading-relaxed max-w-sm">
-              STORIUM is Pakistan&apos;s vanguard online luxury showroom for futuristic timepieces and curated men&apos;s accessories. Combining precision horology, aerospace materials, and accessible luxury.
+              {businessSettings.description}
             </p>
 
             {/* Newsletter Subscription */}
@@ -166,6 +166,72 @@ export const Footer: React.FC = () => {
                   {isSubscribed ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                 </button>
               </form>
+            </div>
+
+            {/* Business Information */}
+            <div className="pt-3 border-t border-[#262930] space-y-3">
+              <h5 className="text-xs uppercase tracking-[0.18em] font-bold text-[#F5F5F7] flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 text-[#D4AF37]" />
+                Business Information
+              </h5>
+              <div className="space-y-2 text-[11px]">
+                <p className="text-[#F5F5F7] font-semibold">
+                  {businessSettings.legalBusinessName || businessSettings.businessName}
+                </p>
+                <div className="flex items-start gap-2 text-[#CBD0DC]">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+                  <span>
+                    {businessSettings.address}, {businessSettings.city}, {businessSettings.province}, {businessSettings.country}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[#CBD0DC]">
+                  <Mail className="w-3.5 h-3.5 text-[#D4AF37] flex-shrink-0" />
+                  <a href={`mailto:${businessSettings.email}`} className="hover:text-[#D4AF37] transition-colors break-all">
+                    {businessSettings.email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-[#CBD0DC]">
+                  <Phone className="w-3.5 h-3.5 text-[#D4AF37] flex-shrink-0" />
+                  <a href={businessSettings.whatsappLink} target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors">
+                    {businessSettings.phone}
+                  </a>
+                </div>
+                <div className="flex items-start gap-2 text-[#CBD0DC]">
+                  <Clock className="w-3.5 h-3.5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+                  <span>{businessSettings.workingHours}</span>
+                </div>
+              </div>
+
+              {/* Social Media */}
+              {(
+                businessSettings.socials.facebook ||
+                businessSettings.socials.instagram ||
+                businessSettings.socials.tiktok ||
+                businessSettings.socials.youtube
+              ) && (
+                <div className="flex items-center gap-2 pt-1">
+                  {businessSettings.socials.facebook && (
+                    <a href={businessSettings.socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="p-2 rounded-lg bg-[#121316] border border-[#262930] text-[#8E929E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors">
+                      <ThumbsUp className="w-4 h-4" />
+                    </a>
+                  )}
+                  {businessSettings.socials.instagram && (
+                    <a href={businessSettings.socials.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="p-2 rounded-lg bg-[#121316] border border-[#262930] text-[#8E929E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors">
+                      <Camera className="w-4 h-4" />
+                    </a>
+                  )}
+                  {businessSettings.socials.tiktok && (
+                    <a href={businessSettings.socials.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="p-2 rounded-lg bg-[#121316] border border-[#262930] text-[#8E929E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors">
+                      <Music2 className="w-4 h-4" />
+                    </a>
+                  )}
+                  {businessSettings.socials.youtube && (
+                    <a href={businessSettings.socials.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="p-2 rounded-lg bg-[#121316] border border-[#262930] text-[#8E929E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors">
+                      <Play className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -215,7 +281,8 @@ export const Footer: React.FC = () => {
                 { label: 'Customer Account', page: 'account' as PageView },
                 { label: 'Private Wishlist', page: 'wishlist' as PageView },
                 { label: 'Pakistan Shipping Policy', page: 'shipping-policy' as PageView },
-                { label: '7-Day Returns & Refunds', page: 'return-policy' as PageView },
+                { label: 'Refund & Return Policy', page: 'return-policy' as PageView },
+                { label: 'Privacy Policy', page: 'privacy-policy' as PageView },
                 { label: 'Terms & Conditions', page: 'terms' as PageView },
               ].map(({ label, page }) => (
                 <button
@@ -251,37 +318,40 @@ export const Footer: React.FC = () => {
                 <span>Contact Showroom</span>
                 <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
-              <div className="mt-3 p-3 rounded-lg bg-[#0D0E10] border border-[#1E2127] space-y-2">
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Phone className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />
-                  <div>
-                    <span className="block text-[#8E929E]">Concierge Phone:</span>
-                    <a href="https://wa.me/923215993022" target="_blank" rel="noopener noreferrer" className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors">+92 321 5993022</a>
+<div className="mt-3 p-3 rounded-lg bg-[#0D0E10] border border-[#1E2127] space-y-2">
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <Phone className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />
+                    <div>
+                      <span className="block text-[#8E929E]">Concierge Phone:</span>
+                      <a href={businessSettings.whatsappLink} target="_blank" rel="noopener noreferrer" className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors">{businessSettings.phone}</a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <Mail className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />
+                    <div>
+                      <span className="block text-[#8E929E]">Support Email:</span>
+                      <a href={`mailto:${businessSettings.email}`} className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors break-all">{businessSettings.email}</a>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <ShieldCheck className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />
-                  <div>
-                    <span className="block text-[#8E929E]">Support Email:</span>
-                    <a href="mailto:Storium.store@gmail.com" className="text-[#CBD0DC] font-mono hover:text-[#D4AF37] transition-colors">Storium.store@gmail.com</a>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Copyright & Legal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-[#262930]/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-[#262930]/60 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
         <p className="text-[#8E929E]">
-          &copy; {new Date().getFullYear()} STORIUM Pakistan. All rights reserved. Registered Luxury Horology Maison.
+          &copy; {new Date().getFullYear()} {businessSettings.legalBusinessName || businessSettings.businessName}, {businessSettings.country}. All rights reserved.
         </p>
         <div className="flex items-center gap-2 flex-wrap justify-center">
           {[
+            { label: 'Refund Policy', page: 'return-policy' as PageView },
+            { label: 'Privacy Policy', page: 'privacy-policy' as PageView },
+            { label: 'Terms & Conditions', page: 'terms' as PageView },
             { label: 'Shipping Policy', page: 'shipping-policy' as PageView },
-            { label: 'Return Policy', page: 'return-policy' as PageView },
-            { label: 'Terms of Service', page: 'terms' as PageView },
+            { label: 'Contact Us', page: 'contact' as PageView },
+            { label: 'About Us', page: 'about' as PageView },
           ].map(({ label, page }) => (
             <button
               key={label}

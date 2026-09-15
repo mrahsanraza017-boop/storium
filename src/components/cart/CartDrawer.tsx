@@ -15,7 +15,11 @@ export const CartDrawer: React.FC = () => {
     removeFromCart,
     updateCartQuantity,
     navigate,
+    businessSettings,
   } = useStore();
+
+  const freeShippingThreshold = businessSettings.shippingFreeAbove;
+  const isFreeShipping = cartSubtotal >= freeShippingThreshold;
 
   const handleCheckout = () => {
     closeCartDrawer();
@@ -74,7 +78,7 @@ export const CartDrawer: React.FC = () => {
 
               {/* Free delivery progress bar (Pakistan) */}
               <div className="bg-[#0B0C0E] px-5 py-2.5 border-b border-[#262930] text-xs">
-                {cartSubtotal >= 15000 ? (
+                {isFreeShipping ? (
                   <p className="text-emerald-400 font-medium flex items-center gap-1.5">
                     <Truck className="w-4 h-4" />
                     <span>Complimentary Nationwide Insured Delivery Unlocked!</span>
@@ -82,12 +86,12 @@ export const CartDrawer: React.FC = () => {
                 ) : (
                   <div>
                     <p className="text-[#CBD0DC]">
-                      Add <span className="text-[#D4AF37] font-semibold">Rs. {(15000 - cartSubtotal).toLocaleString()}</span> more for Complimentary Delivery in Pakistan
+                      Add <span className="text-[#D4AF37] font-semibold">Rs. {(freeShippingThreshold - cartSubtotal).toLocaleString()}</span> more for Complimentary Delivery in Pakistan
                     </p>
                     <div className="w-full bg-[#181A1F] h-1.5 rounded-full mt-1.5 overflow-hidden">
                       <div
                         className="bg-gradient-to-r from-[#D4AF37] to-[#E5C378] h-full transition-all duration-300"
-                        style={{ width: `${Math.min(100, (cartSubtotal / 15000) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (cartSubtotal / freeShippingThreshold) * 100)}%` }}
                       />
                     </div>
                   </div>

@@ -33,16 +33,20 @@ export function getStoreOrganizationSchema() {
     },
     address: {
       '@type': 'PostalAddress',
-      addressCountry: 'PK',
-      addressLocality: 'Lahore',
+      streetAddress: 'ANWAR SHAHID COLONY RENALA',
+      addressLocality: 'Renala Khurd',
       addressRegion: 'Punjab',
+      addressCountry: 'PK',
     },
+    email: 'Storium.store@gmail.com',
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+923215993022',
+      email: 'Storium.store@gmail.com',
       contactType: 'customer service',
       areaServed: 'PK',
       availableLanguage: ['en', 'ur'],
+      hoursAvailable: 'Mo-Sa 10:00-22:00',
     },
     knowsAbout: [
       'Luxury Watches',

@@ -11,8 +11,10 @@ import {
   PageView,
   ContactInquiry,
   ProductReview,
+  BusinessSettings,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
+import { DEFAULT_BUSINESS_SETTINGS } from '../data/businessDefaults';
 import {
   saveOrderToSupabase,
   saveContactToSupabase,
@@ -159,6 +161,11 @@ interface StoreContextType {
   toasts: ToastNotification[];
   addToast: (type: 'success' | 'info' | 'error', title: string, message?: string) => void;
   removeToast: (id: string) => void;
+
+  // Business settings (editable from Admin -> Business Settings)
+  businessSettings: BusinessSettings;
+  updateBusinessSettings: (updates: Partial<BusinessSettings>) => void;
+  resetBusinessSettings: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -172,6 +179,7 @@ const STORAGE_KEYS = {
   INQUIRIES: 'storium_inquiries_v1',
   REVIEWS: 'storium_reviews_v1',
   USER: 'storium_user_v1',
+  SETTINGS: 'storium_settings_v1',
 };
 
 
@@ -209,6 +217,7 @@ function getInitialRoute(): {
   if (path === 'contact') return { page: 'contact', slug: null, category: null, subcategory: null };
   if (path === 'shipping-policy') return { page: 'shipping-policy', slug: null, category: null, subcategory: null };
   if (path === 'return-policy') return { page: 'return-policy', slug: null, category: null, subcategory: null };
+  if (path === 'privacy-policy') return { page: 'privacy-policy', slug: null, category: null, subcategory: null };
   if (path === 'terms') return { page: 'terms', slug: null, category: null, subcategory: null };
   if (path === 'cart') return { page: 'cart', slug: null, category: null, subcategory: null };
   if (path === 'checkout') return { page: 'checkout', slug: null, category: null, subcategory: null };
@@ -317,19 +326,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     } catch {
       // fallback
     }
-    return [
-      {
-        id: 'inq-sample-1',
-        name: 'Taimoor Khan',
-        email: 'taimoor.khan@domain.pk',
-        phone: '+92 321 9876543',
-        topic: 'Timepiece Inquiries',
-        message: 'Interested in reserving the Titanium Skeleton Tourbillon. What is the express delivery timeframe for Islamabad?',
-        createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-        status: 'new',
-        supabaseSynced: true,
-      },
-    ];
+    return [];
   });
 
   const [reviews, setReviews] = useState<ProductReview[]>(() => {
@@ -356,6 +353,25 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  // Business settings (persisted locally; edited from Admin -> Business Settings)
+  const [businessSettings, setBusinessSettings] = useState<BusinessSettings>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<BusinessSettings>;
+        return {
+          ...DEFAULT_BUSINESS_SETTINGS,
+          ...parsed,
+          socials: { ...DEFAULT_BUSINESS_SETTINGS.socials, ...(parsed.socials || {}) },
+          policies: { ...DEFAULT_BUSINESS_SETTINGS.policies, ...(parsed.policies || {}) },
+        };
+      }
+    } catch {
+      // fallback to defaults
+    }
+    return DEFAULT_BUSINESS_SETTINGS;
+  });
 
   // Sync to local storage
   useEffect(() => {
@@ -413,6 +429,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn('Storage save failed', e);
     }
   }, [reviews]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(businessSettings));
+    } catch (e) {
+      console.warn('Storage save failed', e);
+    }
+  }, [businessSettings]);
 
   useEffect(() => {
     try {
@@ -554,6 +578,17 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Business settings management
+  const updateBusinessSettings = (updates: Partial<BusinessSettings>) => {
+    setBusinessSettings((prev) => ({ ...prev, ...updates }));
+    addToast('success', 'Business Settings Saved', 'Your store information has been updated throughout the website.');
+  };
+
+  const resetBusinessSettings = () => {
+    setBusinessSettings(DEFAULT_BUSINESS_SETTINGS);
+    addToast('info', 'Settings Reset', 'Business settings were restored to the website defaults.');
+  };
+
   // Helper to build canonical relative URL for routes
   const getUrlForRoute = (
     page: PageView,
@@ -622,8 +657,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return sum + effectivePrice * item.quantity;
   }, 0);
 
-  // Free shipping throughout Pakistan on luxury orders above Rs. 15,000, otherwise nominal standard Rs. 500
-  const cartShippingFee = cartSubtotal > 15000 || cartSubtotal === 0 ? 0 : 500;
+  // Editable shipping rules (Admin -> Business Settings): free above threshold, flat fee otherwise.
+  const cartShippingFee =
+    cartSubtotal >= businessSettings.shippingFreeAbove || cartSubtotal === 0
+      ? 0
+      : businessSettings.shippingFlatFee;
   const cartTotal = cartSubtotal + cartShippingFee;
 
   // Cart Actions
@@ -1326,6 +1364,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         toasts,
         addToast,
         removeToast,
+
+        businessSettings,
+        updateBusinessSettings,
+        resetBusinessSettings,
       }}
     >
       {children}

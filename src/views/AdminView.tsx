@@ -10,12 +10,14 @@ import {
   Database,
   MessageSquare,
   Star,
+  Settings2,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
 import { AdminSupabaseTab } from '../components/admin/AdminSupabaseTab';
 import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
+import { AdminBusinessSettingsTab } from '../components/admin/AdminBusinessSettingsTab';
 import { AdminAuthGate } from '../components/admin/AdminAuthGate';
 import { uploadProductMedia } from '../services/supabaseService';
 import { ProductMedia } from '../types';
@@ -36,7 +38,7 @@ export const AdminView: React.FC = () => {
     addToast,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inquiries' | 'reviews' | 'supabase'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inquiries' | 'reviews' | 'supabase' | 'settings'>('overview');
 
   // Product management states
   const [productSearch, setProductSearch] = useState('');
@@ -399,6 +401,17 @@ export const AdminView: React.FC = () => {
               <Database className={`w-3.5 h-3.5 ${activeTab === 'supabase' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
               <span>Supabase Cloud DB</span>
               <span className={`w-1.5 h-1.5 rounded-full ${activeTab === 'supabase' ? 'bg-[#0B0C0E]' : 'bg-emerald-400 animate-pulse'}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'settings'
+                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+                }`}
+            >
+              <Settings2 className={`w-3.5 h-3.5 ${activeTab === 'settings' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
+              <span>Business Settings</span>
             </button>
           </div>
 
@@ -935,6 +948,9 @@ export const AdminView: React.FC = () => {
 
           {/* TAB 6: SUPABASE CLOUD BACKEND */}
           {activeTab === 'supabase' && <AdminSupabaseTab />}
+
+          {/* TAB 7: BUSINESS SETTINGS */}
+          {activeTab === 'settings' && <AdminBusinessSettingsTab />}
 
           {/* Modal: Add/Edit Product */}
           {isAddModalOpen && (

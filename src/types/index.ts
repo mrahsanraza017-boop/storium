@@ -138,6 +138,46 @@ export interface ProductReview {
   createdAt: string;
 }
 
+export interface BusinessSocials {
+  facebook: string;
+  instagram: string;
+  tiktok: string;
+  youtube: string;
+}
+
+export interface BusinessSettings {
+  businessName: string;
+  legalBusinessName: string;
+  tagline: string;
+  description: string;
+  email: string;
+  phone: string;
+  whatsappLink: string;
+  address: string;
+  city: string;
+  province: string;
+  country: string;
+  workingHours: string;
+  paymentGatewayName: string;
+  shippingFreeAbove: number;
+  shippingFlatFee: number;
+  socials: BusinessSocials;
+  storefrontImage: string;
+  /** "How We Work" / business model copy rendered on the About page. */
+  businessModel: string;
+  /** "Secure Payment Process" copy rendered on checkout & about pages. */
+  securePaymentCopy: string;
+  /** Editable policy bodies. Plain text; lines starting with "## " become headings. */
+  policies: {
+    shipping: string;
+    refund: string;
+    privacy: string;
+    terms: string;
+  };
+  /** Private gateway notes (admin only, never rendered on the public website). */
+  gatewayNotes: string;
+}
+
 export const ACCESSORY_SUBCATEGORIES = [
   'Wallet',
   'Sun glasses',
@@ -170,5 +210,6 @@ export type PageView =
   | 'contact'
   | 'shipping-policy'
   | 'return-policy'
+  | 'privacy-policy'
   | 'terms'
   | 'payment-complete';

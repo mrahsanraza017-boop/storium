@@ -6,7 +6,7 @@ import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, BASE_SITE_URL } from '../lib/seoSchemas';
 
 export const ContactView: React.FC = () => {
-  const { submitContactInquiry } = useStore();
+  const { submitContactInquiry, businessSettings } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -69,7 +69,7 @@ export const ContactView: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div className="text-center space-y-3">
           <span className="text-xs uppercase tracking-[0.28em] text-[#D4AF37] font-semibold">
-            Client Concierge
+            {businessSettings.businessName} &bull; Client Concierge
           </span>
           <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-[#F5F5F7]">
             Connect With the Showroom
@@ -95,12 +95,12 @@ export const ContactView: React.FC = () => {
                   <div>
                     <span className="text-[#8E929E] block">WhatsApp / Phone Concierge</span>
                     <a
-                      href="https://wa.me/923215993022"
+                      href={businessSettings.whatsappLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37]"
                     >
-                      +92 321 5993022
+                      {businessSettings.phone}
                     </a>
                   </div>
                 </div>
@@ -112,10 +112,10 @@ export const ContactView: React.FC = () => {
                   <div>
                     <span className="text-[#8E929E] block">Electronic Correspondence</span>
                     <a
-                      href="mailto:Storium.store@gmail.com"
-                      className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37]"
+                      href={`mailto:${businessSettings.email}`}
+                      className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37] break-all"
                     >
-                      Storium.store@gmail.com
+                      {businessSettings.email}
                     </a>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export const ContactView: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[#8E929E] block">Concierge Working Hours</span>
-                    <span className="text-[#CBD0DC]">Monday &ndash; Saturday: 10:00 AM &ndash; 10:00 PM PKT</span>
+                    <span className="text-[#CBD0DC]">{businessSettings.workingHours}</span>
                   </div>
                 </div>
 
@@ -135,8 +135,10 @@ export const ContactView: React.FC = () => {
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[#8E929E] block">Showroom Hub &amp; Fulfillment</span>
-                    <span className="text-[#CBD0DC]">ANWAR SHAHID COLONY RENALA</span>
+                    <span className="text-[#8E929E] block">Store Location &amp; Fulfillment</span>
+                    <span className="text-[#CBD0DC]">
+                      {businessSettings.address}, {businessSettings.city}, {businessSettings.province}
+                    </span>
                   </div>
                 </div>
               </div>

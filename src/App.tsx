@@ -26,6 +26,7 @@ const AboutView = lazy(() => import('./views/AboutView').then((m) => ({ default:
 const ContactView = lazy(() => import('./views/ContactView').then((m) => ({ default: m.ContactView })));
 const ShippingPolicyView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.ShippingPolicyView })));
 const ReturnPolicyView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.ReturnPolicyView })));
+const PrivacyPolicyView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.PrivacyPolicyView })));
 const TermsView = lazy(() => import('./views/PolicyViews').then((m) => ({ default: m.TermsView })));
 const PaymentCompleteView = lazy(() => import('./views/PaymentCompleteView').then((m) => ({ default: m.PaymentCompleteView })));
 
@@ -83,6 +84,8 @@ const AppContent: React.FC = () => {
         return <ShippingPolicyView />;
       case 'return-policy':
         return <ReturnPolicyView />;
+      case 'privacy-policy':
+        return <PrivacyPolicyView />;
       case 'terms':
         return <TermsView />;
       case 'payment-complete':

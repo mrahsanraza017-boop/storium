@@ -25,7 +25,13 @@ export const CheckoutView: React.FC = () => {
     currentUser,
     navigate,
     addToast,
+    businessSettings,
   } = useStore();
+
+  const securePaymentSteps = businessSettings.securePaymentCopy
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const allowedPaymentMethods = useMemo(() => {
     if (cart.length === 0) return ['cod', 'card'] as Array<'cod' | 'card'>;
@@ -571,11 +577,50 @@ export const CheckoutView: React.FC = () => {
 
               <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-[#8E929E]">
                 <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Encrypted Pakistani Commerce Gateway</span>
+                <span>Payments processed securely via {businessSettings.paymentGatewayName} — no card details stored</span>
               </div>
             </div>
           </div>
         </form>
+
+        {/* Secure Payment Process */}
+        <div className="mt-12 p-6 sm:p-8 rounded-2xl bg-[#121316] border border-[#262930] space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#D4AF37] flex items-center justify-center flex-shrink-0">
+              <Lock className="w-4 h-4" />
+            </span>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-[#F5F5F7] font-serif-luxury">
+                Secure Payment Process
+              </h2>
+              <p className="text-[11px] text-[#8E929E]">
+                How your payment is handled end-to-end through {businessSettings.paymentGatewayName}
+              </p>
+            </div>
+          </div>
+
+          {securePaymentSteps.length > 0 ? (
+            <ol className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {securePaymentSteps.map((step, index) => (
+                <li key={index} className="flex items-start gap-3 text-xs text-[#CBD0DC] leading-relaxed p-3 rounded-xl bg-[#0B0C0E] border border-[#262930]">
+                  <span className="w-6 h-6 rounded-full bg-[#D4AF37] text-[#0B0C0E] font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {index + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-xs text-[#8E929E]">
+              The payment process is being prepared and will be published here shortly.
+            </p>
+          )}
+
+          <p className="text-[11px] text-[#8E929E] border-t border-[#262930] pt-4">
+            Your card details are entered on the payment gateway&apos;s own encrypted page and never reach or are
+            stored by {businessSettings.businessName}. COD orders are payable to the courier at the time of delivery.
+          </p>
+        </div>
       </div>
     </div>
   );

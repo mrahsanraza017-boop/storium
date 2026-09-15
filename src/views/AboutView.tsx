@@ -1,12 +1,22 @@
 import React from 'react';
-import { Award, Shield, Watch } from 'lucide-react';
+import { Award, Shield, Watch, Lock } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, BASE_SITE_URL } from '../lib/seoSchemas';
 
 export const AboutView: React.FC = () => {
-  const { navigate } = useStore();
+  const { navigate, businessSettings } = useStore();
+
+  const businessModelParagraphs = businessSettings.businessModel
+    .split(/\n{2,}/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const securePaymentSteps = businessSettings.securePaymentCopy
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
@@ -120,6 +130,66 @@ export const AboutView: React.FC = () => {
               Proudly serving modern gentlemen across Karachi, Lahore, Islamabad, and nationwide with white-glove service.
             </p>
           </div>
+        </div>
+
+        {/* How We Work */}
+        <div className="space-y-6 text-sm sm:text-base text-[#D1D5E0] leading-relaxed glass-panel p-8 sm:p-10 rounded-3xl shadow-2xl">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white font-serif-luxury gold-glow-subtle">
+            How We Work
+          </h2>
+          {businessModelParagraphs.length === 0 ? (
+            <p className="text-sm text-[#8E929E]">
+              This section is being prepared. Our full business model will be published here shortly.
+            </p>
+          ) : (
+            businessModelParagraphs.map((paragraph, index) => (
+              <div key={index} className={index > 0 ? 'space-y-4 mt-5' : ''}>
+                <p className="luxury-text-shadow">{paragraph}</p>
+                {index === 0 && businessSettings.storefrontImage && (
+                  <img
+                    src={businessSettings.storefrontImage}
+                    alt={`${businessSettings.businessName} storefront`}
+                    width={960}
+                    height={540}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full max-w-2xl rounded-2xl border border-white/10 object-cover"
+                  />
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Secure Payment Process */}
+        <div className="p-8 sm:p-10 rounded-3xl glass-panel space-y-6 shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#181A1F] flex items-center justify-center text-[#D4AF37] border border-white/5">
+              <Lock className="w-5 h-5" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white font-serif-luxury gold-glow-subtle">
+              Secure Payment Process
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[#CBD0DC] leading-relaxed">
+            This is how your payment is handled when you order online through {businessSettings.businessName}:
+          </p>
+          {securePaymentSteps.length > 0 ? (
+            <ol className="space-y-3">
+              {securePaymentSteps.map((step, index) => (
+                <li key={index} className="flex items-start gap-3 text-xs sm:text-sm text-[#CBD0DC] leading-relaxed">
+                  <span className="w-6 h-6 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#D4AF37] font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {index + 1}
+                  </span>
+                  <span className="luxury-text-shadow">{step}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-xs text-[#8E929E]">
+              The secure payment steps are being prepared and will be published here shortly.
+            </p>
+          )}
         </div>
 
         {/* Showroom CTA */}

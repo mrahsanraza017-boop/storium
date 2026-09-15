@@ -30,11 +30,11 @@ export const AccountView: React.FC = () => {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
-    fullName: currentUser?.fullName || 'Hamza Tariq',
-    email: currentUser?.email || 'hamza.tariq@example.pk',
-    phone: currentUser?.phone || '+92 300 8459201',
-    address: currentUser?.address || 'House 42, Sector Y, Phase 5, DHA',
-    city: currentUser?.city || 'Lahore',
+    fullName: currentUser?.fullName || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    address: currentUser?.address || '',
+    city: currentUser?.city || '',
   });
 
   useEffect(() => {
