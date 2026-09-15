@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Search, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
+import { PriceRangeSlider, PriceRange } from '../components/filters/PriceRangeSlider';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
@@ -14,7 +15,13 @@ export const ShopView: React.FC = () => {
     activeCategoryFilter || 'all'
   );
   const [searchFilter, setSearchFilter] = useState('');
-  const [maxPrice, setMaxPrice] = useState<number>(75000);
+
+  const priceBounds = useMemo<PriceRange>(() => {
+    const maxPrice = Math.max(...products.map((p) => p.salePrice ?? p.price), 500);
+    return { min: 500, max: Math.ceil(maxPrice / 1000) * 1000 };
+  }, [products]);
+
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 500, max: priceBounds.max });
   const [availabilityOnly, setAvailabilityOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
 
@@ -30,7 +37,7 @@ export const ShopView: React.FC = () => {
           p.brand.toLowerCase().includes(searchFilter.toLowerCase()) ||
           p.tags.some((t) => t.toLowerCase().includes(searchFilter.toLowerCase()));
         const effectivePrice = p.salePrice ?? p.price;
-        const matchesPrice = effectivePrice <= maxPrice;
+        const matchesPrice = effectivePrice >= priceRange.min && effectivePrice <= priceRange.max;
         const matchesAvailability = !availabilityOnly || p.stockQuantity > 0;
 
         return matchesCategory && matchesSearch && matchesPrice && matchesAvailability;
@@ -43,12 +50,12 @@ export const ShopView: React.FC = () => {
         if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
       });
-  }, [products, selectedCategory, searchFilter, maxPrice, availabilityOnly, sortBy]);
+  }, [products, selectedCategory, searchFilter, priceRange, availabilityOnly, sortBy]);
 
   const handleReset = () => {
     setSelectedCategory('all');
     setSearchFilter('');
-    setMaxPrice(75000);
+    setPriceRange({ min: 500, max: priceBounds.max });
     setAvailabilityOnly(false);
     setSortBy('featured');
   };
@@ -160,22 +167,14 @@ export const ShopView: React.FC = () => {
           {/* Secondary Controls: Price range, in-stock checkbox, sort */}
           <div className="pt-4 border-t border-[#262930] flex flex-wrap items-center justify-between gap-4 text-xs">
             <div className="flex flex-wrap items-center gap-6 text-[#CBD0DC]">
-              {/* Slider */}
-              <div className="flex items-center gap-2">
-                <label htmlFor="shop-max-price">Max Price:</label>
-                <input
-                  id="shop-max-price"
-                  type="range"
-                  min="5000"
-                  max="75000"
-                  step="2500"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  aria-label="Filter maximum price in PKR"
-                  className="w-32 sm:w-48 accent-[#D4AF37]"
-                />
-                <span className="font-bold text-[#F5F5F7]">Rs. {maxPrice.toLocaleString()}</span>
-              </div>
+              <PriceRangeSlider
+                bounds={priceBounds}
+                value={priceRange}
+                onChange={setPriceRange}
+                step={500}
+                label="Price Range"
+                className="w-full sm:w-96"
+              />
 
               {/* In-stock toggle */}
               <label htmlFor="shop-in-stock-checkbox" className="flex items-center gap-2 cursor-pointer select-none">
@@ -223,7 +222,7 @@ export const ShopView: React.FC = () => {
         {/* Reusable Product Grid */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={`${selectedCategory}-${searchFilter}-${maxPrice}-${availabilityOnly}-${sortBy}-${filteredProducts.length}`}
+            key={`${selectedCategory}-${searchFilter}-${priceRange.min}-${priceRange.max}-${availabilityOnly}-${sortBy}-${filteredProducts.length}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

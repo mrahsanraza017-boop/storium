@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Heart,
   ShoppingBag,
@@ -10,6 +10,11 @@ import {
   ChevronRight,
   Share2,
   ArrowRight,
+  ThumbsUp,
+  MessageCircle,
+  Camera,
+  Play,
+  Link2,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGallery } from '../components/product/ProductGallery';
@@ -41,6 +46,7 @@ export const ProductDetailView: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'specs' | 'features' | 'shipping' | 'warranty'>('specs');
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   if (!product) {
     return (
@@ -72,12 +78,19 @@ export const ProductDetailView: React.FC = () => {
     navigate('checkout');
   };
 
-  const handleShare = () => {
+  const handleShareToggle = () => setIsShareOpen((prev) => !prev);
+
+  const copyShareLink = (message?: string) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
-      addToast('success', 'Link Copied', 'Product link copied to clipboard.');
+      addToast('success', 'Link Copied', message || 'Product link copied to clipboard.');
     }
   };
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareText = product ? `${product.name} — STORIUM Pakistan` : 'STORIUM Pakistan';
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
 
   // Related products
   const relatedProducts = products
@@ -293,14 +306,94 @@ export const ProductDetailView: React.FC = () => {
                   <Heart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="p-4 rounded-xl bg-[#181A1F] text-[#CBD0DC] hover:text-[#F5F5F7] border border-[#262930] transition-colors cursor-pointer"
-                  aria-label="Share Timepiece"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={handleShareToggle}
+                    className="p-4 rounded-xl bg-[#181A1F] text-[#CBD0DC] hover:text-[#F5F5F7] border border-[#262930] transition-colors cursor-pointer"
+                    aria-label="Share Timepiece"
+                    aria-expanded={isShareOpen}
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+
+                  <AnimatePresence>
+                    {isShareOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsShareOpen(false)}
+                          aria-hidden="true"
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                          className="absolute right-0 top-full mt-2 z-50 w-52 p-2 rounded-2xl bg-[#121316] border border-[#262930] shadow-2xl backdrop-blur-md"
+                        >
+                          <p className="px-3 pt-1.5 pb-2 text-[10px] uppercase tracking-[0.18em] text-[#8E929E] font-semibold">
+                            Share {product.name}
+                          </p>
+                          <a
+                            href={facebookShareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsShareOpen(false)}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs text-[#CBD0DC] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                          >
+                            <ThumbsUp className="w-4 h-4 text-[#D4AF37]" />
+                            <span>Share on Facebook</span>
+                          </a>
+                          <a
+                            href={whatsappShareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsShareOpen(false)}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs text-[#CBD0DC] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                          >
+                            <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
+                            <span>Share on WhatsApp</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              copyShareLink('Product link copied — paste it into your Instagram story or DM.');
+                              setIsShareOpen(false);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs text-[#CBD0DC] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                          >
+                            <Camera className="w-4 h-4 text-[#D4AF37]" />
+                            <span>Share via Instagram</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              copyShareLink('Product link copied — you can paste it anywhere on YouTube.');
+                              setIsShareOpen(false);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs text-[#CBD0DC] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                          >
+                            <Play className="w-4 h-4 text-[#D4AF37]" />
+                            <span>Share via YouTube</span>
+                          </button>
+                          <div className="my-1 border-t border-[#262930]" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              copyShareLink();
+                              setIsShareOpen(false);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs text-[#CBD0DC] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                          >
+                            <Link2 className="w-4 h-4 text-[#D4AF37]" />
+                            <span>Copy Custom Share Link</span>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* Prominent BUY NOW Button */}

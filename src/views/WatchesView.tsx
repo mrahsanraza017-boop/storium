@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
+import { PriceRangeSlider, PriceRange } from '../components/filters/PriceRangeSlider';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
@@ -9,10 +10,15 @@ export const WatchesView: React.FC = () => {
   const { products } = useStore();
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
-  const [maxPrice, setMaxPrice] = useState<number>(70000);
 
-  // Filter for watches
-  const watchProducts = products.filter((p) => p.category === 'watches');
+  const watchProducts = useMemo(() => products.filter((p) => p.category === 'watches'), [products]);
+
+  const priceBounds = useMemo<PriceRange>(() => {
+    const maxPrice = Math.max(...watchProducts.map((p) => p.salePrice ?? p.price), 500);
+    return { min: 500, max: Math.ceil(maxPrice / 1000) * 1000 };
+  }, [watchProducts]);
+
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 500, max: priceBounds.max });
 
   const tagsList = ['All', 'Chrono', 'Automatic', 'Skeleton', 'Titanium', 'Minimalist', 'Diver', 'GMT'];
 
@@ -21,8 +27,7 @@ export const WatchesView: React.FC = () => {
       .filter((p) => {
         const matchesTag = selectedTag === 'All' || p.tags.includes(selectedTag);
         const effectivePrice = p.salePrice ?? p.price;
-        const matchesPrice = effectivePrice <= maxPrice;
-        return matchesTag && matchesPrice;
+        return matchesTag && effectivePrice >= priceRange.min && effectivePrice <= priceRange.max;
       })
       .sort((a, b) => {
         const priceA = a.salePrice ?? a.price;
@@ -32,7 +37,7 @@ export const WatchesView: React.FC = () => {
         if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
       });
-  }, [watchProducts, selectedTag, sortBy, maxPrice]);
+  }, [watchProducts, selectedTag, sortBy, priceRange]);
 
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
@@ -121,27 +126,19 @@ export const WatchesView: React.FC = () => {
 
           {/* Price Range Slider */}
           <div className="pt-3 border-t border-[#262930] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#CBD0DC]">
-            <div className="flex items-center gap-3">
-              <label htmlFor="watches-max-price">Filter Max Price:</label>
-              <input
-                id="watches-max-price"
-                type="range"
-                min="20000"
-                max="70000"
-                step="2500"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                aria-label="Filter maximum price in PKR"
-                className="w-40 sm:w-60 accent-[#D4AF37]"
-              />
-              <span className="font-bold text-[#F5F5F7]">Rs. {maxPrice.toLocaleString()}</span>
-            </div>
+            <PriceRangeSlider
+              bounds={priceBounds}
+              value={priceRange}
+              onChange={setPriceRange}
+              step={500}
+              className="w-full sm:w-80"
+            />
 
             <button
               type="button"
               onClick={() => {
                 setSelectedTag('All');
-                setMaxPrice(70000);
+                setPriceRange({ min: 500, max: priceBounds.max });
                 setSortBy('featured');
               }}
               className="text-xs text-[#D4AF37] hover:underline cursor-pointer"
