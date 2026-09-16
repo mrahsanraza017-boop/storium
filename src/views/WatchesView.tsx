@@ -14,11 +14,11 @@ export const WatchesView: React.FC = () => {
   const watchProducts = useMemo(() => products.filter((p) => p.category === 'watches'), [products]);
 
   const priceBounds = useMemo<PriceRange>(() => {
-    const maxPrice = Math.max(...watchProducts.map((p) => p.salePrice ?? p.price), 500);
-    return { min: 500, max: Math.ceil(maxPrice / 1000) * 1000 };
+    const maxPrice = Math.max(...watchProducts.map((p) => p.salePrice ?? p.price), 10000);
+    return { min: 10000, max: Math.ceil(maxPrice / 1000) * 1000 };
   }, [watchProducts]);
 
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 500, max: priceBounds.max });
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 10000, max: priceBounds.max });
 
   const tagsList = ['All', 'Chrono', 'Automatic', 'Skeleton', 'Titanium', 'Minimalist', 'Diver', 'GMT'];
 
@@ -58,7 +58,7 @@ export const WatchesView: React.FC = () => {
     <div className="w-full bg-transparent min-h-screen text-[#E8E8EC] py-12">
       <SEOHead
         title="Men's Luxury Watches in Pakistan — Automatic, Chronograph & Titanium | STORIUM"
-        description="Explore precision Japanese & Swiss mechanical watches in Pakistan. Featuring 316L stainless steel, sapphire crystal, DLC coatings, and 2-year warranty with express COD."
+        description="Explore precision Japanese & Swiss mechanical watches in Pakistan. Featuring 316L stainless steel, sapphire crystal, DLC coatings, and 1-year warranty with express COD."
         keywords="luxury watches pakistan, automatic watches karachi, chronograph watch lahore, mechanical watch islamabad, buy luxury watch pakistan, storium timepieces"
         canonicalPath="/watches"
         schemas={schemas}
@@ -138,7 +138,7 @@ export const WatchesView: React.FC = () => {
               type="button"
               onClick={() => {
                 setSelectedTag('All');
-                setPriceRange({ min: 500, max: priceBounds.max });
+                setPriceRange({ min: 10000, max: priceBounds.max });
                 setSortBy('featured');
               }}
               className="text-xs text-[#D4AF37] hover:underline cursor-pointer"

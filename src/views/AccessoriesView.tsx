@@ -21,11 +21,11 @@ export const AccessoriesView: React.FC = () => {
   }, [products]);
 
   const priceBounds = useMemo<PriceRange>(() => {
-    const maxPrice = Math.max(...allAccessories.map((p) => p.salePrice ?? p.price), 500);
-    return { min: 500, max: Math.ceil(maxPrice / 1000) * 1000 };
+    const maxPrice = Math.max(...allAccessories.map((p) => p.salePrice ?? p.price), 10000);
+    return { min: 10000, max: Math.ceil(maxPrice / 1000) * 1000 };
   }, [allAccessories]);
 
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 500, max: priceBounds.max });
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 10000, max: priceBounds.max });
 
   // Sync with global activeSubcategoryFilter if navigated with subcategory param
   useEffect(() => {
@@ -80,7 +80,7 @@ export const AccessoriesView: React.FC = () => {
     setSelectedSubcategory('All');
     setActiveSubcategoryFilter(null);
     setSearchQuery('');
-    setPriceRange({ min: 500, max: priceBounds.max });
+    setPriceRange({ min: 10000, max: priceBounds.max });
     setSortBy('featured');
   };
 
@@ -252,7 +252,7 @@ export const AccessoriesView: React.FC = () => {
               </div>
 
               {/* Reset Filters */}
-              {(selectedSubcategory !== 'All' || searchQuery || priceRange.min > 500 || priceRange.max < priceBounds.max) && (
+              {(selectedSubcategory !== 'All' || searchQuery || priceRange.min > 10000 || priceRange.max < priceBounds.max) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}

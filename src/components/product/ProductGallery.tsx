@@ -19,8 +19,10 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
   const prefersReducedMotion = useReducedMotion();
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
+  // Show every uploaded image/video (no cap). Order follows the admin-defined
+  // media order, so index 0 is whatever the admin pinned to display first.
   const displayMedia: ProductMedia[] = media?.length
-    ? media.slice(0, 3)
+    ? media
     : (images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=1200&auto=format&fit=crop']).map((url) => ({ url, type: 'image' as const }));
   const currentMedia = displayMedia[activeIdx] || displayMedia[0];
 

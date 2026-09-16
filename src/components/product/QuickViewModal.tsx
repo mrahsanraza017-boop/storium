@@ -216,10 +216,10 @@ export const QuickViewModal: React.FC = () => {
 
                 {/* Guarantees */}
                 <div className="grid grid-cols-2 gap-2 pt-4 border-t border-[#262930]/60 text-[11px] text-[#CBD0DC]">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#D4AF37]" />
-                    <span>2-Year International Warranty</span>
-                  </div>
+<div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-[#D4AF37]" />
+                      <span>1-Year International Warranty</span>
+                    </div>
                   <div className="flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#D4AF37]" />
                     <span>Free Insured Delivery (Pakistan)</span>

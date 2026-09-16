@@ -35,7 +35,7 @@ export const HomeView: React.FC = () => {
     {
       question: 'What warranty and guarantees come with STORIUM timepieces?',
       answer:
-        'Every STORIUM timepiece is individually serialized with its laser-engraved caseback SKU and accompanied by our embossed Certificate of Authenticity, 2-Year International Movement Warranty, and a 7-day inspection guarantee.',
+        'Every STORIUM timepiece is individually serialized with its laser-engraved caseback SKU and accompanied by our embossed Certificate of Authenticity, 1-Year International Movement Warranty, and a 7-day inspection guarantee.',
     },
     {
       question: 'What materials are used in STORIUM luxury watches?',
@@ -131,87 +131,7 @@ export const HomeView: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* 2. BRAND INTRODUCTION SECTION
-          data-section="brand-introduction"
-      */}
-      <section data-section="brand-introduction" className="py-24 bg-transparent border-b border-[#262930]/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <MotionReveal direction="left" className="lg:col-span-5 p-8 sm:p-10 rounded-3xl glass-panel space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-transparent p-0.5 flex-shrink-0 flex items-center justify-center">
-                  <img src="/logo.png" alt="STORIUM Logo" width="48" height="48" loading="lazy" decoding="async" className="w-full h-full object-contain" />
-                </div>
-                <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
-                  The STORIUM Manifesto
-                </span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white font-serif-luxury leading-tight gold-glow-subtle">
-                Not an ordinary store. <br />
-                A futuristic luxury showroom.
-              </h2>
-              <p className="text-sm sm:text-base text-[#D1D5E0] leading-relaxed luxury-text-shadow">
-                STORIUM was founded in Pakistan on a singular conviction: the objects you wear and carry are not passive ornaments—they are an extension of your presence and ambition.
-              </p>
-              <p className="text-sm sm:text-base text-[#D1D5E0] leading-relaxed luxury-text-shadow">
-                By uniting precision Japanese &amp; Swiss mechanical movements with futuristic industrial silhouettes and direct showroom pricing, we bridge the chasm between unattainable Swiss luxury and mass-market disposable watches.
-              </p>
-
-              <div className="pt-4 flex items-center gap-6">
-                <div>
-                  <span className="block text-2xl font-bold text-[#D4AF37] font-serif-luxury drop-shadow-[0_2px_8px_rgba(212,175,55,0.35)]">100%</span>
-                  <span className="text-xs text-[#CBD0DC]">Original &amp; Guaranteed</span>
-                </div>
-                <div className="w-px h-10 bg-[#262930]" />
-                <div>
-                  <span className="block text-2xl font-bold text-[#D4AF37] font-serif-luxury drop-shadow-[0_2px_8px_rgba(212,175,55,0.35)]">2 Years</span>
-                  <span className="text-xs text-[#CBD0DC]">Movement Warranty</span>
-                </div>
-                <div className="w-px h-10 bg-[#262930]" />
-                <div>
-                  <span className="block text-2xl font-bold text-[#D4AF37] font-serif-luxury drop-shadow-[0_2px_8px_rgba(212,175,55,0.35)]">7 Days</span>
-                  <span className="text-xs text-[#CBD0DC]">Hassle-Free Inspection</span>
-                </div>
-              </div>
-            </MotionReveal>
-
-            <MotionReveal direction="right" className="lg:col-span-7 relative">
-              <div className="relative rounded-2xl overflow-hidden bg-[#121316] border border-[#262930] aspect-[16/10] group shadow-2xl">
-                <img
-                  src="/assets/exhibition-bench.webp"
-                  alt="STORIUM Horology Craftsmanship"
-                  width={1376}
-                  height={768}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C0E] via-transparent to-transparent opacity-85" />
-                <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-mono">
-                      EXHIBITION BENCH
-                    </span>
-                    <h3 className="text-lg font-bold text-white gold-glow-subtle">
-                      Precision Micro-Engineering
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('about')}
-                    aria-label="Read more about STORIUM craftsmanship"
-                    className="p-3 rounded-full bg-[#181A1F]/90 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-white/10 backdrop-blur-md transition-all cursor-pointer shadow-lg"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </MotionReveal>
-          </div>
-        </div>
-      </section>
+</section>
 
       {/* 3. FEATURED WATCHES SHOWCASE
           Rendered through the Reusable ProductGrid component (Automatic animations)
@@ -490,7 +410,7 @@ export const HomeView: React.FC = () => {
                 STORIUM Certificate of Authenticity
               </h3>
               <p className="text-xs sm:text-sm text-[#CBD0DC] leading-relaxed luxury-text-shadow">
-                Every timepiece is individually serialized with its laser-engraved caseback SKU and accompanied by our embossed Certificate of Authenticity and 2-Year International Warranty card.
+                Every timepiece is individually serialized with its laser-engraved caseback SKU and accompanied by our embossed Certificate of Authenticity and 1-Year International Warranty card.
               </p>
             </div>
           </div>

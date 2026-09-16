@@ -16,8 +16,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
   const prefersReducedMotion = useReducedMotion();
   const [isHovered, setIsHovered] = useState(false);
   const [isAddedRecently, setIsAddedRecently] = useState(false);
+  // Surface every uploaded image/video; the first item is the admin-chosen cover.
   const media = product.media?.length
-    ? product.media.slice(0, 3)
+    ? product.media
     : [{ url: product.thumbnail, type: 'image' as const }];
   const [mediaIndex, setMediaIndex] = useState(0);
   const inWishlist = isInWishlist(product.id);

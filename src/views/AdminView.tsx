@@ -45,6 +45,7 @@ export const AdminView: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [existingMedia, setExistingMedia] = useState<ProductMedia[]>([]);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
   // Order management states
@@ -85,6 +86,7 @@ export const AdminView: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingProduct(null);
     setMediaFiles([]);
+    setExistingMedia([]);
     setFormData({
       name: '',
       slug: '',
@@ -114,6 +116,7 @@ export const AdminView: React.FC = () => {
   const handleOpenEdit = (p: Product) => {
     setEditingProduct(p);
     setMediaFiles([]);
+    setExistingMedia(p.media || []);
     const methods = p.paymentMethods?.length ? p.paymentMethods : (['cod', 'card'] as const);
     setFormData({
       name: p.name,
@@ -139,6 +142,26 @@ export const AdminView: React.FC = () => {
       caseDiameter: p.specifications['Case Diameter'] || '',
     });
     setIsAddModalOpen(true);
+  };
+
+  // Reorder a media/file list by one slot. Items render in array order, so the
+  // first entry is what shoppers see first on the public site.
+  const moveMedia = <T,>(list: T[], from: number, delta: number): T[] => {
+    const to = from + delta;
+    if (to < 0 || to >= list.length) return list;
+    const next = [...list];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    return next;
+  };
+
+  // Pin a media item to the front so it displays first publicly.
+  const moveMediaToFront = <T,>(list: T[], from: number): T[] => {
+    if (from <= 0 || from >= list.length) return list;
+    const next = [...list];
+    const [moved] = next.splice(from, 1);
+    next.unshift(moved);
+    return next;
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -176,6 +199,20 @@ export const AdminView: React.FC = () => {
     }
     setIsUploadingMedia(false);
 
+    // Determine final media order. The admin-curated `existingMedia` order is
+    // preserved and any newly uploaded files are appended after it (dedup by
+    // URL), so the admin's chosen "first" item still leads the gallery.
+    const seen = new Set<string>();
+    const finalMedia: ProductMedia[] = [...existingMedia, ...uploadedMedia].filter((item) => {
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    });
+    const finalProductImages = finalMedia.filter((item) => item.type === 'image').map((item) => item.url);
+    // Thumbnail stays an image (cards/cart/SEO need one), preferring the first
+    // image in the admin-defined order.
+    const finalThumbnail = finalProductImages.length > 0 ? finalProductImages[0] : formData.thumbnail;
+
     const subcategory =
       formData.category === 'mens-accessories'
         ? (formData.subcategory || 'Wallet')
@@ -200,11 +237,12 @@ export const AdminView: React.FC = () => {
         stockQuantity: Number(formData.stockQuantity),
         shortDescription: formData.shortDescription,
         description: formData.description,
-        thumbnail: formData.thumbnail,
+        thumbnail: finalThumbnail,
         featured: formData.featured,
         paymentMethods,
         specifications: nextSpecs,
-        ...(uploadedMedia.length > 0 ? { media: uploadedMedia, productImages: uploadedMedia.filter((item) => item.type === 'image').map((item) => item.url), thumbnail: uploadedMedia[0].url } : {}),
+        media: finalMedia,
+        productImages: finalProductImages,
       });
       addToast('success', 'Product Updated', `${formData.name} was successfully updated.`);
     } else {
@@ -221,9 +259,9 @@ export const AdminView: React.FC = () => {
         stockQuantity: Number(formData.stockQuantity),
         shortDescription: formData.shortDescription,
         description: formData.description,
-        thumbnail: formData.thumbnail,
-        productImages: [formData.thumbnail],
-        ...(uploadedMedia.length > 0 ? { media: uploadedMedia, productImages: uploadedMedia.filter((item) => item.type === 'image').map((item) => item.url), thumbnail: uploadedMedia[0].url } : {}),
+        thumbnail: finalThumbnail,
+        productImages: finalProductImages,
+        media: finalMedia,
         featured: formData.featured,
         paymentMethods,
         tags: [formData.category === 'watches' ? 'Automatic' : 'Titanium'],
@@ -814,7 +852,7 @@ export const AdminView: React.FC = () => {
                             aria-label={`Order status for order ${o.orderNumber}`}
                             value={o.orderStatus}
                             onChange={(e) => updateOrderStatus(o.id, e.target.value as any)}
-                            className="bg-[#0B0C0E] border border-[#262930] rounded-lg px-2.5 py-1 text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
+                            className="bg-[#0B0C0E] border-[#262930] rounded-lg px-2.5 py-1 text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
                           >
                             <option value="Pending">Pending</option>
                             <option value="Processing">Processing</option>
@@ -1091,21 +1129,141 @@ export const AdminView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="admin-product-media" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
-                      Product Media (up to 3 images or videos)
-                    </label>
-                    <input
-                      id="admin-product-media"
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      onChange={(event) => setMediaFiles(Array.from(event.target.files || []).slice(0, 3))}
-                      className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7]"
-                    />
-                    <p className="mt-1 text-[11px] text-[#626673]">Select up to 3 files. New uploads replace the current product media.</p>
-                    {mediaFiles.length > 0 && <p className="mt-1 text-[11px] text-[#D4AF37]">{mediaFiles.length} file(s) ready to upload.</p>}
-                  </div>
+<div>
+                      <label htmlFor="admin-product-media" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                        Product Media (unlimited images & videos)
+                      </label>
+                      <input
+                        id="admin-product-media"
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        onChange={(event) => setMediaFiles(Array.from(event.target.files || []))}
+                        className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7]"
+                      />
+                      <p className="mt-1 text-[11px] text-[#626673]">Select unlimited images and videos. New uploads are added after the current media; the first item is what shoppers see first.</p>
+
+                      {/* Existing Media Display */}
+                      {existingMedia.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-[11px] text-[#D4AF37] font-semibold">Current Product Media ({existingMedia.length}):</p>
+                          <p className="text-[10px] text-[#626673]">The first item (marked “Cover”) is shown first on the public site. Reorder with “Set as first” or the arrows.</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+                            {existingMedia.map((media, index) => (
+                              <div key={media.url} className={`relative group p-2 bg-[#181A1F] border rounded-lg ${index === 0 ? 'border-[#D4AF37]/60' : 'border-[#262930]'}`}>
+                                {index === 0 && (
+                                  <span className="absolute top-3 left-3 z-10 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-[#D4AF37] text-[#0B0C0E] shadow-md">
+                                    Cover
+                                  </span>
+                                )}
+                                <div className="aspect-square rounded overflow-hidden bg-[#0B0C0E]">
+                                  {media.type === 'video' ? (
+                                    <video src={media.url} className="w-full h-full object-cover" muted />
+                                  ) : (
+                                    <img src={media.url} alt={media.name || `Media ${index + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                                  )}
+                                </div>
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {index > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setExistingMedia(moveMediaToFront(existingMedia, index))}
+                                      className="px-2 py-1 rounded-md bg-[#D4AF37] text-[#0B0C0E] text-[10px] font-semibold hover:bg-[#E5C378]"
+                                      aria-label={`Show ${media.name || 'media'} first`}
+                                      title="Show this first"
+                                    >
+                                      ⬆ First
+                                    </button>
+                                  )}
+                                  {index > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setExistingMedia(moveMedia(existingMedia, index, -1))}
+                                      className="p-1.5 rounded-md bg-[#181A1F] text-white border-white/10 hover:border-[#D4AF37]/50"
+                                      aria-label="Move earlier"
+                                      title="Move earlier"
+                                    >
+                                      ←
+                                    </button>
+                                  )}
+                                  {index < existingMedia.length - 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setExistingMedia(moveMedia(existingMedia, index, 1))}
+                                      className="p-1.5 rounded-md bg-[#181A1F] text-white border-white/10 hover:border-[#D4AF37]/50"
+                                      aria-label="Move later"
+                                      title="Move later"
+                                    >
+                                      →
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setExistingMedia(existingMedia.filter((_, i) => i !== index))}
+                                    className="p-2 rounded-full bg-rose-500 text-white hover:bg-rose-400"
+                                    aria-label={`Remove ${media.name || 'media'}`}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                                  <span className="truncate flex-1 text-[#F5F5F7]">{media.name || `Media ${index + 1}`}</span>
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono ${media.type === 'video' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-[#E5C378]/20 text-[#E5C378]'}`}>
+                                    {media.type.toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* New Files Ready to Upload */}
+                      {mediaFiles.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-[11px] text-[#D4AF37] font-semibold">New Files Ready to Upload ({mediaFiles.length}):</p>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {mediaFiles.map((file, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-[#181A1F] border rounded-lg text-[11px]">
+                                <span className="w-6 text-center text-[#8E929E] font-mono">{index + 1}</span>
+                                <div className="flex-1 min-w-0 flex items-center gap-2">
+                                  {file.type.startsWith('video/') ? (
+                                    <span className="text-[#D4AF37]">🎬</span>
+                                  ) : (
+                                    <span className="text-[#E5C378]">🖼️</span>
+                                  )}
+                                  <span className="truncate text-[#F5F5F7]">{file.name}</span>
+                                  <span className="text-[#8E929E] font-mono">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                </div>
+                                {index > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setMediaFiles(moveMediaToFront(mediaFiles, index))}
+                                    className="px-2 py-1 rounded-md bg-[#D4AF37] text-[#0B0C0E] text-[10px] font-semibold hover:bg-[#E5C378]"
+                                    aria-label={`Show ${file.name} first`}
+                                    title="Show this first"
+                                  >
+                                    ⬆ First
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setMediaFiles(mediaFiles.filter((_, i) => i !== index))}
+                                  className="text-rose-400 hover:text-rose-300 p-1"
+                                  aria-label={`Remove ${file.name}`}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(existingMedia.length === 0 && mediaFiles.length === 0) && (
+                        <p className="mt-2 text-[11px] text-[#626673]">No media uploaded yet. Add images or videos above.</p>
+                      )}
+                    </div>
 
                   <div>
                     <label htmlFor="admin-product-short-desc" className="block text-[#8E929E] mb-1 uppercase tracking-wider">

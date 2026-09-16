@@ -423,7 +423,7 @@ export async function fetchSupabaseProducts(): Promise<Product[]> {
 
 export async function uploadProductMedia(files: File[], productId: string): Promise<ProductMedia[]> {
   const supabase = await getSupabase();
-  const uploads = files.slice(0, 3).map(async (file, index) => {
+  const uploads = files.map(async (file, index) => {
     const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const path = `${productId}/${Date.now()}-${index}.${extension}`;
     const { error } = await supabase.storage.from('product-media').upload(path, file, {

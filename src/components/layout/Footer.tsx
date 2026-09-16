@@ -55,7 +55,7 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-[#F5F5F7] uppercase tracking-wider">
-                2-Year STORIUM Guarantee
+                1-Year STORIUM Guarantee
               </h4>
               <p className="mt-1 text-xs text-[#CBD0DC] leading-relaxed">
                 Comprehensive international movement warranty and sapphire crystal guarantee.

@@ -112,7 +112,7 @@ export const ProductDetailView: React.FC = () => {
   ];
 
   const metaTitle = product.seoTitle || `${product.name} — Luxury ${product.categoryName || 'Horology'} | STORIUM Pakistan`;
-  const metaDescription = product.seoDescription || `${product.name}. ${product.shortDescription || product.description.slice(0, 150)} Includes 2-Year International Warranty and express COD across Pakistan.`;
+  const metaDescription = product.seoDescription || `${product.name}. ${product.shortDescription || product.description.slice(0, 150)} Includes 1-Year International Warranty and express COD across Pakistan.`;
 
   return (
     <div className="w-full bg-transparent min-h-screen text-[#E8E8EC] py-8 sm:py-12">
@@ -414,7 +414,7 @@ export const ProductDetailView: React.FC = () => {
                 </div>
                 <div className="p-2.5 rounded-lg bg-[#121316] border border-[#262930]/50">
                   <Shield className="w-4 h-4 text-[#D4AF37] mx-auto mb-1" />
-                  <span>2-Year Warranty</span>
+                  <span>1-Year Warranty</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-[#121316] border border-[#262930]/50">
                   <RotateCcw className="w-4 h-4 text-[#D4AF37] mx-auto mb-1" />
@@ -564,10 +564,10 @@ export const ProductDetailView: React.FC = () => {
                 <div className="max-w-3xl space-y-4 text-sm text-[#CBD0DC] leading-relaxed">
                   <div className="p-5 rounded-2xl bg-[#121316] border border-[#262930] space-y-3">
                     <h3 className="text-base font-bold text-[#F5F5F7]">
-                      2-Year STORIUM International Guarantee
+                      1-Year STORIUM International Guarantee
                     </h3>
                     <p>
-                      Each timepiece is guaranteed against movement manufacturing defects for a period of twenty-four (24) months from the purchase date. The guarantee covers movement timing accuracy, mechanical escapement, and dial assembly.
+                      Each timepiece is guaranteed against movement manufacturing defects for a period of twelve (12) months from the purchase date. The guarantee covers movement timing accuracy, mechanical escapement, and dial assembly.
                     </p>
                     <h3 className="text-base font-bold text-[#F5F5F7] pt-2">
                       7-Day Inspection Guarantee

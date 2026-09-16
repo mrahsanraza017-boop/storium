@@ -222,7 +222,7 @@ export const CartView: React.FC = () => {
               <div className="space-y-2 pt-4 border-t border-[#262930] text-[11px] text-[#8E929E]">
                 <div className="flex items-center gap-2">
                   <Shield className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>2-Year International Warranty Included</span>
+                  <span>1-Year International Warranty Included</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-[#D4AF37]" />
