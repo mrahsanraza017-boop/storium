@@ -111,25 +111,6 @@ export const HomeView: React.FC = () => {
             </button>
           </div>
 
-          {/* Micro horological specs bar with frosted glass styling */}
-          <div className="mt-16 pt-8 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center w-full max-w-3xl">
-            <div className="p-3.5 rounded-xl glass-panel shadow-lg">
-              <span className="block text-lg sm:text-xl font-bold text-white gold-glow-subtle">316L / Ti</span>
-              <span className="text-[10px] uppercase tracking-wider text-[#CBD0DC]">Aerospace Metallurgy</span>
-            </div>
-            <div className="p-3.5 rounded-xl glass-panel shadow-lg">
-              <span className="block text-lg sm:text-xl font-bold text-white gold-glow-subtle">Sapphire</span>
-              <span className="text-[10px] uppercase tracking-wider text-[#CBD0DC]">Double-Domed AR Glass</span>
-            </div>
-            <div className="p-3.5 rounded-xl glass-panel shadow-lg">
-              <span className="block text-lg sm:text-xl font-bold text-white gold-glow-subtle">10 ATM</span>
-              <span className="text-[10px] uppercase tracking-wider text-[#CBD0DC]">Screw-Down Water Res.</span>
-            </div>
-            <div className="p-3.5 rounded-xl glass-panel shadow-lg">
-              <span className="block text-lg sm:text-xl font-bold text-white gold-glow-subtle">Nationwide</span>
-              <span className="text-[10px] uppercase tracking-wider text-[#CBD0DC]">Express Pakistan COD</span>
-            </div>
-          </div>
         </div>
 </section>
 

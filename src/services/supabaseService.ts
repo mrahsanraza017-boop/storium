@@ -108,9 +108,11 @@ CREATE INDEX IF NOT EXISTS idx_reviews_status ON public.reviews(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_featured ON public.reviews(featured_on_home) WHERE featured_on_home = true;
 
 -- 6. Product media storage bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('product-media', 'product-media', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
+-- file_size_limit is set to 500 MB so large product videos upload without
+-- being rejected. Raise it further if you need bigger files.
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('product-media', 'product-media', true, 524288000)
+ON CONFLICT (id) DO UPDATE SET public = true, file_size_limit = 524288000;
 
 -- Backfill: add customer_id column to orders if missing (safe for existing installs)
 ALTER TABLE public.orders
@@ -423,19 +425,45 @@ export async function fetchSupabaseProducts(): Promise<Product[]> {
 
 export async function uploadProductMedia(files: File[], productId: string): Promise<ProductMedia[]> {
   const supabase = await getSupabase();
-  const uploads = files.map(async (file, index) => {
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
-    const path = `${productId}/${Date.now()}-${index}.${extension}`;
-    const { error } = await supabase.storage.from('product-media').upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type,
-    });
-    if (error) throw new Error(error.message);
-    const { data } = supabase.storage.from('product-media').getPublicUrl(path);
-    return { url: data.publicUrl, type: file.type.startsWith('video/') ? 'video' : 'image', name: file.name } as ProductMedia;
-  });
-  return Promise.all(uploads);
+
+  // Upload every file independently so one failure cannot discard the others.
+  // (Previously this used Promise.all with a thrown error, which aborted the
+  // whole batch — including files that had already uploaded successfully.)
+  const results = await Promise.allSettled(
+    files.map(async (file, index) => {
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
+      // Combine a per-batch timestamp with the index and a random suffix so
+      // repeated uploads (and same-named files) never collide on the path.
+      const unique = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+      const path = `${productId}/${unique}.${extension}`;
+      const { error } = await supabase.storage.from('product-media').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) throw new Error(`${file.name}: ${error.message}`);
+      const { data } = supabase.storage.from('product-media').getPublicUrl(path);
+      return { url: data.publicUrl, type: file.type.startsWith('video/') ? 'video' : 'image', name: file.name } as ProductMedia;
+    })
+  );
+
+  const uploaded: ProductMedia[] = [];
+  const failures: string[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') uploaded.push(result.value);
+    else failures.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
+  }
+
+  // If nothing uploaded at all, surface the error so the admin sees a real
+  // message. If some succeeded, keep them and report the failures via console.
+  if (uploaded.length === 0 && failures.length > 0) {
+    throw new Error(failures.join('; '));
+  }
+  if (failures.length > 0) {
+    console.warn('Some product media failed to upload:', failures);
+  }
+
+  return uploaded;
 }
 
 export async function fetchCustomerProfile(userId: string): Promise<CustomerUser | null> {

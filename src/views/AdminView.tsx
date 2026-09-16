@@ -199,6 +199,15 @@ export const AdminView: React.FC = () => {
     }
     setIsUploadingMedia(false);
 
+    // Warn if only some of the selected files made it (e.g. oversized files).
+    if (mediaFiles.length > 0 && uploadedMedia.length < mediaFiles.length) {
+      addToast(
+        'error',
+        'Some Files Skipped',
+        `${uploadedMedia.length} of ${mediaFiles.length} files uploaded. Check that each file is within your Supabase storage size limit.`
+      );
+    }
+
     // Determine final media order. The admin-curated `existingMedia` order is
     // preserved and any newly uploaded files are appended after it (dedup by
     // URL), so the admin's chosen "first" item still leads the gallery.
