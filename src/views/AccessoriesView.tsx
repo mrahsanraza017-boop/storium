@@ -1,11 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, Tag } from 'lucide-react';
+import { Search, X, Tag, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { ACCESSORY_SUBCATEGORIES } from '../types';
-import { PriceRangeSlider, PriceRange } from '../components/filters/PriceRangeSlider';
+import { CustomPriceFilter, PriceRange, PricePreset } from '../components/filters/CustomPriceFilter';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
+
+const ACCESSORY_PRICE_PRESETS: PricePreset[] = [
+  { label: 'Under Rs. 15,000', min: 0, max: 15000 },
+  { label: 'Rs. 15,000 – Rs. 25,000', min: 15000, max: 25000 },
+  { label: 'Rs. 25,000 – Rs. 40,000', min: 25000, max: 40000 },
+  { label: 'Above Rs. 40,000', min: 40000, max: Infinity },
+];
 
 export const AccessoriesView: React.FC = () => {
   const { products, activeSubcategoryFilter, setActiveSubcategoryFilter } = useStore();
@@ -20,12 +27,30 @@ export const AccessoriesView: React.FC = () => {
     return products.filter((p) => p.category === 'mens-accessories');
   }, [products]);
 
+  const effectivePrice = (p: { price: number; salePrice?: number }) => p.salePrice ?? p.price;
+
   const priceBounds = useMemo<PriceRange>(() => {
-    const maxPrice = Math.max(...allAccessories.map((p) => p.salePrice ?? p.price), 10000);
-    return { min: 10000, max: Math.ceil(maxPrice / 1000) * 1000 };
+    if (allAccessories.length === 0) return { min: 0, max: 50000 };
+    const prices = allAccessories.map((p) => effectivePrice(p));
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    return {
+      min: Math.floor(minPrice / 1000) * 1000,
+      max: Math.ceil(maxPrice / 1000) * 1000,
+    };
   }, [allAccessories]);
 
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 10000, max: priceBounds.max });
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 0, max: 100000 });
+
+  // Sync price bounds when available
+  useEffect(() => {
+    if (priceBounds.max > 0) {
+      setPriceRange((prev) => ({
+        min: prev.min === 0 ? priceBounds.min : prev.min,
+        max: prev.max === 100000 ? priceBounds.max : prev.max,
+      }));
+    }
+  }, [priceBounds]);
 
   // Sync with global activeSubcategoryFilter if navigated with subcategory param
   useEffect(() => {
@@ -55,15 +80,16 @@ export const AccessoriesView: React.FC = () => {
           p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (p.subcategory && p.subcategory.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-        const effectivePrice = p.salePrice ?? p.price;
-        const matchesPrice = effectivePrice >= priceRange.min && effectivePrice <= priceRange.max;
+          (p.tags || []).some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        
+        const price = effectivePrice(p);
+        const matchesPrice = price >= priceRange.min && price <= priceRange.max;
 
         return matchesSubcategory && matchesSearch && matchesPrice;
       })
       .sort((a, b) => {
-        const priceA = a.salePrice ?? a.price;
-        const priceB = b.salePrice ?? b.price;
+        const priceA = effectivePrice(a);
+        const priceB = effectivePrice(b);
         if (sortBy === 'price-asc') return priceA - priceB;
         if (sortBy === 'price-desc') return priceB - priceA;
         if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -76,11 +102,17 @@ export const AccessoriesView: React.FC = () => {
     setActiveSubcategoryFilter(sub === 'All' ? null : sub);
   };
 
+  const hasActiveFilters =
+    selectedSubcategory !== 'All' ||
+    searchQuery.trim() !== '' ||
+    priceRange.min > priceBounds.min ||
+    priceRange.max < priceBounds.max;
+
   const handleResetFilters = () => {
     setSelectedSubcategory('All');
     setActiveSubcategoryFilter(null);
     setSearchQuery('');
-    setPriceRange({ min: 10000, max: priceBounds.max });
+    setPriceRange({ min: priceBounds.min, max: priceBounds.max });
     setSortBy('featured');
   };
 
@@ -203,9 +235,10 @@ export const AccessoriesView: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-[#121316]/75 border border-[#262930]/80 backdrop-blur-md rounded-2xl p-4 sm:p-5 mb-10 space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Filter Controls Area */}
+        <div className="space-y-6 mb-10">
+          {/* Search, Sort & Reset Bar */}
+          <div className="bg-[#121316]/75 border border-[#262930]/80 backdrop-blur-md rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 text-[#8E929E] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -232,7 +265,6 @@ export const AccessoriesView: React.FC = () => {
 
             {/* Sort & Controls */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Sort By */}
               <div className="flex items-center gap-2">
                 <label htmlFor="accessories-sort-by" className="text-xs uppercase tracking-wider text-[#CBD0DC] hidden sm:inline">
                   Sort:
@@ -242,7 +274,7 @@ export const AccessoriesView: React.FC = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   aria-label="Sort accessories"
-                  className="py-2.5 px-3 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
+                  className="py-2 px-3 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
                 >
                   <option value="featured">Featured First</option>
                   <option value="newest">New Arrivals</option>
@@ -251,30 +283,28 @@ export const AccessoriesView: React.FC = () => {
                 </select>
               </div>
 
-              {/* Reset Filters */}
-              {(selectedSubcategory !== 'All' || searchQuery || priceRange.min > 10000 || priceRange.max < priceBounds.max) && (
+              {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="py-2 px-3 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-xs text-[#D4AF37] border border-[#262930] transition-colors cursor-pointer"
+                  className="flex items-center gap-1 py-2 px-3 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-xs text-[#D4AF37] border border-[#262930] transition-colors cursor-pointer"
                 >
-                  Reset
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset All</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Price Range Slider */}
-          <div className="border-t border-[#262930] pt-4">
-            <PriceRangeSlider
-              bounds={priceBounds}
-              value={priceRange}
-              onChange={setPriceRange}
-              step={500}
-              label="Price Range"
-              className="w-full"
-            />
-          </div>
+          {/* Custom Price Filter Component */}
+          <CustomPriceFilter
+            bounds={priceBounds}
+            value={priceRange}
+            onChange={setPriceRange}
+            presets={ACCESSORY_PRICE_PRESETS}
+            step={500}
+            label="Filter Accessories by Price"
+          />
         </div>
 
         {/* Product Grid or Empty State */}
@@ -289,7 +319,7 @@ export const AccessoriesView: React.FC = () => {
               No Accessories Found
             </h2>
             <p className="text-xs sm:text-sm text-[#CBD0DC] max-w-md mx-auto leading-relaxed">
-              We currently don&apos;t have items matching &ldquo;{selectedSubcategory}&rdquo; with your selected filters. Explore our full collection or check back soon for private showroom drops.
+              We currently don&apos;t have items matching &ldquo;{selectedSubcategory}&rdquo; with your selected filters. Explore our full collection or adjust your custom price filter.
             </p>
             <div className="pt-2">
               <button

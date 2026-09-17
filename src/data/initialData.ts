@@ -51,7 +51,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       'Water Resistance': '10 ATM / 100 Meters',
       'Strap Width': '22 mm Quick-Release Genuine FKM Rubber Strap',
       'Luminescence': 'Swiss Super-LumiNova BGW9 on hands and markers',
-      'Warranty': '2 Years Comprehensive STORIUM International Guarantee',
+      'Warranty': '1 Year Comprehensive STORIUM International Guarantee',
     },
     features: [
       'Aerospace-Grade DLC Matte Black Coating',

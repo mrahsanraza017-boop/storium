@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Users, FileText, Phone, Mail, MapPin, ThumbsUp, Camera, Play, Music2 } from 'lucide-react';
+import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Users, FileText, Phone, Mail, MapPin, ThumbsUp, Camera, Play, Music2, Lock } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
+import { PaymentBadges } from '../common/PaymentBadges';
 
 export const Footer: React.FC = () => {
   const { navigate, addToast, businessSettings } = useStore();
@@ -339,8 +340,29 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
+      {/* Accepted Payment Methods & Gateway Security Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-[#262930]/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[#0E0F12]/80 border border-[#262930]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[#181A1F] border border-[#262930] text-[#D4AF37]">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-[#F5F5F7] block">
+                Secure Online Payments &amp; Concierge COD
+              </span>
+              <span className="text-[11px] text-[#8E929E]">
+                Encrypted via Rapid Gateway (rapidgateway.pk) &bull; 256-Bit SSL Protection
+              </span>
+            </div>
+          </div>
+
+          <PaymentBadges showRapidBadge={true} />
+        </div>
+      </div>
+
       {/* Bottom Copyright & Legal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-[#262930]/60 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-[#262930]/40 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
         <p className="text-[#8E929E]">
           &copy; {new Date().getFullYear()} {businessSettings.legalBusinessName || businessSettings.businessName}, {businessSettings.country}. All rights reserved.
         </p>

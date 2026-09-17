@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Shield, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { PaymentBadges } from '../components/common/PaymentBadges';
 import { SEOHead } from '../components/seo/SEOHead';
 
 export const CartView: React.FC = () => {
@@ -219,7 +220,7 @@ export const CartView: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <div className="space-y-2 pt-4 border-t border-[#262930] text-[11px] text-[#8E929E]">
+              <div className="space-y-3 pt-4 border-t border-[#262930] text-[11px] text-[#8E929E]">
                 <div className="flex items-center gap-2">
                   <Shield className="w-3.5 h-3.5 text-[#D4AF37]" />
                   <span>1-Year International Warranty Included</span>
@@ -227,6 +228,9 @@ export const CartView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-[#D4AF37]" />
                   <span>Cash on Delivery (COD) or Card</span>
+                </div>
+                <div className="pt-2">
+                  <PaymentBadges showRapidBadge={true} />
                 </div>
               </div>
             </div>

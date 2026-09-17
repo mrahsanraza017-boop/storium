@@ -7,9 +7,11 @@ import {
   ArrowRight,
   Package,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
+import { PaymentBadges } from '../components/common/PaymentBadges';
 import { Order } from '../types';
 
 const getProductPaymentMethods = (methods?: Array<'cod' | 'card'>): Array<'cod' | 'card'> =>
@@ -461,34 +463,57 @@ export const CheckoutView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Debit Card */}
+                {/* Debit / Credit Card — Rapid Gateway */}
                 {allowedPaymentMethods.includes('card') && (
                   <div
                     onClick={() => setPaymentMethod('card')}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-4 ${paymentMethod === 'card'
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/30'
-                      : 'border-[#262930] bg-[#0B0C0E] hover:border-white/20'
-                      }`}
+                    className={`p-4 sm:p-5 rounded-xl border cursor-pointer transition-all space-y-3.5 ${
+                      paymentMethod === 'card'
+                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/30 shadow-lg'
+                        : 'border-[#262930] bg-[#0B0C0E] hover:border-white/20'
+                    }`}
                   >
-                    <div className="flex items-start gap-3.5">
-                      <CreditCard className="w-5 h-5 text-[#D4AF37] mt-0.5" />
-                      <div>
-                        <h3 className="text-sm font-bold text-[#F5F5F7]">
-                          Visa / Mastercard Debit Card
-                        </h3>
-                        <p className="text-xs text-[#CBD0DC] mt-0.5">
-                          Redirected to our secure bank gateway — no card details are stored on our servers.
-                        </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3.5">
+                        <CreditCard className="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-bold text-[#F5F5F7]">
+                              Credit / Debit Card (via Rapid Gateway)
+                            </h3>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#E5C378]">
+                              3D Secure 2.0
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#CBD0DC] mt-1 leading-relaxed">
+                            Pay securely with any Visa, Mastercard, or PayPak card through Rapid Gateway (rapidgateway.pk). You will be seamlessly redirected to the 256-bit SSL encrypted bank portal.
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 flex-shrink-0 ${
+                          paymentMethod === 'card' ? 'border-[#D4AF37]' : 'border-[#626673]'
+                        }`}
+                      >
+                        {paymentMethod === 'card' && (
+                          <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
+                        )}
                       </div>
                     </div>
-                    <div
-                      className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${paymentMethod === 'card' ? 'border-[#D4AF37]' : 'border-[#626673]'
-                        }`}
-                    >
-                      {paymentMethod === 'card' && (
-                        <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                      )}
+
+                    {/* Supported Card Badges */}
+                    <div className="pt-2 border-t border-[#262930]/80">
+                      <PaymentBadges showRapidBadge={true} />
                     </div>
+
+                    {paymentMethod === 'card' && (
+                      <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
+                        <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+                        <span>
+                          Protected by Rapid Gateway PCI-DSS Level 1 certification. Card credentials never touch STORIUM servers.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -575,9 +600,15 @@ export const CheckoutView: React.FC = () => {
                 )}
               </button>
 
-              <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-[#8E929E]">
-                <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Payments processed securely via {businessSettings.paymentGatewayName} — no card details stored</span>
+              <div className="pt-3 border-t border-[#262930] space-y-2">
+                <div className="flex items-center justify-center gap-2 text-[11px] text-[#CBD0DC]">
+                  <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>256-Bit SSL Encrypted Concierge Checkout</span>
+                </div>
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#8E929E]">
+                  <span>Payment Gateway:</span>
+                  <span className="text-[#E5C378] font-semibold">{businessSettings.paymentGatewayName} (rapidgateway.pk)</span>
+                </div>
               </div>
             </div>
           </div>

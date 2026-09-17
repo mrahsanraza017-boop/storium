@@ -258,7 +258,7 @@ export const ContactView: React.FC = () => {
                     >
                       <option value="Timepiece Inquiries">Timepiece Inquiries &amp; Calibres</option>
                       <option value="Order Tracking">Order Tracking &amp; Delivery</option>
-                      <option value="Warranty & Service">2-Year Warranty &amp; Service</option>
+                      <option value="Warranty & Service">1-Year Warranty &amp; Service</option>
                       <option value="Corporate Gifting">Corporate &amp; Executive Gifting</option>
                     </select>
                   </div>
