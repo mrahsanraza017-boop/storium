@@ -21,7 +21,7 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   province: 'Punjab',
   country: 'Pakistan',
   workingHours: 'Monday – Saturday: 10:00 AM – 10:00 PM PKT',
-  paymentGatewayName: 'Online Payment Gateway',
+  paymentGatewayName: 'PayFast Gateway',
   shippingFreeAbove: 15000,
   shippingFlatFee: 500,
   socials: {
