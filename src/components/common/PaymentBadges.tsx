@@ -3,17 +3,9 @@ import { ShieldCheck, Lock } from 'lucide-react';
 
 export const PaymentBadges: React.FC<{ className?: string; showRapidBadge?: boolean }> = ({
   className = '',
-  showRapidBadge = true,
 }) => {
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
-      {/* Rapid Gateway Badge */}
-      {showRapidBadge && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#181A1F] border border-[#D4AF37]/40 text-[#E5C378] text-[11px] font-semibold tracking-wide shadow-sm">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <span>Rapid Gateway</span>
-        </div>
-      )}
 
       {/* Visa */}
       <div className="px-2.5 py-1 rounded-lg bg-[#0F172A] border border-blue-900/50 text-blue-400 font-extrabold text-[11px] tracking-wider italic">

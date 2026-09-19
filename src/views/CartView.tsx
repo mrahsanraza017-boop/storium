@@ -230,7 +230,7 @@ export const CartView: React.FC = () => {
                   <span>Cash on Delivery (COD) or Card</span>
                 </div>
                 <div className="pt-2">
-                  <PaymentBadges showRapidBadge={true} />
+                  <PaymentBadges />
                 </div>
               </div>
             </div>

@@ -352,12 +352,12 @@ export const Footer: React.FC = () => {
                 Secure Online Payments &amp; Concierge COD
               </span>
               <span className="text-[11px] text-[#8E929E]">
-                Encrypted via Rapid Gateway (rapidgateway.pk) &bull; 256-Bit SSL Protection
+                256-Bit SSL Encrypted Payment Protection &bull; Instant Confirmation
               </span>
             </div>
           </div>
 
-          <PaymentBadges showRapidBadge={true} />
+          <PaymentBadges />
         </div>
       </div>
 

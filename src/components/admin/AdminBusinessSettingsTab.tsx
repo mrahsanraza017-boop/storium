@@ -86,7 +86,7 @@ export const AdminBusinessSettingsTab: React.FC = () => {
       province: form.province.trim(),
       country: form.country.trim() || 'Pakistan',
       workingHours: form.workingHours.trim(),
-      paymentGatewayName: form.paymentGatewayName.trim() || 'Rapid Gateway',
+      paymentGatewayName: form.paymentGatewayName.trim() || 'Online Payment Gateway',
       shippingFreeAbove: Number(form.shippingFreeAbove) || 0,
       shippingFlatFee: Number(form.shippingFlatFee) || 0,
       storefrontImage: form.storefrontImage.trim(),
@@ -124,7 +124,7 @@ export const AdminBusinessSettingsTab: React.FC = () => {
       province: 'Punjab',
       country: 'Pakistan',
       workingHours: 'Monday – Saturday: 10:00 AM – 10:00 PM PKT',
-      paymentGatewayName: 'Rapid Gateway',
+      paymentGatewayName: 'Online Payment Gateway',
       shippingFreeAbove: 15000,
       shippingFlatFee: 500,
       storefrontImage: '',
@@ -265,7 +265,7 @@ export const AdminBusinessSettingsTab: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className={labelClass} htmlFor="set-gateway">Payment Gateway Name</label>
-              <input id="set-gateway" className={inputClass} value={form.paymentGatewayName} onChange={(e) => set('paymentGatewayName', e.target.value)} placeholder="Rapid Gateway" />
+              <input id="set-gateway" className={inputClass} value={form.paymentGatewayName} onChange={(e) => set('paymentGatewayName', e.target.value)} placeholder="Online Payment Gateway" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

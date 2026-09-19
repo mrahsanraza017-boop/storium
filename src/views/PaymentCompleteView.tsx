@@ -175,7 +175,7 @@ export const PaymentCompleteView: React.FC = () => {
 
         <div className="space-y-2">
           <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
-            Secure Concierge Checkout &bull; Rapid Gateway
+            Secure Concierge Checkout
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold font-serif-luxury text-[#F5F5F7]">
             {success

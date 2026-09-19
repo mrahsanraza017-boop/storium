@@ -213,40 +213,11 @@ export const CheckoutView: React.FC = () => {
         orderStatus: 'Pending',
       });
 
-      // COD: order is confirmed immediately, payment settles at the doorstep.
-      if (paymentMethod === 'cod') {
-        setConfirmedOrder(newOrder);
-        return;
-      }
-
-      // Card: create the order first, then send the customer to Rapid Gateway's
-      // hosted checkout. On completion the gateway redirects back to
-      // /payment/success (accepted), /payment/failure (declined) or
-      // /payment/complete (closed), where PaymentCompleteView shows the result.
-      const checkoutRes = await fetch('/api/checkout.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: formData.phone,
-          email: formData.email,
-          orderId: newOrder.orderNumber,
-        }),
-      });
-
-      const checkoutData = (await checkoutRes.json().catch(() => ({}))) as {
-        redirectUrl?: string;
-        error?: string;
-      };
-
-      if (!checkoutRes.ok || !checkoutData.redirectUrl) {
-        throw new Error(checkoutData.error || 'Payment initiation failed. Please try again.');
-      }
-
-      window.location.assign(checkoutData.redirectUrl);
+      setConfirmedOrder(newOrder);
     } catch (err) {
       console.error('Order submission error:', err);
       const message = err instanceof Error ? err.message : 'Please try again.';
-      addToast('error', 'Payment Could Not Be Started', message);
+      addToast('error', 'Order Could Not Be Completed', message);
     } finally {
       setIsSubmitting(false);
     }
@@ -463,7 +434,7 @@ export const CheckoutView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Debit / Credit Card — Rapid Gateway */}
+                {/* Debit / Credit Card */}
                 {allowedPaymentMethods.includes('card') && (
                   <div
                     onClick={() => setPaymentMethod('card')}
@@ -479,14 +450,14 @@ export const CheckoutView: React.FC = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-bold text-[#F5F5F7]">
-                              Credit / Debit Card (via Rapid Gateway)
+                              Credit / Debit Card
                             </h3>
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#E5C378]">
                               3D Secure 2.0
                             </span>
                           </div>
                           <p className="text-xs text-[#CBD0DC] mt-1 leading-relaxed">
-                            Pay securely with any Visa, Mastercard, or PayPak card through Rapid Gateway (rapidgateway.pk). You will be seamlessly redirected to the 256-bit SSL encrypted bank portal.
+                            Pay securely with any Visa, Mastercard, or PayPak debit/credit card.
                           </p>
                         </div>
                       </div>
@@ -503,14 +474,14 @@ export const CheckoutView: React.FC = () => {
 
                     {/* Supported Card Badges */}
                     <div className="pt-2 border-t border-[#262930]/80">
-                      <PaymentBadges showRapidBadge={true} />
+                      <PaymentBadges />
                     </div>
 
                     {paymentMethod === 'card' && (
                       <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
                         <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
                         <span>
-                          Protected by Rapid Gateway PCI-DSS Level 1 certification. Card credentials never touch STORIUM servers.
+                          Protected by 256-Bit SSL Encryption. Card credentials are secure.
                         </span>
                       </div>
                     )}
@@ -607,7 +578,7 @@ export const CheckoutView: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#8E929E]">
                   <span>Payment Gateway:</span>
-                  <span className="text-[#E5C378] font-semibold">{businessSettings.paymentGatewayName} (rapidgateway.pk)</span>
+                  <span className="text-[#E5C378] font-semibold">{businessSettings.paymentGatewayName}</span>
                 </div>
               </div>
             </div>
