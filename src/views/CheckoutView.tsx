@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   CreditCard,
@@ -60,6 +60,28 @@ export const CheckoutView: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
+  const [safepayCheckoutUrl, setSafepayCheckoutUrl] = useState<string | null>(null);
+  const [safepayOrderId, setSafepayOrderId] = useState<string>('');
+  const [safepayTotal, setSafepayTotal] = useState<number>(0);
+  const safepayFrameRef = useRef<HTMLIFrameElement>(null);
+
+  // The SafePay hosted checkout runs inside an iframe on this page. When the
+  // shopper finishes (or cancels), SafePay redirects the iframe to our same-
+  // origin redirect/cancel URL, which we can read here and break out to.
+  const onSafepayFrameLoad = () => {
+    const frame = safepayFrameRef.current;
+    if (!frame) return;
+    let href: string;
+    try {
+      href = frame.contentWindow?.location.href || '';
+    } catch {
+      // Cross-origin SafePay page — nothing to read yet.
+      return;
+    }
+    if (href.includes('/payment/success') || href.includes('/payment/failure')) {
+      window.location.assign(href);
+    }
+  };
 
   useEffect(() => {
     if (!allowedPaymentMethods.includes(paymentMethod)) {
@@ -254,7 +276,12 @@ export const CheckoutView: React.FC = () => {
           if (!response.ok || !data || typeof data.redirectUrl !== 'string') {
             throw new Error(data?.error || 'SafePay checkout could not be started.');
           }
-          window.location.assign(data.redirectUrl);
+          // Open the SafePay card form embedded in a modal on this page instead
+          // of redirecting the shopper away. SafePay redirects back to our
+          // success/cancel URL inside the iframe when done.
+          setSafepayOrderId(newOrder.orderNumber);
+          setSafepayTotal(newOrder.total);
+          setSafepayCheckoutUrl(data.redirectUrl);
           return;
         } catch (gatewayErr) {
           // Gateway/API unreachable — keep the order and let the shopper retry
@@ -280,6 +307,7 @@ export const CheckoutView: React.FC = () => {
   };
 
   return (
+    <>
     <div className="w-full bg-transparent min-h-screen text-[#E8E8EC] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -538,7 +566,7 @@ export const CheckoutView: React.FC = () => {
                         <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
                           <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
                           <span>
-                            Protected by PCI-DSS Level 1 certified secured payments. Card credentials never touch STORIUM servers.
+                            After confirming your order, enter your card details in the secure SafePay window right here — powered by PCI-DSS Level 1 certified payments. Card credentials never touch STORIUM servers.
                           </span>
                         </div>
                       </div>
@@ -683,5 +711,69 @@ export const CheckoutView: React.FC = () => {
         </div>
       </div>
     </div>
+
+    {/* Embedded SafePay card payment */}
+    {safepayCheckoutUrl && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={() => setSafepayCheckoutUrl(null)}
+          aria-hidden
+        />
+        <div className="relative w-full max-w-2xl rounded-3xl glass-panel border border-[#262930] overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#262930]">
+            <div className="flex items-center gap-3">
+              <Lock className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+              <div>
+                <h2 className="text-sm font-bold text-[#F5F5F7] font-serif-luxury">
+                  Card Payment — Secure SafePay Checkout
+                </h2>
+                <p className="text-[11px] text-[#8E929E]">
+                  {safepayOrderId ? `Order ${safepayOrderId}` : 'Enter card details below'} &bull; Rs. {safepayTotal.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSafepayCheckoutUrl(null)}
+              aria-label="Close payment window"
+              className="w-8 h-8 rounded-lg border border-[#262930] bg-[#0B0C0E] text-[#CBD0DC] hover:text-white hover:border-white/30 flex items-center justify-center text-sm cursor-pointer flex-shrink-0"
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* SafePay hosted checkout iframe */}
+          <div className="flex-1 overflow-auto bg-[#0B0C0E]">
+            <iframe
+              ref={safepayFrameRef}
+              src={safepayCheckoutUrl}
+              title="SafePay Secure Card Payment"
+              onLoad={onSafepayFrameLoad}
+              className="w-full h-[600px] border-0"
+              allow="payment"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            />
+          </div>
+
+          {/* Footer actions */}
+          <div className="px-5 sm:px-6 py-3 border-t border-[#262930] flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11px] text-[#8E929E] flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37] flex-shrink-0" />
+              PCI-DSS secured — card details never reach STORIUM.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSafepayCheckoutUrl(null)}
+              className="text-[11px] uppercase tracking-wider font-medium text-[#CBD0DC] hover:text-white cursor-pointer"
+            >
+              Cancel and Keep Order
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
