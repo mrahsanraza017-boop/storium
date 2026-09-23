@@ -920,9 +920,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     addToast('info', 'Order Status Updated', `Order marked as ${status}.`);
   };
 
-  // Called from the payment return page when Rapid Gateway confirms payment.
-  // Local copy flips instantly; the cloud copy is updated by api/webhook.php
-  // (service-role key) so it stays authoritative for admins.
+  // Marks an order as paid locally. The cloud copy is updated server-side
+  // so it stays authoritative for admins.
   const markOrderPaid = (orderNumber: string) => {
     setOrders((prev) =>
       prev.map((ord) =>

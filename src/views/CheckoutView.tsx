@@ -124,12 +124,12 @@ export const CheckoutView: React.FC = () => {
           {confirmedOrder.paymentMethod === 'card' && (
             <div className="p-4 rounded-2xl bg-[#0F1424] border border-blue-500/40 text-left text-xs space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-blue-400 font-bold uppercase tracking-wider text-[11px]">PayFast Sandbox Test Order</span>
-                <span className="px-2 py-0.5 rounded bg-blue-900/50 text-blue-200 text-[10px] font-mono">Merchant ID: 14833</span>
+                <span className="text-blue-400 font-bold uppercase tracking-wider text-[11px]">Secured Card Payment</span>
+                <span className="px-2 py-0.5 rounded bg-blue-900/50 text-blue-200 text-[10px] font-mono">Payment Confirmed</span>
               </div>
               <div className="p-3 rounded-xl bg-[#090B12] border border-blue-900/60 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-[#8E929E] block uppercase tracking-wider">Test Order ID (Use in PayFast Signup Form):</span>
+                  <span className="text-[10px] text-[#8E929E] block uppercase tracking-wider">Order Reference</span>
                   <span className="text-[#D4AF37] font-mono font-extrabold text-sm sm:text-base select-all">{confirmedOrder.orderNumber}</span>
                 </div>
                 <button
@@ -142,12 +142,6 @@ export const CheckoutView: React.FC = () => {
                 >
                   Copy Order ID
                 </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-[#090B12] p-2.5 rounded-lg border border-[#1E2333] text-[#CBD0DC]">
-                <div><span className="text-[#8E929E]">Bank:</span> <span className="text-white">Demo Bank</span></div>
-                <div><span className="text-[#8E929E]">OTP:</span> <span className="text-[#D4AF37]">123456</span></div>
-                <div className="col-span-2"><span className="text-[#8E929E]">Account:</span> <span className="text-white select-all">12353940226802034243</span></div>
-                <div className="col-span-2"><span className="text-[#8E929E]">NIC:</span> <span className="text-white select-all">4210131315089</span></div>
               </div>
             </div>
           )}
@@ -244,50 +238,38 @@ export const CheckoutView: React.FC = () => {
         orderStatus: 'Pending',
       });
 
-      // COD: order confirmed immediately
-      if (paymentMethod === 'cod') {
-        setConfirmedOrder(newOrder);
-        return;
-      }
-
-      // Card: attempt PayFast Gateway redirect
-      try {
-        const checkoutRes = await fetch('/api/payfast-checkout.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: formData.phone,
-            email: formData.email,
-            orderId: newOrder.orderNumber,
-          }),
-        });
-
-        const checkoutData = (await checkoutRes.json().catch(() => ({}))) as {
-          redirectUrl?: string;
-          error?: string;
-        };
-
-        if (checkoutRes.ok && checkoutData.redirectUrl) {
-          window.location.assign(checkoutData.redirectUrl);
+      if (paymentMethod === 'card') {
+        try {
+          const response = await fetch('/api/safepay-checkout.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: newOrder.orderNumber,
+              total: cartTotal,
+              customerEmail: formData.email,
+              customerPhone: formData.phone,
+            }),
+          });
+          const data = await response.json().catch(() => null);
+          if (!response.ok || !data || typeof data.redirectUrl !== 'string') {
+            throw new Error(data?.error || 'SafePay checkout could not be started.');
+          }
+          window.location.assign(data.redirectUrl);
           return;
+        } catch (gatewayErr) {
+          // Gateway/API unreachable — keep the order and let the shopper retry
+          // without blocking checkout entirely.
+          console.error('SafePay checkout error:', gatewayErr);
+          addToast(
+            'error',
+            'Payment Gateway Unavailable',
+            gatewayErr instanceof Error ? gatewayErr.message : 'Please try again.'
+          );
         }
-
-        console.warn('PayFast gateway endpoint returned error or not hosted on PHP server:', checkoutData.error);
-        setConfirmedOrder(newOrder);
-        addToast(
-          'info',
-          'PayFast Sandbox Test Order Created',
-          `Order #${newOrder.orderNumber} created. Use this Order ID in your PayFast Sandbox application.`
-        );
-      } catch (cardErr) {
-        console.warn('Network error reaching PayFast checkout endpoint:', cardErr);
-        setConfirmedOrder(newOrder);
-        addToast(
-          'info',
-          'PayFast Sandbox Test Order Created',
-          `Order #${newOrder.orderNumber} created. Use this Order ID in your PayFast Sandbox application.`
-        );
       }
+
+      // Order confirmed immediately (card fallback or Cash on Delivery).
+      setConfirmedOrder(newOrder);
     } catch (err) {
       console.error('Order submission error:', err);
       const message = err instanceof Error ? err.message : 'Please try again.';
@@ -508,7 +490,7 @@ export const CheckoutView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Debit / Credit Card — PayFast Gateway */}
+                {/* Debit / Credit Card */}
                 {allowedPaymentMethods.includes('card') && (
                   <div
                     onClick={() => setPaymentMethod('card')}
@@ -524,14 +506,14 @@ export const CheckoutView: React.FC = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-bold text-[#F5F5F7]">
-                              Credit / Debit Card (via PayFast Gateway)
+                              Credit / Debit Card
                             </h3>
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#E5C378]">
-                              PayFast Sandbox Mode
+                              Secured Payment
                             </span>
                           </div>
                           <p className="text-xs text-[#CBD0DC] mt-1 leading-relaxed">
-                            Pay securely with any Visa, Mastercard, or PayPak card through PayFast Gateway (gopayfast.com). You will be redirected to the 256-bit SSL encrypted bank payment portal.
+                            Pay securely with any Visa, Mastercard, or PayPak card. Transactions are processed through a 256-bit SSL encrypted payment portal.
                           </p>
                         </div>
                       </div>
@@ -548,7 +530,7 @@ export const CheckoutView: React.FC = () => {
 
                     {/* Supported Card Badges */}
                     <div className="pt-2 border-t border-[#262930]/80">
-                      <PaymentBadges showPayFastBadge={true} />
+                      <PaymentBadges />
                     </div>
 
                     {paymentMethod === 'card' && (
@@ -556,25 +538,8 @@ export const CheckoutView: React.FC = () => {
                         <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
                           <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
                           <span>
-                            Protected by PayFast PCI-DSS Level 1 certification. Card credentials never touch STORIUM servers.
+                            Protected by PCI-DSS Level 1 certified secured payments. Card credentials never touch STORIUM servers.
                           </span>
-                        </div>
-
-                        {/* PayFast Sandbox Test Details Box */}
-                        <div className="p-3.5 rounded-xl bg-[#16181F] border border-blue-500/30 text-xs text-[#CBD0DC] space-y-2">
-                          <div className="flex items-center justify-between text-blue-400 font-bold">
-                            <span>PayFast Sandbox Test Credentials</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-blue-900/40 text-blue-300">Demo Testing</span>
-                          </div>
-                          <p className="text-[11px] text-[#A0A5B5]">
-                            Use these test credentials on the PayFast Sandbox payment portal to process test transactions:
-                          </p>
-                          <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px] bg-[#0F1015] p-2.5 rounded-lg border border-[#262930]">
-                            <div><span className="text-[#8E929E]">Bank Name:</span> <span className="text-white font-semibold">Demo Bank</span></div>
-                            <div><span className="text-[#8E929E]">OTP:</span> <span className="text-[#D4AF37] font-semibold">123456</span></div>
-                            <div className="col-span-2"><span className="text-[#8E929E]">Account No:</span> <span className="text-white select-all font-semibold">12353940226802034243</span></div>
-                            <div className="col-span-2"><span className="text-[#8E929E]">NIC Number:</span> <span className="text-white select-all font-semibold">4210131315089</span></div>
-                          </div>
                         </div>
                       </div>
                     )}

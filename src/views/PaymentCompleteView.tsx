@@ -6,33 +6,33 @@ import { useStore } from '../context/StoreContext';
 type PaymentStatus = 'checking' | 'paid' | 'pending' | 'failed' | 'not-found';
 
 /**
- * Landing page after Rapid Gateway redirects the customer back to
+ * Landing page for payment return URLs:
  * /payment/success, /payment/failure or /payment/complete.
  *
- * The verified webhook is the ONLY source of truth for payment confirmation.
- * SUCCESS_URL must never be treated as proof of payment, so this view polls the
- * order status from Supabase (which the webhook updates) and only shows
- * "paid" once the order is actually marked paid there.
+ * The authoritative payment status lives on the order in Supabase (updated by
+ * the SafePay webhook). SafePay appends "tracker=" to the redirect_url, and we
+ * verify that tracker against SafePay server-side (/api/safepay-status.php) so
+ * guest orders (which RLS hides from the anon key) still resolve to paid.
  */
 export const PaymentCompleteView: React.FC = () => {
-  const { orders, navigate, isSupabaseSyncing, syncWithSupabase } = useStore();
+  const { orders, markOrderPaid, navigate, isSupabaseSyncing, syncWithSupabase } = useStore();
 
   // The gateway drops the customer on one of three paths after checkout:
-  //   /payment/success   -> payment accepted (but NOT proof — wait for webhook)
+  //   /payment/success   -> payment accepted (but NOT proof — wait for confirmation)
   //   /payment/failure   -> payment declined/expired
-  //   /payment/complete  -> checkout finished (outcome via order/webhook)
+  //   /payment/complete  -> checkout finished (outcome via order status)
   const incomingPath = useMemo(() => {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
     return path.includes('success') ? 'success' : path.includes('failure') ? 'failure' : 'complete';
   }, []);
 
-  const orderId = useMemo(() => {
-    return new URLSearchParams(window.location.search).get('order') || '';
-  }, []);
+  const params = useMemo(() => new URLSearchParams(window.location.search), []);
 
-  const explicitStatus = useMemo(() => {
-    return new URLSearchParams(window.location.search).get('status') || '';
-  }, []);
+  const orderId = useMemo(() => params.get('order') || '', [params]);
+
+  const tracker = useMemo(() => params.get('tracker') || '', [params]);
+
+  const explicitStatus = useMemo(() => params.get('status') || '', [params]);
 
   const [status, setStatus] = useState<PaymentStatus>('checking');
   const [pollCount, setPollCount] = useState(0);
@@ -43,12 +43,12 @@ export const PaymentCompleteView: React.FC = () => {
     [orders, orderId]
   );
 
-  // Only ~8 seconds of polling is worth block the page; the webhook usually
-  // lands within a few seconds of the redirect.
+  // Only ~8 seconds of polling is worth block the page; the order status
+  // usually settles within a few seconds of checkout.
   const MAX_POLLS = 4;
 
-  // Re-sync order state from Supabase shortly after returning from the
-  // gateway so a webhook (transaction.completed) has a chance to land.
+  // Re-sync order state from Supabase shortly after arriving so a server-side
+  // payment update has a chance to land.
   useEffect(() => {
     if (orderId === '') {
       setStatus('not-found');
@@ -62,6 +62,30 @@ export const PaymentCompleteView: React.FC = () => {
     sync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
+
+  // If SafePay returned a tracker on the redirect, verify it against the
+  // gateway server-side (authoritative even for guest orders that RLS hides
+  // from the browser's Supabase queries) and mark the order paid locally.
+  useEffect(() => {
+    if (tracker === '' || orderId === '') return;
+    let cancelled = false;
+    fetch(`/api/safepay-status.php?tracker=${encodeURIComponent(tracker)}`)
+      .then((res) => res.json().catch(() => null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data && data.status === 'paid') {
+          markOrderPaid(orderId);
+        }
+      })
+      .catch(() => {
+        // Tracker verification failed (e.g. API not deployed yet) — fall back
+        // to the Supabase polling path below.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tracker, orderId]);
 
   // Poll a few times with a delay, then settle on a final state.
   useEffect(() => {
@@ -82,7 +106,7 @@ export const PaymentCompleteView: React.FC = () => {
     }
 
     // A failure or cancelled redirect is a strong (but not authoritative)
-    // signal — the definitive status still comes from the webhook. We show
+    // signal — the definitive status still comes from the order state. We show
     // "failed" immediately for these since the order won't flip to paid.
     const failedHint =
       incomingPath === 'failure' ||
@@ -95,7 +119,7 @@ export const PaymentCompleteView: React.FC = () => {
       return;
     }
 
-    // The verified order state (updated by the webhook) is authoritative.
+    // The verified order state (authoritative).
     if (order) {
       if (order.paymentStatus === 'paid') {
         setStatus('paid');
@@ -114,8 +138,8 @@ export const PaymentCompleteView: React.FC = () => {
       return;
     }
 
-    // Success return: only claim paid once the order is actually marked paid
-    // by the webhook. Until then keep showing the confirming state.
+    // Success return: only claim paid once the order is actually marked paid.
+    // Until then keep showing the confirming state.
     if (pollCount < MAX_POLLS) {
       setStatus('checking');
       return;

@@ -1,20 +1,9 @@
 import React from 'react';
-import { ShieldCheck, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
-export const PaymentBadges: React.FC<{ className?: string; showPayFastBadge?: boolean }> = ({
-  className = '',
-  showPayFastBadge = true,
-}) => {
+export const PaymentBadges: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
-      {/* PayFast Gateway Badge */}
-      {showPayFastBadge && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#181A1F] border border-[#D4AF37]/40 text-[#E5C378] text-[11px] font-semibold tracking-wide shadow-sm">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <span>PayFast Gateway</span>
-        </div>
-      )}
-
       {/* Visa */}
       <div className="px-2.5 py-1 rounded-lg bg-[#0F172A] border border-blue-900/50 text-blue-400 font-extrabold text-[11px] tracking-wider italic">
         VISA
@@ -32,6 +21,11 @@ export const PaymentBadges: React.FC<{ className?: string; showPayFastBadge?: bo
       {/* PayPak */}
       <div className="px-2.5 py-1 rounded-lg bg-[#062419] border border-emerald-800/50 text-emerald-400 font-bold text-[10px] tracking-wider">
         PayPak
+      </div>
+
+      {/* SafePay */}
+      <div className="px-2.5 py-1 rounded-lg bg-[#0B1020] border border-[#D4AF37]/50 text-[#E5C378] font-extrabold text-[11px] tracking-wider">
+        SafePay
       </div>
 
       {/* 3D Secure / SSL */}

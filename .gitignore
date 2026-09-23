@@ -7,3 +7,6 @@ coverage/
 .env*
 !.env.example
 watch_frames_30fps_high_quality.zip
+
+# SafePay gateway credentials (deployed artifact, never committed)
+public/api/safepay-config.php

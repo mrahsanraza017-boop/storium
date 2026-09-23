@@ -118,7 +118,7 @@ ON CONFLICT (id) DO UPDATE SET public = true, file_size_limit = 524288000;
 ALTER TABLE public.orders
     ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
--- Backfill: add Rapid Gateway transaction reference + payment timestamps (safe for existing installs)
+-- Backfill: add transaction reference + payment timestamps (safe for existing installs)
 ALTER TABLE public.orders
     ADD COLUMN IF NOT EXISTS rg_transaction_ref TEXT;
 ALTER TABLE public.orders
