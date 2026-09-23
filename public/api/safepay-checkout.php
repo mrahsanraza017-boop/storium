@@ -14,7 +14,7 @@
  *   }
  *
  * Response (JSON):
- *   { "orderId": "...", "tracker": "track_...", "redirectUrl": "https://..." }
+ *   { "orderId": "...", "tracker": "track_...", "tbt": "...", "redirectUrl": "https://...", "environment": "sandbox" }
  */
 
 require_once __DIR__ . '/safepay-lib.php';
@@ -106,6 +106,7 @@ $checkoutUrl .= '&cancel_url=' . urlencode($cancelUrl);
 safepay_json_response(array(
     'orderId' => $orderId,
     'tracker' => $tracker,
+    'tbt' => $token,
     'redirectUrl' => $checkoutUrl,
     'environment' => $env,
 ));

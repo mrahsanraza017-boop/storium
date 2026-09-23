@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   CreditCard,
@@ -9,6 +9,8 @@ import {
   Loader2,
   ShieldCheck,
 } from 'lucide-react';
+import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
+import '@sfpy/atoms/styles';
 import { useStore } from '../context/StoreContext';
 import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
 import { PaymentBadges } from '../components/common/PaymentBadges';
@@ -27,6 +29,7 @@ export const CheckoutView: React.FC = () => {
     currentUser,
     navigate,
     addToast,
+    markOrderPaid,
     businessSettings,
   } = useStore();
 
@@ -60,28 +63,26 @@ export const CheckoutView: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
-  const [safepayCheckoutUrl, setSafepayCheckoutUrl] = useState<string | null>(null);
-  const [safepayOrderId, setSafepayOrderId] = useState<string>('');
-  const [safepayTotal, setSafepayTotal] = useState<number>(0);
-  const safepayFrameRef = useRef<HTMLIFrameElement>(null);
 
-  // The SafePay hosted checkout runs inside an iframe on this page. When the
-  // shopper finishes (or cancels), SafePay redirects the iframe to our same-
-  // origin redirect/cancel URL, which we can read here and break out to.
-  const onSafepayFrameLoad = () => {
-    const frame = safepayFrameRef.current;
-    if (!frame) return;
-    let href: string;
-    try {
-      href = frame.contentWindow?.location.href || '';
-    } catch {
-      // Cross-origin SafePay page — nothing to read yet.
-      return;
-    }
-    if (href.includes('/payment/success') || href.includes('/payment/failure')) {
-      window.location.assign(href);
-    }
-  };
+  // SafePay Atoms session — set once a card session + auth token is created.
+  const [safepaySession, setSafepaySession] = useState<{
+    tracker: string;
+    tbt: string;
+    environment: string;
+    orderId: string;
+    total: number;
+  } | null>(null);
+
+  // 3-D Secure challenge — populated from CardCapture's onProceedToAuthentication.
+  const [payerAuthSession, setPayerAuthSession] = useState<{
+    accessToken: string;
+    deviceDataCollectionURL: string;
+  } | null>(null);
+
+  const [isPaying, setIsPaying] = useState(false);
+  const [isCardReady, setIsCardReady] = useState(false);
+  const cardRef = useRef<any>(null);
+  const authRef = useRef<any>(null);
 
   useEffect(() => {
     if (!allowedPaymentMethods.includes(paymentMethod)) {
@@ -273,15 +274,21 @@ export const CheckoutView: React.FC = () => {
             }),
           });
           const data = await response.json().catch(() => null);
-          if (!response.ok || !data || typeof data.redirectUrl !== 'string') {
+          if (!response.ok || !data || typeof data.tracker !== 'string' || !data.tbt) {
             throw new Error(data?.error || 'SafePay checkout could not be started.');
           }
-          // Open the SafePay card form embedded in a modal on this page instead
-          // of redirecting the shopper away. SafePay redirects back to our
-          // success/cancel URL inside the iframe when done.
-          setSafepayOrderId(newOrder.orderNumber);
-          setSafepayTotal(newOrder.total);
-          setSafepayCheckoutUrl(data.redirectUrl);
+          // Render SafePay's secure card-entry fields inline (Atoms) instead of
+          // sending the shopper away. Card data never touches our servers.
+          setPayerAuthSession(null);
+          setIsPaying(false);
+          setIsCardReady(false);
+          setSafepaySession({
+            tracker: data.tracker,
+            tbt: data.tbt,
+            environment: typeof data.environment === 'string' ? data.environment : 'sandbox',
+            orderId: newOrder.orderNumber,
+            total: newOrder.total,
+          });
           return;
         } catch (gatewayErr) {
           // Gateway/API unreachable — keep the order and let the shopper retry
@@ -304,6 +311,45 @@ export const CheckoutView: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Validate the card fields inside SafePay's iframe, then submit for
+  // processing. A successful submit triggers onProceedToAuthentication, which
+  // opens the 3-D Secure step if the bank requires it.
+  const handleCardPay = async () => {
+    if (!safepaySession) return;
+    setIsPaying(true);
+    try {
+      cardRef.current?.validate();
+      const isValid = await cardRef.current?.fetchValidity();
+      if (!isValid) {
+        addToast('error', 'Incomplete Card Details', 'Please check your card number, expiry date and CVV.');
+        return;
+      }
+      cardRef.current?.submit();
+    } catch (err) {
+      console.error('SafePay card submit error:', err);
+      addToast('error', 'Payment Could Not Be Started', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  // Terminal success for both the challenge-based and frictionless 3-D Secure
+  // paths — authorization has been captured, so mark the order paid and let the
+  // return page confirm it with the gateway.
+  const handlePaymentSettled = () => {
+    if (!safepaySession) return;
+    markOrderPaid(safepaySession.orderId);
+    setPayerAuthSession(null);
+    setSafepaySession(null);
+    const params = new URLSearchParams({ order: safepaySession.orderId, tracker: safepaySession.tracker });
+    window.location.assign(`/payment/success?${params.toString()}`);
+  };
+
+  const closeAuthOverlay = (title: string, message: string) => {
+    setPayerAuthSession(null);
+    addToast('error', title, message);
   };
 
   return (
@@ -566,7 +612,7 @@ export const CheckoutView: React.FC = () => {
                         <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
                           <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
                           <span>
-                            After confirming your order, enter your card details in the secure SafePay window right here — powered by PCI-DSS Level 1 certified payments. Card credentials never touch STORIUM servers.
+                            After confirming your order, enter your card details in the secure SafePay field right here — powered by PCI-DSS Level 1 certified payments. Card credentials never touch STORIUM servers.
                           </span>
                         </div>
                       </div>
@@ -712,31 +758,31 @@ export const CheckoutView: React.FC = () => {
       </div>
     </div>
 
-    {/* Embedded SafePay card payment */}
-    {safepayCheckoutUrl && (
+    {/* SafePay secure card entry (Atoms) */}
+    {safepaySession && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div
           className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          onClick={() => setSafepayCheckoutUrl(null)}
+          onClick={() => setSafepaySession(null)}
           aria-hidden
         />
-        <div className="relative w-full max-w-2xl rounded-3xl glass-panel border border-[#262930] overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="relative w-full max-w-xl rounded-3xl glass-panel border border-[#262930] overflow-hidden flex flex-col max-h-[90vh]">
           {/* Header */}
           <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#262930]">
             <div className="flex items-center gap-3">
               <Lock className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
               <div>
                 <h2 className="text-sm font-bold text-[#F5F5F7] font-serif-luxury">
-                  Card Payment — Secure SafePay Checkout
+                  Enter Your Card Details
                 </h2>
                 <p className="text-[11px] text-[#8E929E]">
-                  {safepayOrderId ? `Order ${safepayOrderId}` : 'Enter card details below'} &bull; Rs. {safepayTotal.toLocaleString()}
+                  Order {safepaySession.orderId} &bull; Rs. {safepaySession.total.toLocaleString()}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setSafepayCheckoutUrl(null)}
+              onClick={() => setSafepaySession(null)}
               aria-label="Close payment window"
               className="w-8 h-8 rounded-lg border border-[#262930] bg-[#0B0C0E] text-[#CBD0DC] hover:text-white hover:border-white/30 flex items-center justify-center text-sm cursor-pointer flex-shrink-0"
             >
@@ -744,17 +790,68 @@ export const CheckoutView: React.FC = () => {
             </button>
           </div>
 
-          {/* SafePay hosted checkout iframe */}
-          <div className="flex-1 overflow-auto bg-[#0B0C0E]">
-            <iframe
-              ref={safepayFrameRef}
-              src={safepayCheckoutUrl}
-              title="SafePay Secure Card Payment"
-              onLoad={onSafepayFrameLoad}
-              className="w-full h-[600px] border-0"
-              allow="payment"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-            />
+          {/* Secure card fields rendered inline by SafePay Atoms */}
+          <div className="flex-1 overflow-auto bg-[#0B0C0E] p-6 space-y-4">
+            <Suspense
+              fallback={
+                <div className="text-xs text-[#8E929E] text-center py-12">
+                  Loading secure card form...
+                </div>
+              }
+            >
+              <CardCapture
+                environment={safepaySession.environment}
+                authToken={safepaySession.tbt}
+                tracker={safepaySession.tracker}
+                validationEvent="change"
+                inputStyle={{
+                  fontFamily: 'inherit',
+                  fontSize: '16px',
+                  color: '#F5F5F7',
+                }}
+                imperativeRef={cardRef}
+                onReady={() => setIsCardReady(true)}
+                onError={(error) => addToast('error', 'Card Error', error)}
+                onProceedToAuthentication={(data) => {
+                  setPayerAuthSession({
+                    accessToken: data?.accessToken || '',
+                    deviceDataCollectionURL: data?.deviceDataCollectionURL || '',
+                  });
+                }}
+              />
+            </Suspense>
+
+            <div className="rounded-xl bg-[#121316] border border-[#262930] px-4 py-3 text-[11px] text-[#8E929E] flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+              <span>
+                Card details are entered inside SafePay&apos;s PCI-DSS Level 1 certified secure field and
+                never touch STORIUM servers.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              disabled={isPaying || !isCardReady}
+              onClick={handleCardPay}
+              className="w-full py-4 px-6 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] disabled:opacity-50 text-[#0B0C0E] text-[11px] uppercase tracking-[0.2em] font-bold cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isPaying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Securing Your Payment...</span>
+                </>
+              ) : !isCardReady ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Preparing Secure Form...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Pay Rs. {safepaySession.total.toLocaleString()}</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Footer actions */}
@@ -765,11 +862,84 @@ export const CheckoutView: React.FC = () => {
             </p>
             <button
               type="button"
-              onClick={() => setSafepayCheckoutUrl(null)}
+              onClick={() => setSafepaySession(null)}
               className="text-[11px] uppercase tracking-wider font-medium text-[#CBD0DC] hover:text-white cursor-pointer"
             >
               Cancel and Keep Order
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* SafePay 3-D Secure payer authentication */}
+    {payerAuthSession && safepaySession && (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+          onClick={() => setPayerAuthSession(null)}
+          aria-hidden
+        />
+        <div className="relative w-full max-w-lg rounded-3xl glass-panel border border-[#262930] overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#262930]">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+              <div>
+                <h2 className="text-sm font-bold text-[#F5F5F7] font-serif-luxury">
+                  Bank 3-D Secure Verification
+                </h2>
+                <p className="text-[11px] text-[#8E929E]">
+                  Complete the security step from your bank to finish payment.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPayerAuthSession(null)}
+              aria-label="Close bank verification window"
+              className="w-8 h-8 rounded-lg border border-[#262930] bg-[#0B0C0E] text-[#CBD0DC] hover:text-white hover:border-white/30 flex items-center justify-center text-sm cursor-pointer flex-shrink-0"
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* 3-D Secure challenge */}
+          <div className="flex-1 min-h-[420px] overflow-auto bg-[#0B0C0E]">
+            <Suspense
+              fallback={
+                <div className="text-xs text-[#8E929E] text-center py-20">
+                  Preparing secure bank verification...
+                </div>
+              }
+            >
+              <PayerAuthentication
+                environment={safepaySession.environment}
+                tracker={safepaySession.tracker}
+                authToken={safepaySession.tbt}
+                deviceDataCollectionJWT={payerAuthSession.accessToken}
+                deviceDataCollectionURL={payerAuthSession.deviceDataCollectionURL}
+                authorizationOptions={{ do_capture: true }}
+                imperativeRef={authRef}
+                onPayerAuthenticationSuccess={handlePaymentSettled}
+                onPayerAuthenticationFrictionless={handlePaymentSettled}
+                onPayerAuthenticationFailure={(data) =>
+                  closeAuthOverlay(
+                    'Payment Declined',
+                    data?.errorMessage || 'Please try again or use another card.'
+                  )
+                }
+                onPayerAuthenticationUnavailable={(data) =>
+                  closeAuthOverlay(
+                    'Payment Could Not Be Completed',
+                    data?.errorMessage || 'Please try again or use another card.'
+                  )
+                }
+                onSafepayError={(error) =>
+                  closeAuthOverlay('Payment Error', error?.error?.message || 'Please try again.')
+                }
+              />
+            </Suspense>
           </div>
         </div>
       </div>
