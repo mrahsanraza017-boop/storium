@@ -26,7 +26,10 @@ export default defineConfig(() => {
               if (id.includes('@supabase')) {
                 return 'vendor-services';
               }
-              if (id.includes('react') || id.includes('motion') || id.includes('clsx') || id.includes('tailwind')) {
+              if (id.includes('motion')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('react') || id.includes('clsx') || id.includes('tailwind')) {
                 return 'vendor-ui-core';
               }
             }

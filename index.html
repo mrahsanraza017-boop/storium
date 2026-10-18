@@ -36,7 +36,7 @@
 
     <!-- Preload Critical LCP Background Frame & Primary Fonts -->
     <link rel="preload" href="/frames/frame_000001.webp" as="image" type="image/webp" fetchpriority="high" />
-    <link rel="preload" href="/fonts/playfair-display-normal-700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/playfair-display-normal-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/manrope-normal-400.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Preconnect to critical third-party origins (product imagery + Supabase API) -->
@@ -98,15 +98,43 @@
       ]
     }
     </script>
-    <link rel="stylesheet" href="https://chatzy-kb-store.s3.amazonaws.com/icons/5ab07987-b5db-477c-82ff-1287e0883acb"/>
-<script src="https://chatzy-kb-store.s3.amazonaws.com/icons/56706cc4-b3ba-4eba-9610-f2fb07008a5c" id="846c865b-bb79-4e3d-a216-49d885e572cf" class="chatzy_widget_script" defer></script>
+    <script>
+      // Non-blocking deferred loading of Chatzy widget (eliminates mobile render-blocking)
+      (function() {
+        var loaded = false;
+        function loadChatzy() {
+          if (loaded) return;
+          loaded = true;
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://chatzy-kb-store.s3.amazonaws.com/icons/5ab07987-b5db-477c-82ff-1287e0883acb';
+          document.head.appendChild(link);
+
+          var s = document.createElement('script');
+          s.src = 'https://chatzy-kb-store.s3.amazonaws.com/icons/56706cc4-b3ba-4eba-9610-f2fb07008a5c';
+          s.id = '846c865b-bb79-4e3d-a216-49d885e572cf';
+          s.className = 'chatzy_widget_script';
+          s.async = true;
+          document.body.appendChild(s);
+        }
+
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(function() { setTimeout(loadChatzy, 2000); });
+        } else {
+          window.addEventListener('load', function() { setTimeout(loadChatzy, 2500); });
+        }
+        ['touchstart', 'scroll', 'mousemove'].forEach(function(ev) {
+          window.addEventListener(ev, loadChatzy, { once: true, passive: true });
+        });
+      })();
+    </script>
   </head>
   <body class="bg-[#0B0C0E] text-[#E8E8EC] antialiased selection:bg-[#D4AF37]/30 selection:text-[#F5F5F7]">
     <div id="root">
       <!-- Static above-the-fold hero for instant FCP/LCP. Replaced by React on mount. -->
       <div class="relative min-h-[92vh] w-full flex items-center justify-center py-20 overflow-hidden" style="background-color:#0B0C0E">
         <div style="position:absolute;inset:0;overflow:hidden">
-          <img src="/frames/frame_000001.webp" alt="" fetchpriority="high" decoding="async" width="854" height="480" style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.45" />
+          <img src="/frames/frame_000001.webp" alt="" fetchpriority="high" loading="eager" decoding="sync" width="854" height="480" style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.45" />
           <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(212,175,55,0.10), transparent 70%)"></div>
         </div>
         <div class="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center flex flex-col items-center">
