@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, Tag, RotateCcw, Sparkles, Bell, ArrowRight, ShieldCheck, Gem } from 'lucide-react';
+import { Search, X, Tag, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { ACCESSORY_SUBCATEGORIES } from '../types';
@@ -7,15 +7,13 @@ import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
 export const AccessoriesView: React.FC = () => {
-  const { products, activeSubcategoryFilter, setActiveSubcategoryFilter, navigate, addToast } = useStore();
+  const { products, activeSubcategoryFilter, setActiveSubcategoryFilter } = useStore();
 
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>(
     activeSubcategoryFilter || 'All'
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
-  const [notifyEmail, setNotifyEmail] = useState('');
-  const [notified, setNotified] = useState(false);
 
   // Match both 'accessories' and legacy 'mens-accessories'
   const allAccessories = useMemo(() => {
@@ -76,14 +74,6 @@ export const AccessoriesView: React.FC = () => {
     setSortBy('featured');
   };
 
-  const handleNotifySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!notifyEmail) return;
-    setNotified(true);
-    addToast('success', 'VIP Priority Registered', `You will receive private notification the moment the Accessories collection launches.`);
-    setNotifyEmail('');
-  };
-
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
     { name: 'Accessories', url: '/accessories' },
@@ -110,106 +100,16 @@ export const AccessoriesView: React.FC = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* If no accessories have been uploaded yet: Show luxurious Coming Soon state */}
+        {/* If no accessories have been uploaded yet: Big Size & Fully Animated Coming Soon */}
         {allAccessories.length === 0 ? (
-          <div className="py-12 sm:py-20 flex flex-col items-center justify-center text-center">
-            {/* Ambient Backlight Glow */}
-            <div className="relative w-full max-w-4xl p-8 sm:p-16 rounded-3xl glass-panel border border-[#D4AF37]/30 shadow-2xl overflow-hidden">
-              <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative min-h-[75vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden select-none">
+            {/* Ambient Breathing Radial Gold Aura */}
+            <div className="coming-soon-glow-orb absolute w-[300px] sm:w-[560px] md:w-[750px] h-[300px] sm:h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.25)_0%,rgba(212,175,55,0.06)_50%,transparent_75%)] rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Tag Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#181A1F] border border-[#D4AF37]/50 text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold mb-6 shadow-md">
-                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-pulse" />
-                <span>STORIUM Atelier &mdash; Coming Soon</span>
-              </div>
-
-              {/* Main Heading */}
-              <h1 className="text-4xl sm:text-6xl font-bold font-serif-luxury text-white gold-glow-heading mb-6 tracking-tight">
-                Accessories Collection
-              </h1>
-
-              {/* Subtitle */}
-              <p className="text-base sm:text-lg text-[#CBD0DC] max-w-2xl mx-auto leading-relaxed mb-10 luxury-text-shadow">
-                Precision-machined Grade-5 titanium cardholders, vegetable-tanned Tuscan leather goods, and sartorial accents are currently being forged. Our premiere collection will debut shortly.
-              </p>
-
-              {/* Teaser Feature Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12 text-left">
-                <div className="p-5 rounded-2xl bg-[#0B0C0E]/80 border border-[#262930] hover:border-[#D4AF37]/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-[#121316] border border-[#262930] flex items-center justify-center text-[#D4AF37] mb-3">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-sm font-bold text-white mb-1">Titanium Everyday Carry</h2>
-                  <p className="text-xs text-[#8E929E] leading-relaxed">
-                    Aerospace-grade Grade-5 titanium cardholders with military-spec RFID theft shielding and instant mechanical ejectors.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0B0C0E]/80 border border-[#262930] hover:border-[#D4AF37]/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-[#121316] border border-[#262930] flex items-center justify-center text-[#D4AF37] mb-3">
-                    <Gem className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-sm font-bold text-white mb-1">Handcrafted Leather</h2>
-                  <p className="text-xs text-[#8E929E] leading-relaxed">
-                    Full-grain vegetable-tanned Tuscan leather wallets, weekenders, and reversible belts that age with a rich personal patina.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0B0C0E]/80 border border-[#262930] hover:border-[#D4AF37]/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-[#121316] border border-[#262930] flex items-center justify-center text-[#D4AF37] mb-3">
-                    <Tag className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-sm font-bold text-white mb-1">Sartorial Accents</h2>
-                  <p className="text-xs text-[#8E929E] leading-relaxed">
-                    Muonionalusta meteorite cufflinks, titanium cable bangles, and precision double-edge safety razors.
-                  </p>
-                </div>
-              </div>
-
-              {/* VIP Early Access Notification Form */}
-              <div className="max-w-md mx-auto mb-8">
-                <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[#CBD0DC] mb-3">
-                  Be Notified Upon Premiere Launch
-                </h2>
-                {notified ? (
-                  <div className="p-4 rounded-xl bg-[#181A1F] border border-[#D4AF37]/40 text-xs text-[#D4AF37] font-semibold">
-                    ✓ You are registered for VIP Early Access! We will email you once products are live.
-                  </div>
-                ) : (
-                  <form onSubmit={handleNotifySubmit} className="flex gap-2">
-                    <input
-                      type="email"
-                      value={notifyEmail}
-                      onChange={(e) => setNotifyEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      required
-                      aria-label="Email address for accessories launch notifications"
-                      className="flex-1 py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37] transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      className="px-5 py-3 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-[#D4AF37]/20 cursor-pointer"
-                    >
-                      <Bell className="w-3.5 h-3.5" />
-                      <span>Notify Me</span>
-                    </button>
-                  </form>
-                )}
-              </div>
-
-              {/* Call to Action: Explore Watches */}
-              <div className="pt-4 border-t border-[#262930]/60 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <span className="text-xs text-[#8E929E]">Looking for our flagship horology?</span>
-                <button
-                  type="button"
-                  onClick={() => navigate('watches')}
-                  className="px-6 py-2.5 rounded-xl bg-[#181A1F] hover:bg-[#20232A] border border-[#D4AF37]/40 text-[#D4AF37] hover:text-white text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-md"
-                >
-                  <span>Explore Timepieces</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            {/* Big Size Fully Animated Coming Soon Text */}
+            <h1 className="coming-soon-giant-text font-serif-luxury font-black text-center uppercase tracking-[0.14em] sm:tracking-[0.2em] md:tracking-[0.26em] text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] leading-none py-6">
+              Coming Soon
+            </h1>
           </div>
         ) : (
           /* When products are added: Automatically render full collection UI! */

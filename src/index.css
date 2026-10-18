@@ -159,6 +159,74 @@ main>div>div:first-child>div:first-child {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
 }
 
+/* =========================================================================
+   COMING SOON GIANT ANIMATED TEXT SYSTEM
+   ========================================================================= */
+
+@keyframes coming-soon-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes coming-soon-breathe {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.95))
+            drop-shadow(0 0 35px rgba(212, 175, 55, 0.35))
+            drop-shadow(0 0 70px rgba(212, 175, 55, 0.15));
+  }
+  50% {
+    transform: scale(1.025) translateY(-5px);
+    filter: drop-shadow(0 10px 35px rgba(0, 0, 0, 0.95))
+            drop-shadow(0 0 60px rgba(245, 230, 179, 0.75))
+            drop-shadow(0 0 120px rgba(212, 175, 55, 0.45));
+  }
+}
+
+@keyframes coming-soon-glow-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.12);
+  }
+}
+
+.coming-soon-giant-text {
+  background: linear-gradient(
+    115deg,
+    #C59B27 0%,
+    #FFF2B2 18%,
+    #DAA520 35%,
+    #FFFFFF 50%,
+    #B38728 65%,
+    #FFF2B2 82%,
+    #C59B27 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation:
+    coming-soon-shimmer 7s ease-in-out infinite,
+    coming-soon-breathe 5s ease-in-out infinite;
+  display: inline-block;
+  will-change: transform, filter, background-position;
+}
+
+.coming-soon-glow-orb {
+  animation: coming-soon-glow-pulse 6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 /* Frosted Glass Panels that float effortlessly over the 3D watch animation with balanced GPU-friendly blur */
 .glass-panel {
   background: rgba(18, 19, 22, 0.82);
