@@ -10,3 +10,13 @@ watch_frames_30fps_high_quality.zip
 
 # SafePay gateway credentials (deployed artifact, never committed)
 public/api/safepay-config.php
+
+# Rapid Gateway credentials (deployed artifact, never committed)
+public/api/rapid-config.php
+
+# Email credentials (deployed artifact, never committed)
+public/api/email-config.php
+
+# RUN Couriers credentials (deployed artifact, never committed)
+public/api/courier-config.php
+

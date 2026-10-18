@@ -94,11 +94,15 @@ export interface Order {
   paymentStatus: 'pending' | 'paid' | 'failed';
   orderStatus: 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   trackingNumber?: string;
+  courierName?: string;
+  courierInvoiceUrl?: string;
+  courierBookingId?: number | string;
   rgTransactionRef?: string;
   paidAt?: string;
   paymentFailedAt?: string;
   supabaseSynced?: boolean;
 }
+
 
 export interface ContactInquiry {
   id: string;

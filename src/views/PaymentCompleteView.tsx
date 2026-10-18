@@ -28,9 +28,17 @@ export const PaymentCompleteView: React.FC = () => {
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
 
-  const orderId = useMemo(() => params.get('order') || '', [params]);
+  const gateway = useMemo(() => params.get('gateway') || '', [params]);
 
-  const tracker = useMemo(() => params.get('tracker') || '', [params]);
+  const orderId = useMemo(
+    () => params.get('order') || params.get('BASKET_ID') || params.get('basket_id') || params.get('orderId') || '',
+    [params]
+  );
+
+  const tracker = useMemo(
+    () => params.get('tracker') || params.get('TXNREF') || params.get('txnref') || params.get('transaction_id') || params.get('rrn') || '',
+    [params]
+  );
 
   const explicitStatus = useMemo(() => params.get('status') || '', [params]);
 
@@ -63,29 +71,43 @@ export const PaymentCompleteView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
-  // If SafePay returned a tracker on the redirect, verify it against the
-  // gateway server-side (authoritative even for guest orders that RLS hides
-  // from the browser's Supabase queries) and mark the order paid locally.
+  // If redirect confirms payment (or return path is success), mark the order paid
+  // and verify server-side via Rapid Gateway or SafePay status endpoints.
   useEffect(() => {
-    if (tracker === '' || orderId === '') return;
+    if (orderId === '') return;
     let cancelled = false;
-    fetch(`/api/safepay-status.php?tracker=${encodeURIComponent(tracker)}`)
+
+    // Immediately reflect successful landing
+    if (explicitStatus.toLowerCase() === 'paid' || incomingPath === 'success') {
+      markOrderPaid(orderId);
+      setStatus('paid');
+    }
+
+    const isRapid = gateway === 'rapid' || !tracker.startsWith('track_');
+    const statusUrl = isRapid
+      ? `/api/rapid-status.php?order=${encodeURIComponent(orderId)}`
+      : `/api/safepay-status.php?tracker=${encodeURIComponent(tracker)}`;
+
+    fetch(statusUrl)
       .then((res) => res.json().catch(() => null))
       .then((data) => {
         if (cancelled) return;
         if (data && data.status === 'paid') {
           markOrderPaid(orderId);
+          setStatus('paid');
+        } else if (data && data.status === 'failed') {
+          setStatus('failed');
         }
       })
       .catch(() => {
-        // Tracker verification failed (e.g. API not deployed yet) — fall back
-        // to the Supabase polling path below.
+        // Fall back to Supabase polling path
       });
+
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tracker, orderId]);
+  }, [tracker, orderId, gateway, explicitStatus, incomingPath]);
 
   // Poll a few times with a delay, then settle on a final state.
   useEffect(() => {

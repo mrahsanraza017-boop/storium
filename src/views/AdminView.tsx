@@ -11,16 +11,28 @@ import {
   MessageSquare,
   Star,
   Settings2,
+  Mail,
+  Send,
+  Truck,
+  ExternalLink,
+  Printer,
+  Navigation,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
+
+import { AdminAuthGate } from '../components/admin/AdminAuthGate';
 import { AdminSupabaseTab } from '../components/admin/AdminSupabaseTab';
+
+
 import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
 import { AdminBusinessSettingsTab } from '../components/admin/AdminBusinessSettingsTab';
-import { AdminAuthGate } from '../components/admin/AdminAuthGate';
+import { AdminEmailTab } from '../components/admin/AdminEmailTab';
 import { uploadProductMedia } from '../services/supabaseService';
 import { ProductMedia } from '../types';
+import { compressImage } from '../utils/imageCompressor';
+import { bookWithRunCouriers, trackRunCourier, TrackingHistoryItem } from '../services/courierService';
 
 export const AdminView: React.FC = () => {
   const {
@@ -32,13 +44,16 @@ export const AdminView: React.FC = () => {
     updateProduct,
     deleteProduct,
     updateOrderStatus,
+    updateOrderCourierBooking,
     deleteOrder,
     deleteOrdersByNumber,
+    sendConfirmationEmail,
     navigate,
     addToast,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inquiries' | 'reviews' | 'supabase' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inquiries' | 'reviews' | 'emails' | 'supabase' | 'settings'>('overview');
+
 
   // Product management states
   const [productSearch, setProductSearch] = useState('');
@@ -52,6 +67,94 @@ export const AdminView: React.FC = () => {
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+
+  // RUN Couriers Integration States
+  const [bookingCourierOrder, setBookingCourierOrder] = useState<Order | null>(null);
+  const [bookingWeight, setBookingWeight] = useState<number>(0.5);
+  const [bookingPieces, setBookingPieces] = useState<number>(1);
+  const [bookingSpecialInstruction, setBookingSpecialInstruction] = useState<string>('Fragile Luxury Timepiece - Handle with Care');
+  const [isBookingCourier, setIsBookingCourier] = useState<boolean>(false);
+  const [trackingModalData, setTrackingModalData] = useState<{
+    orderNumber: string;
+    trackingNo: string;
+    currentStatus: string;
+    history: TrackingHistoryItem[];
+    loading: boolean;
+  } | null>(null);
+
+  const handleOpenBookingModal = (order: Order) => {
+    setBookingCourierOrder(order);
+    setBookingWeight(0.5);
+    setBookingPieces(order.items.reduce((acc, it) => acc + (it.quantity || 1), 0) || 1);
+    setBookingSpecialInstruction('Fragile Luxury Timepiece - Handle with Care');
+  };
+
+  const handleConfirmRunCourierBooking = async () => {
+    if (!bookingCourierOrder) return;
+    setIsBookingCourier(true);
+    try {
+      const res = await bookWithRunCouriers(bookingCourierOrder, {
+        weight: bookingWeight,
+        pieces: bookingPieces,
+        specialInstruction: bookingSpecialInstruction,
+      });
+
+      if (res.success) {
+        updateOrderCourierBooking(bookingCourierOrder.id, {
+          trackingNumber: res.tracking_no,
+          courierName: 'RUN Couriers',
+          courierInvoiceUrl: res.invoice_link,
+          courierBookingId: res.booking_id,
+          orderStatus: 'Shipped',
+        });
+
+        // Also update modal view if currently open
+        if (selectedOrderDetails?.id === bookingCourierOrder.id) {
+          setSelectedOrderDetails({
+            ...selectedOrderDetails,
+            trackingNumber: res.tracking_no,
+            courierName: 'RUN Couriers',
+            courierInvoiceUrl: res.invoice_link,
+            courierBookingId: res.booking_id,
+            orderStatus: 'Shipped',
+          });
+        }
+
+        setBookingCourierOrder(null);
+      } else {
+        addToast('error', 'Booking Failed', res.error || 'Could not complete RUN Couriers booking');
+      }
+    } catch (err: any) {
+      addToast('error', 'Booking Error', err?.message || 'Error communicating with RUN Couriers');
+    } finally {
+      setIsBookingCourier(false);
+    }
+  };
+
+  const handleOpenTrackingModal = async (orderNumber: string, trackingNo: string) => {
+    setTrackingModalData({
+      orderNumber,
+      trackingNo,
+      currentStatus: 'Connecting to RUN Couriers...',
+      history: [],
+      loading: true,
+    });
+    try {
+      const result = await trackRunCourier(trackingNo);
+      setTrackingModalData({
+        orderNumber,
+        trackingNo,
+        currentStatus: result.current_status || 'In Transit',
+        history: result.history,
+        loading: false,
+      });
+    } catch {
+      setTrackingModalData((prev) =>
+        prev ? { ...prev, currentStatus: 'Tracking Active', loading: false } : null
+      );
+    }
+  };
+
 
   // Form state for creating/editing product
   const [formData, setFormData] = useState({
@@ -124,8 +227,8 @@ export const AdminView: React.FC = () => {
       brand: p.brand,
       sku: p.sku,
       category: p.category,
-      categoryName: p.categoryName,
-      subcategory: p.subcategory || (p.category === 'mens-accessories' ? 'Wallet' : ''),
+      categoryName: p.categoryName || (p.category === 'watches' ? 'Watches' : 'Accessories'),
+      subcategory: p.subcategory || (p.category === 'accessories' || p.category === 'mens-accessories' ? 'Wallet' : ''),
       price: p.price,
       salePrice: p.salePrice || 0,
       stockQuantity: p.stockQuantity,
@@ -162,6 +265,53 @@ export const AdminView: React.FC = () => {
     const [moved] = next.splice(from, 1);
     next.unshift(moved);
     return next;
+  };
+
+  const [isCompressingMedia, setIsCompressingMedia] = useState(false);
+
+  // Automatically compress uploaded product images
+  const handleMediaFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    setIsCompressingMedia(true);
+    try {
+      let totalOriginal = 0;
+      let totalCompressed = 0;
+      const processed: File[] = [];
+
+      for (const file of selectedFiles) {
+        if (file.type.startsWith('image/')) {
+          const res = await compressImage(file);
+          processed.push(res.file);
+          totalOriginal += res.originalSize;
+          totalCompressed += res.compressedSize;
+        } else {
+          processed.push(file);
+          totalOriginal += file.size;
+          totalCompressed += file.size;
+        }
+      }
+
+      setMediaFiles((prev) => [...prev, ...processed]);
+
+      if (totalOriginal > totalCompressed) {
+        const savedMb = ((totalOriginal - totalCompressed) / (1024 * 1024)).toFixed(1);
+        const savedPct = Math.round(((totalOriginal - totalCompressed) / totalOriginal) * 100);
+        addToast(
+          'info',
+          'Images Auto-Compressed',
+          `Compressed ${processed.length} image(s). Saved ${savedMb} MB (-${savedPct}% size) for ultra-fast mobile loading.`
+        );
+      }
+    } catch (err) {
+      console.warn('Auto compression notice:', err);
+      setMediaFiles((prev) => [...prev, ...selectedFiles]);
+    } finally {
+      setIsCompressingMedia(false);
+      // Reset input value so re-selecting same files triggers change event
+      e.target.value = '';
+    }
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -222,10 +372,8 @@ export const AdminView: React.FC = () => {
     // image in the admin-defined order.
     const finalThumbnail = finalProductImages.length > 0 ? finalProductImages[0] : formData.thumbnail;
 
-    const subcategory =
-      formData.category === 'mens-accessories'
-        ? (formData.subcategory || 'Wallet')
-        : undefined;
+    const isAccessory = formData.category === 'accessories' || formData.category === 'mens-accessories';
+    const subcategory = isAccessory ? (formData.subcategory || 'Wallet') : undefined;
 
     if (editingProduct) {
       const nextSpecs = { ...editingProduct.specifications, ...specs };
@@ -239,7 +387,7 @@ export const AdminView: React.FC = () => {
         brand: formData.brand,
         sku: formData.sku,
         category: formData.category,
-        categoryName: formData.category === 'watches' ? 'Watches' : "Men's Accessories",
+        categoryName: formData.category === 'watches' ? 'Watches' : 'Accessories',
         subcategory,
         price: Number(formData.price),
         salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
@@ -261,8 +409,9 @@ export const AdminView: React.FC = () => {
         brand: formData.brand,
         sku: formData.sku,
         category: formData.category,
-        categoryName: formData.category === 'watches' ? 'Watches' : "Men's Accessories",
+        categoryName: formData.category === 'watches' ? 'Watches' : 'Accessories',
         subcategory,
+
         price: Number(formData.price),
         salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
         stockQuantity: Number(formData.stockQuantity),
@@ -436,6 +585,17 @@ export const AdminView: React.FC = () => {
               >
                 {reviews.length}
               </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('emails')}
+              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'emails'
+                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+                }`}
+            >
+              <Mail className={`w-3.5 h-3.5 ${activeTab === 'emails' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
+              <span>Email Receipts</span>
             </button>
             <button
               type="button"
@@ -674,8 +834,8 @@ export const AdminView: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-4 uppercase tracking-wider text-[11px] text-[#8E929E]">
-                          <div>{p.categoryName}</div>
-                          {p.category === 'mens-accessories' && p.subcategory && (
+                          <div>{p.categoryName || (p.category === 'watches' ? 'Watches' : 'Accessories')}</div>
+                          {(p.category === 'accessories' || p.category === 'mens-accessories') && p.subcategory && (
                             <div className="text-[10px] text-[#D4AF37] font-mono normal-case mt-0.5">
                               ↳ {p.subcategory}
                             </div>
@@ -839,9 +999,48 @@ export const AdminView: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <span className="font-mono text-[10px] text-[#8E929E] block">
-                            {o.trackingNumber}
-                          </span>
+                          {o.courierName === 'RUN Couriers' || o.courierInvoiceUrl ? (
+                            <div className="flex flex-col gap-1 mt-1.5">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 w-fit">
+                                <Truck className="w-2.5 h-2.5" /> RUN #{o.trackingNumber}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {o.courierInvoiceUrl && (
+                                  <a
+                                    href={o.courierInvoiceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-[#CBD0DC] hover:text-[#D4AF37] underline flex items-center gap-0.5"
+                                    title="Open RUN Couriers Airway Bill / Invoice"
+                                  >
+                                    <Printer className="w-2.5 h-2.5" /> Airway Bill
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenTrackingModal(o.orderNumber, o.trackingNumber || '')}
+                                  className="text-[10px] text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  <Navigation className="w-2.5 h-2.5" /> Track
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="font-mono text-[10px] text-[#8E929E]">
+                                {o.trackingNumber}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenBookingModal(o)}
+                                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#D4AF37]/15 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-[#D4AF37]/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                                title="Book consignment with RUN Couriers"
+                              >
+                                <Truck className="w-2.5 h-2.5" />
+                                <span>Book Courier</span>
+                              </button>
+                            </div>
+                          )}
                         </td>
                         <td className="p-4">
                           <span className="font-semibold text-[#F5F5F7] block">
@@ -879,6 +1078,17 @@ export const AdminView: React.FC = () => {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
+                          {o.courierInvoiceUrl && (
+                            <a
+                              href={o.courierInvoiceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block p-1.5 rounded-lg bg-[#181A1F] text-[#D4AF37] hover:bg-[#20232A] border border-[#D4AF37]/30"
+                              title="Print RUN Couriers Airway Bill"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </a>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleDeleteOrder(o.orderNumber)}
@@ -889,6 +1099,7 @@ export const AdminView: React.FC = () => {
                           </button>
                         </td>
                       </motion.tr>
+
                     ))}
                   </tbody>
                 </table>
@@ -975,11 +1186,114 @@ export const AdminView: React.FC = () => {
                       ))}
                     </div>
 
+                    {/* RUN Couriers Logistics Consignment Card */}
+                    <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#D4AF37]/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-[#D4AF37]">
+                          <Truck className="w-4 h-4" />
+                          <span className="font-bold uppercase tracking-wider text-[11px]">
+                            RUN Couriers Pakistan Dispatch
+                          </span>
+                        </div>
+                        {selectedOrderDetails.courierInvoiceUrl || selectedOrderDetails.courierName === 'RUN Couriers' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                            Booked
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#181A1F] text-[#8E929E] border border-[#262930]">
+                            Not Dispatched
+                          </span>
+                        )}
+                      </div>
+
+                      {selectedOrderDetails.courierInvoiceUrl || selectedOrderDetails.courierName === 'RUN Couriers' ? (
+                        <div className="space-y-2 pt-1 text-[11px]">
+                          <div className="grid grid-cols-2 gap-2 text-[#8E929E]">
+                            <div>
+                              <span>Tracking Number:</span>
+                              <p className="font-mono font-bold text-white text-xs">{selectedOrderDetails.trackingNumber}</p>
+                            </div>
+                            <div>
+                              <span>Courier Service:</span>
+                              <p className="font-semibold text-white">RUN Couriers (Overnight)</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[#8E929E] pt-1 border-t border-[#262930]">
+                            <div>
+                              <span>COD Collection:</span>
+                              <p className="font-bold text-[#D4AF37]">
+                                {selectedOrderDetails.paymentMethod === 'cod' ? `Rs. ${selectedOrderDetails.total.toLocaleString()}` : 'Rs. 0 (Prepaid Card)'}
+                              </p>
+                            </div>
+                            <div>
+                              <span>Destination:</span>
+                              <p className="text-white">{selectedOrderDetails.customer.city}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-2">
+                            {selectedOrderDetails.courierInvoiceUrl && (
+                              <a
+                                href={selectedOrderDetails.courierInvoiceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="py-2 px-3.5 rounded-lg bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-md"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                <span>Print Airway Bill (Invoice)</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTrackingModal(selectedOrderDetails.orderNumber, selectedOrderDetails.trackingNumber || '')}
+                              className="py-2 px-3.5 rounded-lg bg-[#181A1F] hover:bg-[#20232A] text-[#D4AF37] border border-[#262930] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                              <span>Live Tracking</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 pt-1">
+                          <p className="text-xs text-[#8E929E]">
+                            Generate an official RUN Couriers airway bill and tracking number for overnight delivery to {selectedOrderDetails.customer.city}.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenBookingModal(selectedOrderDetails)}
+                            className="w-full py-2.5 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                          >
+                            <Truck className="w-4 h-4" />
+                            <span>Book Consignment with RUN Couriers</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="pt-2 border-t border-[#262930] flex justify-between text-sm font-bold">
                       <span>Grand Total:</span>
                       <span className="text-[#D4AF37]">
                         Rs. {selectedOrderDetails.total.toLocaleString()}
                       </span>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#262930] flex justify-end">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          addToast('info', 'Sending…', `Sending receipt to ${selectedOrderDetails.customer.email}`);
+                          const res = await sendConfirmationEmail(selectedOrderDetails);
+                          if (res.success) {
+                            addToast('success', 'Email Sent', `Order receipt successfully sent to ${selectedOrderDetails.customer.email}`);
+                          } else {
+                            addToast('error', 'Send Failed', res.error || 'Could not send confirmation email.');
+                          }
+                        }}
+                        className="py-2 px-4 rounded-xl bg-[#181A1F] hover:bg-[#22252C] text-[#D4AF37] border border-[#262930] text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Resend Confirmation Email</span>
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -987,16 +1301,224 @@ export const AdminView: React.FC = () => {
             )}
           </AnimatePresence>
 
+          {/* Modal: Book RUN Couriers Consignment */}
+          <AnimatePresence>
+            {bookingCourierOrder && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-md bg-[#121316] border border-[#262930] rounded-2xl p-6 space-y-5 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between border-b border-[#262930] pb-3">
+                    <div className="flex items-center gap-2 text-[#D4AF37]">
+                      <Truck className="w-5 h-5" />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                        Dispatch via RUN Couriers
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBookingCourierOrder(null)}
+                      className="p-1 text-[#8E929E] hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-[#8E929E]">Order Number:</span>
+                        <span className="font-mono font-bold text-[#D4AF37]">{bookingCourierOrder.orderNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8E929E]">Recipient:</span>
+                        <span className="text-white font-semibold">{bookingCourierOrder.customer.fullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8E929E]">Destination City:</span>
+                        <span className="text-white font-bold">{bookingCourierOrder.customer.city}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8E929E]">Collection Amount (COD):</span>
+                        <span className="font-bold text-[#D4AF37]">
+                          {bookingCourierOrder.paymentMethod === 'cod' ? `Rs. ${bookingCourierOrder.total.toLocaleString()}` : 'Rs. 0 (Card Paid)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] uppercase tracking-wider text-[#8E929E] mb-1">
+                          Weight (kg)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={bookingWeight}
+                          onChange={(e) => setBookingWeight(parseFloat(e.target.value) || 0.5)}
+                          className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] uppercase tracking-wider text-[#8E929E] mb-1">
+                          Parcels (Pieces)
+                        </label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="1"
+                          value={bookingPieces}
+                          onChange={(e) => setBookingPieces(parseInt(e.target.value, 10) || 1)}
+                          className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-[#8E929E] mb-1">
+                        Special Instructions
+                      </label>
+                      <input
+                        type="text"
+                        value={bookingSpecialInstruction}
+                        onChange={(e) => setBookingSpecialInstruction(e.target.value)}
+                        placeholder="e.g. Fragile Luxury Watch - Handle with Care"
+                        className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#262930]">
+                    <button
+                      type="button"
+                      onClick={() => setBookingCourierOrder(null)}
+                      disabled={isBookingCourier}
+                      className="px-4 py-2 rounded-xl bg-[#181A1F] text-[#8E929E] hover:text-white text-xs font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmRunCourierBooking}
+                      disabled={isBookingCourier}
+                      className="px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-[#D4AF37]/20 disabled:opacity-50 cursor-pointer"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>{isBookingCourier ? 'Booking Consignment...' : 'Confirm & Generate Airway Bill'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Modal: RUN Couriers Live Tracking History */}
+          <AnimatePresence>
+            {trackingModalData && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-lg bg-[#121316] border border-[#262930] rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between border-b border-[#262930] pb-3">
+                    <div className="flex items-center gap-2 text-[#D4AF37]">
+                      <Navigation className="w-5 h-5" />
+                      <div>
+                        <h3 className="text-sm font-bold text-white">
+                          RUN Couriers &bull; Tracking #{trackingModalData.trackingNo}
+                        </h3>
+                        <p className="text-[10px] text-[#8E929E]">Order #{trackingModalData.orderNumber}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTrackingModalData(null)}
+                      className="p-1 text-[#8E929E] hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#0B0C0E] border border-[#D4AF37]/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-[#8E929E] block">Current Status</span>
+                      <span className="text-sm font-bold text-[#D4AF37]">{trackingModalData.currentStatus}</span>
+                    </div>
+                    <span className="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                      Live
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <span className="text-[11px] uppercase tracking-wider text-[#8E929E] font-semibold block">
+                      Tracking Timeline
+                    </span>
+
+                    {trackingModalData.loading ? (
+                      <div className="py-8 text-center text-xs text-[#8E929E]">
+                        Connecting to portal.runcourier.com...
+                      </div>
+                    ) : trackingModalData.history.length > 0 ? (
+                      <div className="relative pl-6 space-y-4 border-l-2 border-[#D4AF37]/40 max-h-60 overflow-y-auto pr-2">
+                        {trackingModalData.history.map((event, idx) => (
+                          <div key={idx} className="relative">
+                            <span className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-[#D4AF37] border-2 border-[#0B0C0E]" />
+                            <p className="text-xs font-semibold text-white">{event.status}</p>
+                            <p className="text-[10px] text-[#8E929E] font-mono mt-0.5">{event.created}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-center text-xs text-[#8E929E]">
+                        Tracking consignment registered. Awaiting initial hub scan.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-[#262930]">
+                    <button
+                      type="button"
+                      onClick={() => setTrackingModalData(null)}
+                      className="py-2 px-5 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-white text-xs font-semibold"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+
           {/* TAB 4: CONCIERGE INQUIRIES */}
           {activeTab === 'inquiries' && <AdminInquiriesTab />}
 
           {/* TAB 5: PRODUCT REVIEWS */}
           {activeTab === 'reviews' && <AdminReviewsTab />}
 
-          {/* TAB 6: SUPABASE CLOUD BACKEND */}
+          {/* TAB 6: EMAIL RECEIPTS & DISPATCH */}
+          {activeTab === 'emails' && <AdminEmailTab />}
+
+          {/* TAB 7: SUPABASE CLOUD BACKEND */}
           {activeTab === 'supabase' && <AdminSupabaseTab />}
 
-          {/* TAB 7: BUSINESS SETTINGS */}
+          {/* TAB 8: BUSINESS SETTINGS */}
           {activeTab === 'settings' && <AdminBusinessSettingsTab />}
 
           {/* Modal: Add/Edit Product */}
@@ -1090,18 +1612,19 @@ export const AdminView: React.FC = () => {
                           setFormData({
                             ...formData,
                             category: newCat,
-                            categoryName: newCat === 'watches' ? 'Watches' : "Men's Accessories",
-                            subcategory: newCat === 'mens-accessories' ? (formData.subcategory || 'Wallet') : '',
+                            categoryName: newCat === 'watches' ? 'Watches' : 'Accessories',
+                            subcategory: (newCat === 'accessories' || newCat === 'mens-accessories') ? (formData.subcategory || 'Wallet') : '',
                           });
                         }}
                         className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7]"
                       >
                         <option value="watches">Watches</option>
-                        <option value="mens-accessories">Men&apos;s Accessories</option>
+                        <option value="accessories">Accessories</option>
                       </select>
                     </div>
 
-                    {formData.category === 'mens-accessories' && (
+                    {(formData.category === 'accessories' || formData.category === 'mens-accessories') && (
+
                       <div>
                         <label htmlFor="admin-product-subcategory" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
                           Subcategory *
@@ -1139,18 +1662,32 @@ export const AdminView: React.FC = () => {
                   </div>
 
 <div>
-                      <label htmlFor="admin-product-media" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
-                        Product Media (unlimited images & videos)
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="admin-product-media" className="block text-[#8E929E] mb-1 uppercase tracking-wider">
+                          Product Media (unlimited images & videos)
+                        </label>
+                        <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                          ⚡ Auto-Compression Active (WebP/JPEG)
+                        </span>
+                      </div>
                       <input
                         id="admin-product-media"
                         type="file"
                         accept="image/*,video/*"
                         multiple
-                        onChange={(event) => setMediaFiles(Array.from(event.target.files || []))}
-                        className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7]"
+                        disabled={isCompressingMedia}
+                        onChange={handleMediaFilesSelected}
+                        className="w-full py-2.5 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] disabled:opacity-50"
                       />
-                      <p className="mt-1 text-[11px] text-[#626673]">Select unlimited images and videos. New uploads are added after the current media; the first item is what shoppers see first.</p>
+                      {isCompressingMedia ? (
+                        <p className="mt-1 text-[11px] text-[#D4AF37] animate-pulse">
+                          Compressing &amp; optimizing selected photos for maximum mobile speed...
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[11px] text-[#626673]">
+                          Select unlimited images and videos. Images are automatically compressed to optimal web dimensions so your store loads instantly on mobile.
+                        </p>
+                      )}
 
                       {/* Existing Media Display */}
                       {existingMedia.length > 0 && (

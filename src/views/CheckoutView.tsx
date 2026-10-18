@@ -8,6 +8,7 @@ import {
   Package,
   Loader2,
   ShieldCheck,
+  Mail,
 } from 'lucide-react';
 import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
 import '@sfpy/atoms/styles';
@@ -169,7 +170,15 @@ export const CheckoutView: React.FC = () => {
             </div>
           )}
 
-          <div className="p-4 rounded-xl bg-[#181A1F] border border-[#262930] text-xs text-[#CBD0DC] flex items-center gap-3">
+          <div className="p-4 rounded-xl bg-[#181A1F] border border-[#262930] text-xs text-[#CBD0DC] flex items-center gap-3 text-left">
+            <Mail className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <div>
+              <span className="font-semibold text-[#F5F5F7] block">Confirmation Receipt Dispatched</span>
+              <span className="text-[#A0A5B5]">An itemized order receipt has been sent to <strong className="text-[#D4AF37]">{confirmedOrder.customer.email}</strong>.</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#181A1F] border border-[#262930] text-xs text-[#CBD0DC] flex items-center gap-3 text-left">
             <Package className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
             <span>
               Our concierge team will contact you via WhatsApp/SMS to verify dispatch. Estimated delivery is 2-4 working days.
@@ -263,6 +272,32 @@ export const CheckoutView: React.FC = () => {
 
       if (paymentMethod === 'card') {
         try {
+          // Attempt Rapid Gateway checkout initiation
+          const rapidResponse = await fetch('/api/rapid-checkout.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: newOrder.orderNumber,
+              total: cartTotal,
+              customerName: formData.fullName,
+              customerEmail: formData.email,
+              customerPhone: formData.phone,
+            }),
+          });
+          const rapidData = await rapidResponse.json().catch(() => null);
+
+          if (rapidResponse.ok && rapidData?.success && rapidData?.redirectUrl) {
+            addToast('info', 'Connecting to Rapid Gateway', 'Redirecting you to complete your secure payment...');
+            window.location.href = rapidData.redirectUrl;
+            return;
+          }
+
+          // If Rapid Gateway returned an error (and not just "not configured"), notify the user
+          if (!rapidResponse.ok && rapidData?.error && !rapidData.error.includes('not configured')) {
+            throw new Error(rapidData.error);
+          }
+
+          // Fallback to SafePay if Rapid Gateway is not configured
           const response = await fetch('/api/safepay-checkout.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -274,26 +309,23 @@ export const CheckoutView: React.FC = () => {
             }),
           });
           const data = await response.json().catch(() => null);
-          if (!response.ok || !data || typeof data.tracker !== 'string' || !data.tbt) {
-            throw new Error(data?.error || 'SafePay checkout could not be started.');
+          if (response.ok && data?.tracker && data?.tbt) {
+            setPayerAuthSession(null);
+            setIsPaying(false);
+            setIsCardReady(false);
+            setSafepaySession({
+              tracker: data.tracker,
+              tbt: data.tbt,
+              environment: typeof data.environment === 'string' ? data.environment : 'sandbox',
+              orderId: newOrder.orderNumber,
+              total: newOrder.total,
+            });
+            return;
           }
-          // Render SafePay's secure card-entry fields inline (Atoms) instead of
-          // sending the shopper away. Card data never touches our servers.
-          setPayerAuthSession(null);
-          setIsPaying(false);
-          setIsCardReady(false);
-          setSafepaySession({
-            tracker: data.tracker,
-            tbt: data.tbt,
-            environment: typeof data.environment === 'string' ? data.environment : 'sandbox',
-            orderId: newOrder.orderNumber,
-            total: newOrder.total,
-          });
-          return;
+
+          throw new Error(rapidData?.error || data?.error || 'Payment gateway could not be reached.');
         } catch (gatewayErr) {
-          // Gateway/API unreachable — keep the order and let the shopper retry
-          // without blocking checkout entirely.
-          console.error('SafePay checkout error:', gatewayErr);
+          console.error('Payment gateway checkout error:', gatewayErr);
           addToast(
             'error',
             'Payment Gateway Unavailable',
@@ -580,14 +612,15 @@ export const CheckoutView: React.FC = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-bold text-[#F5F5F7]">
-                              Credit / Debit Card
+                              Credit / Debit Card (Rapid Gateway)
                             </h3>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#E5C378]">
-                              Secured Payment
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#00C2FF]/15 border border-[#00C2FF]/40 text-[#00C2FF]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                              Rapid Gateway
                             </span>
                           </div>
                           <p className="text-xs text-[#CBD0DC] mt-1 leading-relaxed">
-                            Pay securely with any Visa, Mastercard, or PayPak card. Transactions are processed through a 256-bit SSL encrypted payment portal.
+                            Pay securely with any Visa, Mastercard, or PayPak card via Rapid Gateway. Transactions are protected by 256-bit SSL encryption and 3-D Secure OTP verification.
                           </p>
                         </div>
                       </div>
@@ -612,7 +645,7 @@ export const CheckoutView: React.FC = () => {
                         <div className="p-3 rounded-lg bg-[#0B0C0E]/90 border border-[#D4AF37]/30 text-[11px] text-[#CBD0DC] flex items-center gap-2.5">
                           <ShieldCheck className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
                           <span>
-                            After confirming your order, enter your card details in the secure SafePay field right here — powered by PCI-DSS Level 1 certified payments. Card credentials never touch STORIUM servers.
+                            After confirming your order, you will be redirected to the secure 256-bit SSL encrypted payment portal to complete card verification (3-D Secure OTP). Card credentials never touch STORIUM servers.
                           </span>
                         </div>
                       </div>

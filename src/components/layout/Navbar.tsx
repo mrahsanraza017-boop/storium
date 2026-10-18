@@ -27,7 +27,7 @@ export const Navbar: React.FC = () => {
   const navLinks: { label: string; page: PageView; category?: string; badge?: string }[] = [
     { label: 'Showroom', page: 'home' },
     { label: 'Watches', page: 'watches' },
-    { label: "Men's Accessories", page: 'accessories', badge: 'New' },
+    { label: 'Accessories', page: 'accessories', badge: 'Coming Soon' },
     { label: 'About', page: 'about' },
     { label: 'Contact', page: 'contact' },
   ];

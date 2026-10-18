@@ -23,9 +23,15 @@ export const PaymentBadges: React.FC<{ className?: string }> = ({ className = ''
         PayPak
       </div>
 
-      {/* SafePay */}
-      <div className="px-2.5 py-1 rounded-lg bg-[#0B1020] border border-[#D4AF37]/50 text-[#E5C378] font-extrabold text-[11px] tracking-wider">
-        SafePay
+      {/* Rapid Gateway Official Brand Badge */}
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0E1726] border border-[#00B4D8]/40 shadow-sm">
+        <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-[#00C2FF] to-[#0077B6] flex items-center justify-center text-[7px] font-black text-white tracking-tighter">
+          ▶▶
+        </span>
+        <span className="text-[11px] font-extrabold tracking-tight">
+          <span className="text-[#00C2FF]">Rapid</span>
+          <span className="text-[#10B981] ml-0.5">Gateway</span>
+        </span>
       </div>
 
       {/* 3D Secure / SSL */}

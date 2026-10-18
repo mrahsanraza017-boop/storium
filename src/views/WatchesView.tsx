@@ -1,17 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Watch, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
-import { CustomPriceFilter, PriceRange, PricePreset } from '../components/filters/CustomPriceFilter';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
-
-const WATCH_PRICE_PRESETS: PricePreset[] = [
-  { label: 'Under Rs. 35,000', min: 0, max: 35000 },
-  { label: 'Rs. 35,000 – Rs. 50,000', min: 35000, max: 50000 },
-  { label: 'Rs. 50,000 – Rs. 75,000', min: 50000, max: 75000 },
-  { label: 'Above Rs. 75,000', min: 75000, max: Infinity },
-];
 
 export const WatchesView: React.FC = () => {
   const { products } = useStore();
@@ -21,29 +13,6 @@ export const WatchesView: React.FC = () => {
   const watchProducts = useMemo(() => products.filter((p) => p.category === 'watches'), [products]);
 
   const effectivePrice = (p: { price: number; salePrice?: number }) => p.salePrice ?? p.price;
-
-  const priceBounds = useMemo<PriceRange>(() => {
-    if (watchProducts.length === 0) return { min: 0, max: 100000 };
-    const prices = watchProducts.map((p) => effectivePrice(p));
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    return {
-      min: Math.floor(minPrice / 5000) * 5000,
-      max: Math.ceil(maxPrice / 5000) * 5000,
-    };
-  }, [watchProducts]);
-
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 0, max: 150000 });
-
-  // Sync price range once bounds are computed
-  useEffect(() => {
-    if (priceBounds.max > 0) {
-      setPriceRange((prev) => ({
-        min: prev.min === 0 ? priceBounds.min : prev.min,
-        max: prev.max === 150000 ? priceBounds.max : prev.max,
-      }));
-    }
-  }, [priceBounds]);
 
   // Watch "type" options derived from catalogue tags and subcategories
   const typeOptions = useMemo(() => {
@@ -80,10 +49,7 @@ export const WatchesView: React.FC = () => {
           (p.tags || []).includes(selectedType) ||
           p.subcategory === selectedType;
 
-        const price = effectivePrice(p);
-        const matchesPrice = price >= priceRange.min && price <= priceRange.max;
-
-        return matchesType && matchesPrice;
+        return matchesType;
       })
       .sort((a, b) => {
         const priceA = effectivePrice(a);
@@ -93,18 +59,15 @@ export const WatchesView: React.FC = () => {
         if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
       });
-  }, [watchProducts, selectedType, priceRange, sortBy]);
+  }, [watchProducts, selectedType, sortBy]);
 
-  const hasActiveFilters =
-    selectedType !== 'All' ||
-    priceRange.min > priceBounds.min ||
-    priceRange.max < priceBounds.max;
+  const hasActiveFilters = selectedType !== 'All' || sortBy !== 'featured';
 
   const handleResetFilters = () => {
     setSelectedType('All');
-    setPriceRange({ min: priceBounds.min, max: priceBounds.max });
     setSortBy('featured');
   };
+
 
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
@@ -214,25 +177,16 @@ export const WatchesView: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Custom Price Filter Component */}
-          <CustomPriceFilter
-            bounds={priceBounds}
-            value={priceRange}
-            onChange={setPriceRange}
-            presets={WATCH_PRICE_PRESETS}
-            step={1000}
-            label="Filter Timepieces by Price"
-          />
         </div>
 
         {/* Product Grid */}
         <ProductGrid
           products={filteredWatches}
-          emptyMessage="No timepieces match the current filters. Adjust your custom price range or selection."
+          emptyMessage="No timepieces match the current filters. Adjust your category selection."
           columns="4"
         />
       </div>
     </div>
+
   );
 };

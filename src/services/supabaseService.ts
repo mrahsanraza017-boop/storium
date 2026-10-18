@@ -1,5 +1,6 @@
 import { getSupabase, SUPABASE_PROJECT_ID, SUPABASE_URL } from '../lib/supabase';
 import { Order, ContactInquiry, Product, CustomerUser, ProductMedia, ProductReview } from '../types';
+import { compressImage } from '../utils/imageCompressor';
 
 export type { ContactInquiry };
 
@@ -427,10 +428,10 @@ export async function uploadProductMedia(files: File[], productId: string): Prom
   const supabase = await getSupabase();
 
   // Upload every file independently so one failure cannot discard the others.
-  // (Previously this used Promise.all with a thrown error, which aborted the
-  // whole batch — including files that had already uploaded successfully.)
+  // Images are automatically compressed to web-optimized dimensions & WebP/JPEG.
   const results = await Promise.allSettled(
-    files.map(async (file, index) => {
+    files.map(async (rawFile, index) => {
+      const { file } = await compressImage(rawFile);
       const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
       // Combine a per-batch timestamp with the index and a random suffix so
       // repeated uploads (and same-named files) never collide on the path.

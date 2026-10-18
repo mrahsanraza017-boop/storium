@@ -127,7 +127,7 @@ export function getProductSchema(
       '@type': 'Brand',
       name: product.brand || 'STORIUM',
     },
-    category: product.categoryName || (product.category === 'watches' ? 'Watches' : "Men's Accessories"),
+    category: product.categoryName || (product.category === 'watches' ? 'Watches' : 'Accessories'),
     itemCondition: 'https://schema.org/NewCondition',
     offers: {
       '@type': 'Offer',

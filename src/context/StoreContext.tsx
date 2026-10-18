@@ -45,6 +45,12 @@ import {
   findClientAccount,
   normalizePhoneNumber,
 } from '../services/customerAuthService';
+import {
+  sendOrderConfirmationEmail,
+  sendPaymentReceiptEmail,
+  sendTestConfirmationEmail,
+  getOrderReceiptHtmlPreview,
+} from '../services/emailService';
 
 interface ToastNotification {
   id: string;
@@ -96,9 +102,21 @@ interface StoreContextType {
   orders: Order[];
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'date'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: Order['orderStatus']) => void;
+  updateOrderCourierBooking: (
+    orderId: string,
+    courierData: {
+      trackingNumber: string;
+      courierName: string;
+      courierInvoiceUrl?: string;
+      courierBookingId?: number | string;
+      orderStatus?: Order['orderStatus'];
+    }
+  ) => void;
   markOrderPaid: (orderNumber: string) => void;
   deleteOrder: (orderNumber: string) => Promise<void>;
   deleteOrdersByNumber: (orderNumbers: string[]) => Promise<void>;
+  sendConfirmationEmail: (order: Order) => Promise<{ success: boolean; message?: string; error?: string; method?: string }>;
+  sendTestEmail: (toEmail: string) => Promise<{ success: boolean; message?: string; error?: string; method?: string }>;
   updateInquiryStatus: (inquiryId: string, status: ContactInquiry['status']) => void;
   lastPlacedOrder: Order | null;
 
@@ -200,7 +218,7 @@ function getInitialRoute(): {
   // Check path first
   if (path === 'admin') return { page: 'admin', slug: null, category: null, subcategory: null };
   if (path === 'watches') return { page: 'watches', slug: null, category: 'watches', subcategory: null };
-  if (path === 'accessories') return { page: 'accessories', slug: null, category: 'mens-accessories', subcategory: null };
+  if (path === 'accessories') return { page: 'accessories', slug: null, category: 'accessories', subcategory: null };
   if (path === 'shop') {
     return {
       page: 'shop',
@@ -245,6 +263,21 @@ function getInitialRoute(): {
   return { page: 'home', slug: null, category: null, subcategory: null };
 }
 
+const SEEDED_PLACEHOLDER_ACCESSORY_IDS = new Set([
+  'storium-titanium-cardholder-matte',
+  'storium-meteorite-cufflinks-gold',
+  'storium-obsidian-leather-bifold-wallet',
+  'storium-aviator-polarized-sunglasses',
+  'storium-damascus-steel-signet-ring',
+  'storium-titanium-cable-bracelet',
+  'storium-stealth-weekender-bag',
+  'storium-titanium-carabiner-key',
+  'storium-precision-safety-razor',
+  'storium-tuscan-reversible-belt',
+  'storium-stealth-tech-cap',
+  'storium-extrait-de-parfum-oud',
+]);
+
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const initialRoute = getInitialRoute();
 
@@ -260,31 +293,35 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map((p) => p.id));
-        const updated = parsed.map((p) => {
-          if (p.category === 'mens-accessories' && !p.subcategory) {
-            const match = INITIAL_PRODUCTS.find((initP) => initP.id === p.id);
-            return { ...p, subcategory: match?.subcategory || 'Wallet' };
-          }
-          return p;
-        });
+        // Filter out initial placeholder accessories so Accessories category starts fresh for user uploads
+        const cleaned = parsed.filter((p) => !SEEDED_PLACEHOLDER_ACCESSORY_IDS.has(p.id));
+        const existingIds = new Set(cleaned.map((p) => p.id));
         const missing = INITIAL_PRODUCTS.filter((initP) => !existingIds.has(initP.id));
-        return [...updated, ...missing];
+        return [...cleaned, ...missing];
       }
     } catch {
       // fallback
     }
     return INITIAL_PRODUCTS;
+
   });
 
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: Category[] = JSON.parse(saved);
+        return parsed.map((cat) =>
+          cat.id === 'cat-accessories'
+            ? { ...cat, name: 'Accessories', slug: 'accessories', isUpcoming: true }
+            : cat
+        );
+      }
     } catch {
       // fallback
     }
     return INITIAL_CATEGORIES;
+
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -907,6 +944,16 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setOrders((prev) => [newOrder, ...prev]);
     setLastPlacedOrder(newOrder);
     clearCart();
+
+    // Automatically send luxury order confirmation email to customer
+    void sendOrderConfirmationEmail(newOrder).then((emailRes) => {
+      if (emailRes.success) {
+        console.info(`[Email Confirmation] Successfully dispatched to ${newOrder.customer.email}`);
+      } else {
+        console.warn(`[Email Confirmation] Notice: ${emailRes.error || 'Server email dispatch skipped'}`);
+      }
+    });
+
     return newOrder;
   };
 
@@ -920,16 +967,52 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     addToast('info', 'Order Status Updated', `Order marked as ${status}.`);
   };
 
-  // Marks an order as paid locally. The cloud copy is updated server-side
-  // so it stays authoritative for admins.
-  const markOrderPaid = (orderNumber: string) => {
+  const updateOrderCourierBooking = (
+    orderId: string,
+    courierData: {
+      trackingNumber: string;
+      courierName: string;
+      courierInvoiceUrl?: string;
+      courierBookingId?: number | string;
+      orderStatus?: Order['orderStatus'];
+    }
+  ) => {
     setOrders((prev) =>
       prev.map((ord) =>
-        ord.orderNumber === orderNumber
-          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
+        ord.id === orderId
+          ? {
+              ...ord,
+              trackingNumber: courierData.trackingNumber,
+              courierName: courierData.courierName,
+              courierInvoiceUrl: courierData.courierInvoiceUrl,
+              courierBookingId: courierData.courierBookingId,
+              orderStatus: courierData.orderStatus || 'Shipped',
+            }
           : ord
       )
     );
+    if (courierData.orderStatus) {
+      void updateOrderStatusInSupabase(orderId, courierData.orderStatus);
+    }
+    addToast('success', 'Courier Consignment Booked', `Booked with ${courierData.courierName}. Tracking: ${courierData.trackingNumber}`);
+  };
+
+
+  // Marks an order as paid locally. The cloud copy is updated server-side
+  // so it stays authoritative for admins.
+  const markOrderPaid = (orderNumber: string) => {
+    setOrders((prev) => {
+      const updated = prev.map((ord) =>
+        ord.orderNumber === orderNumber
+          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
+          : ord
+      );
+      const paidOrder = updated.find((o) => o.orderNumber === orderNumber);
+      if (paidOrder) {
+        void sendPaymentReceiptEmail(paidOrder);
+      }
+      return updated;
+    });
   };
 
   // Delete one order from local state (public + admin) and Supabase.
@@ -1321,9 +1404,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         orders,
         createOrder,
         updateOrderStatus,
+        updateOrderCourierBooking,
         markOrderPaid,
         deleteOrder,
         deleteOrdersByNumber,
+        sendConfirmationEmail: sendOrderConfirmationEmail,
+        sendTestEmail: sendTestConfirmationEmail,
         updateInquiryStatus,
         lastPlacedOrder,
 

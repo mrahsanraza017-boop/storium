@@ -1,19 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Search, X, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
-import { CustomPriceFilter, PriceRange, PricePreset } from '../components/filters/CustomPriceFilter';
-
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
-
-const CATALOG_PRICE_PRESETS: PricePreset[] = [
-  { label: 'Under Rs. 20,000', min: 0, max: 20000 },
-  { label: 'Rs. 20,000 – Rs. 40,000', min: 20000, max: 40000 },
-  { label: 'Rs. 40,000 – Rs. 70,000', min: 40000, max: 70000 },
-  { label: 'Above Rs. 70,000', min: 70000, max: Infinity },
-];
 
 export const ShopView: React.FC = () => {
   const { products, categories, activeCategoryFilter } = useStore();
@@ -25,25 +16,8 @@ export const ShopView: React.FC = () => {
 
   const effectivePrice = (p: { price: number; salePrice?: number }) => p.salePrice ?? p.price;
 
-  const priceBounds = useMemo<PriceRange>(() => {
-    if (products.length === 0) return { min: 0, max: 150000 };
-    const prices = products.map((p) => effectivePrice(p));
-    const maxPrice = Math.max(...prices, 1000);
-    return { min: 0, max: Math.ceil(maxPrice / 1000) * 1000 };
-  }, [products]);
-
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 0, max: 150000 });
   const [availabilityOnly, setAvailabilityOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
-
-  useEffect(() => {
-    if (priceBounds.max > 0) {
-      setPriceRange((prev) => ({
-        min: prev.min === 0 ? priceBounds.min : prev.min,
-        max: prev.max === 150000 ? priceBounds.max : prev.max,
-      }));
-    }
-  }, [priceBounds]);
 
   const filteredProducts = useMemo(() => {
     return products
@@ -56,11 +30,9 @@ export const ShopView: React.FC = () => {
           p.sku.toLowerCase().includes(searchFilter.toLowerCase()) ||
           p.brand.toLowerCase().includes(searchFilter.toLowerCase()) ||
           p.tags.some((t) => t.toLowerCase().includes(searchFilter.toLowerCase()));
-        const price = effectivePrice(p);
-        const matchesPrice = price >= priceRange.min && price <= priceRange.max;
         const matchesAvailability = !availabilityOnly || p.stockQuantity > 0;
 
-        return matchesCategory && matchesSearch && matchesPrice && matchesAvailability;
+        return matchesCategory && matchesSearch && matchesAvailability;
       })
       .sort((a, b) => {
         const priceA = effectivePrice(a);
@@ -70,22 +42,21 @@ export const ShopView: React.FC = () => {
         if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
       });
-  }, [products, selectedCategory, searchFilter, priceRange, availabilityOnly, sortBy]);
+  }, [products, selectedCategory, searchFilter, availabilityOnly, sortBy]);
 
   const hasActiveFilters =
     selectedCategory !== 'all' ||
     searchFilter.trim() !== '' ||
-    priceRange.min > priceBounds.min ||
-    priceRange.max < priceBounds.max ||
-    availabilityOnly;
+    availabilityOnly ||
+    sortBy !== 'featured';
 
   const handleReset = () => {
     setSelectedCategory('all');
     setSearchFilter('');
-    setPriceRange({ min: priceBounds.min, max: priceBounds.max });
     setAvailabilityOnly(false);
     setSortBy('featured');
   };
+
 
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
@@ -238,27 +209,19 @@ export const ShopView: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Custom Price Filter Component */}
-          <CustomPriceFilter
-            bounds={priceBounds}
-            value={priceRange}
-            onChange={setPriceRange}
-            presets={CATALOG_PRICE_PRESETS}
-            step={500}
-            label="Filter Showroom Catalog by Price"
-          />
         </div>
+
 
         {/* Reusable Product Grid */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={`${selectedCategory}-${searchFilter}-${priceRange.min}-${priceRange.max}-${availabilityOnly}-${sortBy}-${filteredProducts.length}`}
+            key={`${selectedCategory}-${searchFilter}-${availabilityOnly}-${sortBy}-${filteredProducts.length}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
+
             <ProductGrid
               products={filteredProducts}
               emptyMessage="No showroom pieces found matching your specific filter criteria."

@@ -100,9 +100,10 @@ export const ProductDetailView: React.FC = () => {
   const breadcrumbs = [
     { name: 'Showroom', url: '/' },
     {
-      name: product.categoryName || (product.category === 'watches' ? 'Watches' : "Men's Accessories"),
+      name: product.categoryName || (product.category === 'watches' ? 'Watches' : 'Accessories'),
       url: product.category === 'watches' ? '/watches' : '/accessories',
     },
+
     { name: product.name, url: `/product/${product.slug}` },
   ];
 

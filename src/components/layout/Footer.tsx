@@ -263,11 +263,12 @@ export const Footer: React.FC = () => {
                 className="btn-solid-nav w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between group cursor-pointer"
               >
                 <span className="flex items-center gap-1.5">
-                  Men&apos;s Accessories
-                  <span className="text-[9px] bg-[#D4AF37] text-[#0B0C0E] font-bold px-1.5 py-0.5 rounded tracking-wider">NEW</span>
+                  Accessories
+                  <span className="text-[9px] bg-[#D4AF37] text-[#0B0C0E] font-bold px-1.5 py-0.5 rounded tracking-wider">COMING SOON</span>
                 </span>
                 <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
+
             </div>
           </div>
 
