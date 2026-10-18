@@ -62,6 +62,7 @@ export const CheckoutView: React.FC = () => {
     allowedPaymentMethods.includes('cod') ? 'cod' : allowedPaymentMethods[0] || 'cod'
   );
 
+  const [codAgreement, setCodAgreement] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
@@ -236,6 +237,10 @@ export const CheckoutView: React.FC = () => {
     if (!formData.email.trim() || !formData.email.includes('@')) errors.email = 'Valid email required';
     if (!formData.address.trim()) errors.address = 'Street address is required';
     if (!formData.city.trim()) errors.city = 'Please specify your city';
+    if (paymentMethod === 'cod' && !codAgreement) {
+      errors.codAgreement = "Please confirm that you'll pay courier fee if you don't accept the order at your door.";
+      addToast('error', 'Declaration Required', "Please mark the declaration checkbox above Confirm Order to proceed with Cash on Delivery.");
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -716,6 +721,46 @@ export const CheckoutView: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Cash on Delivery Courier Fee Declaration Checkbox */}
+              {paymentMethod === 'cod' && (
+                <div
+                  className={`p-3.5 rounded-xl border transition-all ${
+                    formErrors.codAgreement
+                      ? 'border-rose-500/80 bg-rose-500/10 ring-1 ring-rose-500/30'
+                      : codAgreement
+                        ? 'border-[#D4AF37]/60 bg-[#D4AF37]/10'
+                        : 'border-[#262930] bg-[#0B0C0E]/80 hover:border-[#D4AF37]/40'
+                  }`}
+                >
+                  <label htmlFor="checkout-cod-agreement" className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="checkout-cod-agreement"
+                      checked={codAgreement}
+                      onChange={(e) => {
+                        setCodAgreement(e.target.checked);
+                        if (formErrors.codAgreement) {
+                          setFormErrors((prev) => {
+                            const updated = { ...prev };
+                            delete updated.codAgreement;
+                            return updated;
+                          });
+                        }
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded border-[#262930] bg-[#121316] text-[#D4AF37] focus:ring-[#D4AF37] focus:ring-offset-0 cursor-pointer accent-[#D4AF37]"
+                    />
+                    <span className="text-xs text-[#E8E8EC] font-medium leading-relaxed">
+                      I swear that i&apos;ll pay courier fee if I don&apos;t accept Order at my Door
+                    </span>
+                  </label>
+                  {formErrors.codAgreement && (
+                    <p className="text-rose-400 text-[11px] mt-1.5 pl-7 font-medium">
+                      {formErrors.codAgreement}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Submit CTA */}
               <button
