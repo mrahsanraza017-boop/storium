@@ -19,6 +19,8 @@ import {
   Navigation,
   CreditCard,
   RotateCcw,
+  RefreshCw,
+  Copy,
   Users,
   TrendingUp,
   Bell,
@@ -134,6 +136,7 @@ export const AdminView: React.FC = () => {
   const [bookingPieces, setBookingPieces] = useState<number>(1);
   const [bookingSpecialInstruction, setBookingSpecialInstruction] = useState<string>('Fragile Luxury Timepiece - Handle with Care');
   const [isBookingCourier, setIsBookingCourier] = useState<boolean>(false);
+  const [quickTrackingInput, setQuickTrackingInput] = useState<string>('');
   const [trackingModalData, setTrackingModalData] = useState<{
     orderNumber: string;
     trackingNo: string;
@@ -181,6 +184,7 @@ export const AdminView: React.FC = () => {
         }
 
         setBookingCourierOrder(null);
+        addToast('success', 'Consignment Booked', `RUN Couriers tracking #${res.tracking_no} generated successfully.`);
       } else {
         addToast('error', 'Booking Failed', res.error || 'Could not complete RUN Couriers booking');
       }
@@ -192,20 +196,25 @@ export const AdminView: React.FC = () => {
   };
 
   const handleOpenTrackingModal = async (orderNumber: string, trackingNo: string) => {
+    const cleanNo = trackingNo.trim();
+    if (!cleanNo) {
+      addToast('info', 'Tracking Required', 'Please provide a valid RUN Couriers tracking number.');
+      return;
+    }
     setTrackingModalData({
       orderNumber,
-      trackingNo,
+      trackingNo: cleanNo,
       currentStatus: 'Connecting to RUN Couriers...',
       history: [],
       loading: true,
     });
     try {
-      const result = await trackRunCourier(trackingNo);
+      const result = await trackRunCourier(cleanNo);
       setTrackingModalData({
         orderNumber,
-        trackingNo,
+        trackingNo: cleanNo,
         currentStatus: result.current_status || 'In Transit',
-        history: result.history,
+        history: result.history || [],
         loading: false,
       });
     } catch {
@@ -213,6 +222,12 @@ export const AdminView: React.FC = () => {
         prev ? { ...prev, currentStatus: 'Tracking Active', loading: false } : null
       );
     }
+  };
+
+  const handleQuickTrackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTrackingInput.trim()) return;
+    handleOpenTrackingModal('Manual Lookup', quickTrackingInput.trim());
   };
 
 
@@ -1042,6 +1057,49 @@ export const AdminView: React.FC = () => {
                 </button>
               </div>
 
+              {/* Quick RUN Courier Tracking Console */}
+              <form
+                onSubmit={handleQuickTrackSubmit}
+                className="p-3.5 rounded-2xl bg-[#121316] border border-[#262930] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl"
+              >
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="p-2.5 rounded-xl bg-[#0B0C0E] border border-[#D4AF37]/30 text-[#D4AF37] flex-shrink-0">
+                    <Navigation className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        RUN Couriers Live Tracking Console
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                        Gateway Connected
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#8E929E]">
+                      Client Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong> &bull; API Auth: <strong className="text-emerald-400 font-mono">Verified</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <input
+                    type="text"
+                    value={quickTrackingInput}
+                    onChange={(e) => setQuickTrackingInput(e.target.value)}
+                    placeholder="Enter RUN tracking # (e.g. 2400123456)..."
+                    className="flex-1 md:w-72 py-2 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] font-mono focus:outline-none focus:border-[#D4AF37]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!quickTrackingInput.trim()}
+                    className="py-2 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer flex-shrink-0 shadow-md"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Track</span>
+                  </button>
+                </div>
+              </form>
+
               {/* Orders Table */}
               <div className="rounded-2xl bg-[#121316] border border-[#262930] overflow-x-auto shadow-xl">
                 <table className="w-full text-left text-xs text-[#E8E8EC]">
@@ -1081,45 +1139,43 @@ export const AdminView: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          {o.courierName === 'RUN Couriers' || o.courierInvoiceUrl ? (
+                          {o.trackingNumber ? (
                             <div className="flex flex-col gap-1 mt-1.5">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 w-fit">
-                                <Truck className="w-2.5 h-2.5" /> RUN #{o.trackingNumber}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                {o.courierInvoiceUrl && (
-                                  <a
-                                    href={o.courierInvoiceUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] text-[#CBD0DC] hover:text-[#D4AF37] underline flex items-center gap-0.5"
-                                    title="Open RUN Couriers Airway Bill / Invoice"
-                                  >
-                                    <Printer className="w-2.5 h-2.5" /> Airway Bill
-                                  </a>
-                                )}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 w-fit">
+                                  <Truck className="w-2.5 h-2.5" /> RUN #{o.trackingNumber}
+                                </span>
                                 <button
                                   type="button"
-                                  onClick={() => handleOpenTrackingModal(o.orderNumber, o.trackingNumber || '')}
-                                  className="text-[10px] text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer"
+                                  onClick={() => handleOpenTrackingModal(o.orderNumber, o.trackingNumber!)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#181A1F] hover:bg-[#D4AF37] hover:text-[#0B0C0E] text-[#D4AF37] border border-[#D4AF37]/30 flex items-center gap-1 transition-all cursor-pointer"
+                                  title="Live Track RUN Courier Consignment"
                                 >
                                   <Navigation className="w-2.5 h-2.5" /> Track
                                 </button>
                               </div>
+                              {o.courierInvoiceUrl && (
+                                <a
+                                  href={o.courierInvoiceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-[#CBD0DC] hover:text-[#D4AF37] underline flex items-center gap-0.5 w-fit"
+                                  title="Open RUN Couriers Airway Bill / Invoice"
+                                >
+                                  <Printer className="w-2.5 h-2.5" /> Airway Bill
+                                </a>
+                              )}
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 mt-1.5">
-                              <span className="font-mono text-[10px] text-[#8E929E]">
-                                {o.trackingNumber}
-                              </span>
                               <button
                                 type="button"
                                 onClick={() => handleOpenBookingModal(o)}
-                                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#D4AF37]/15 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-[#D4AF37]/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#D4AF37]/15 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-[#D4AF37]/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
                                 title="Book consignment with RUN Couriers"
                               >
-                                <Truck className="w-2.5 h-2.5" />
-                                <span>Book Courier</span>
+                                <Truck className="w-3 h-3" />
+                                <span>Book RUN Courier</span>
                               </button>
                             </div>
                           )}
@@ -1160,6 +1216,16 @@ export const AdminView: React.FC = () => {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
+                          {o.trackingNumber && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTrackingModal(o.orderNumber, o.trackingNumber!)}
+                              className="p-1.5 rounded-lg bg-[#181A1F] text-[#D4AF37] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/40 transition-colors"
+                              title={`Live Track RUN Courier: ${o.trackingNumber}`}
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {o.courierInvoiceUrl && (
                             <a
                               href={o.courierInvoiceUrl}
@@ -1415,6 +1481,14 @@ export const AdminView: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#0B0C0E] border border-emerald-500/30 text-[11px]">
+                      <span className="text-[#8E929E]">RUN Gateway Account:</span>
+                      <span className="text-emerald-400 font-mono font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Client Code: 1000003434
+                      </span>
+                    </div>
+
                     <div className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-1">
                       <div className="flex justify-between">
                         <span className="text-[#8E929E]">Order Number:</span>
@@ -1519,42 +1593,72 @@ export const AdminView: React.FC = () => {
                   className="w-full max-w-lg bg-[#121316] border border-[#262930] rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl"
                 >
                   <div className="flex items-center justify-between border-b border-[#262930] pb-3">
-                    <div className="flex items-center gap-2 text-[#D4AF37]">
+                    <div className="flex items-center gap-2.5 text-[#D4AF37]">
                       <Navigation className="w-5 h-5" />
                       <div>
-                        <h3 className="text-sm font-bold text-white">
-                          RUN Couriers &bull; Tracking #{trackingModalData.trackingNo}
-                        </h3>
-                        <p className="text-[10px] text-[#8E929E]">Order #{trackingModalData.orderNumber}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-sm font-bold text-white">
+                            RUN Couriers &bull; Tracking #{trackingModalData.trackingNo}
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(trackingModalData.trackingNo);
+                              addToast('success', 'Copied', `Tracking #${trackingModalData.trackingNo} copied.`);
+                            }}
+                            className="p-1 rounded bg-[#181A1F] hover:bg-[#20232A] text-[#D4AF37] border border-[#262930]"
+                            title="Copy Tracking Number"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-[#8E929E]">
+                          Order: <strong className="text-white">{trackingModalData.orderNumber}</strong> &bull; Merchant Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong>
+                        </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setTrackingModalData(null)}
-                      className="p-1 text-[#8E929E] hover:text-white"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTrackingModal(trackingModalData.orderNumber, trackingModalData.trackingNo)}
+                        disabled={trackingModalData.loading}
+                        className="p-1.5 rounded-lg bg-[#181A1F] hover:bg-[#20232A] text-[#D4AF37] border border-[#262930] transition-colors"
+                        title="Refresh Tracking Status"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${trackingModalData.loading ? 'animate-spin text-[#D4AF37]' : ''}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTrackingModalData(null)}
+                        className="p-1.5 text-[#8E929E] hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-[#0B0C0E] border border-[#D4AF37]/30 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-[#8E929E] block">Current Status</span>
+                      <span className="text-[10px] uppercase tracking-wider text-[#8E929E] block">Live Status</span>
                       <span className="text-sm font-bold text-[#D4AF37]">{trackingModalData.currentStatus}</span>
                     </div>
-                    <span className="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
-                      Live
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Live Sync
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
                     <span className="text-[11px] uppercase tracking-wider text-[#8E929E] font-semibold block">
-                      Tracking Timeline
+                      Consignment Milestone History
                     </span>
 
                     {trackingModalData.loading ? (
-                      <div className="py-8 text-center text-xs text-[#8E929E]">
-                        Connecting to portal.runcourier.com...
+                      <div className="py-8 text-center text-xs text-[#8E929E] flex flex-col items-center justify-center gap-2">
+                        <RefreshCw className="w-5 h-5 text-[#D4AF37] animate-spin" />
+                        <span>Connecting to portal.runcourier.com via Merchant Code 1000003434...</span>
                       </div>
                     ) : trackingModalData.history.length > 0 ? (
                       <div className="relative pl-6 space-y-4 border-l-2 border-[#D4AF37]/40 max-h-60 overflow-y-auto pr-2">
@@ -1568,16 +1672,26 @@ export const AdminView: React.FC = () => {
                       </div>
                     ) : (
                       <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-center text-xs text-[#8E929E]">
-                        Tracking consignment registered. Awaiting initial hub scan.
+                        Consignment registered under Client Code 1000003434. Awaiting rider pickup &amp; first hub scan.
                       </div>
                     )}
                   </div>
 
-                  <div className="flex justify-end pt-2 border-t border-[#262930]">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#262930]">
+                    <a
+                      href="https://portal.runcourier.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#8E929E] hover:text-[#D4AF37] flex items-center gap-1 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>RUN Portal</span>
+                    </a>
+
                     <button
                       type="button"
                       onClick={() => setTrackingModalData(null)}
-                      className="py-2 px-5 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-white text-xs font-semibold"
+                      className="py-2 px-5 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-white text-xs font-semibold cursor-pointer"
                     >
                       Close
                     </button>

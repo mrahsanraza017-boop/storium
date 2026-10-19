@@ -16,8 +16,8 @@ if (!function_exists('courier_config')) {
         }
 
         $defaults = array(
-            'auth_key'                  => '14dfe6b1-d696-4b71-92c8-3254aa5c7ce7',
-            'client_code'               => '1001',
+            'auth_key'                  => 'cf7882d2-d196-4be5-bf2e-4d9d4f38b24e',
+            'client_code'               => '1000003434',
             'profile_id'                => '2002',
             'origin'                    => 'Lahore',
             'service_type'              => 'Overnight',
@@ -154,6 +154,12 @@ if (!function_exists('courier_track_order')) {
         $config = courier_config();
         $url = rtrim($config['base_api_url'], '/') . '/TrackOrder.php';
 
+        $payload = array(
+            'tracking_no' => $trackingNo,
+            'client_code' => $config['client_code'],
+            'auth_key'    => $config['auth_key'],
+        );
+
         $ch = curl_init($url);
         if ($ch === false) {
             return array('success' => false, 'error' => 'cURL init failed');
@@ -162,9 +168,13 @@ if (!function_exists('courier_track_order')) {
         curl_setopt_array($ch, array(
             CURLOPT_POST           => true,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
-            CURLOPT_POSTFIELDS     => json_encode(array('tracking_no' => $trackingNo)),
+            CURLOPT_HTTPHEADER     => array(
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ),
+            CURLOPT_POSTFIELDS     => json_encode($payload),
             CURLOPT_TIMEOUT        => 20,
+            CURLOPT_CONNECTTIMEOUT => 10,
         ));
 
         $res = curl_exec($ch);
@@ -178,8 +188,11 @@ if (!function_exists('courier_track_order')) {
             curl_setopt_array($chAlt, array(
                 CURLOPT_POST           => true,
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
-                CURLOPT_POSTFIELDS     => json_encode(array('tracking_no' => $trackingNo)),
+                CURLOPT_HTTPHEADER     => array(
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                ),
+                CURLOPT_POSTFIELDS     => json_encode($payload),
                 CURLOPT_TIMEOUT        => 15,
             ));
             $altRes = curl_exec($chAlt);
@@ -187,10 +200,36 @@ if (!function_exists('courier_track_order')) {
             $json = json_decode((string) $altRes, true);
         }
 
+        $history = array();
+        $currentStatus = 'In Transit';
+
+        if (is_array($json)) {
+            if (isset($json['history']) && is_array($json['history'])) {
+                $history = $json['history'];
+            } elseif (isset($json['data']) && is_array($json['data'])) {
+                $history = $json['data'];
+            } elseif (array_is_list($json)) {
+                $history = $json;
+            }
+
+            if (isset($json['current_status']) && is_string($json['current_status'])) {
+                $currentStatus = $json['current_status'];
+            } elseif (isset($json['status']) && is_string($json['status'])) {
+                $currentStatus = $json['status'];
+            } elseif (!empty($history)) {
+                $lastEvent = end($history);
+                if (is_array($lastEvent) && isset($lastEvent['status'])) {
+                    $currentStatus = (string) $lastEvent['status'];
+                }
+            }
+        }
+
         return array(
-            'success'     => is_array($json),
-            'tracking_no' => $trackingNo,
-            'history'     => is_array($json) ? $json : array(),
+            'success'        => is_array($json),
+            'tracking_no'    => $trackingNo,
+            'current_status' => $currentStatus,
+            'history'        => $history,
+            'raw'            => $json,
         );
     }
 }
