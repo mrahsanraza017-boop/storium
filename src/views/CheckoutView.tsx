@@ -241,7 +241,7 @@ export const CheckoutView: React.FC = () => {
     if (!formData.address.trim()) errors.address = 'Street address is required';
     if (!formData.city.trim()) errors.city = 'Please specify your city';
     if (paymentMethod === 'cod' && !codAgreement) {
-      errors.codAgreement = "Please confirm that you'll pay courier fee if you don't accept the order at your door.";
+      errors.codAgreement = "Please confirm the declaration to proceed with Cash on Delivery.";
       addToast('error', 'Declaration Required', "Please mark the declaration checkbox above Confirm Order to proceed with Cash on Delivery.");
     }
 
@@ -776,7 +776,7 @@ export const CheckoutView: React.FC = () => {
                       className="mt-0.5 w-4 h-4 rounded border-[#262930] bg-[#121316] text-[#D4AF37] focus:ring-[#D4AF37] focus:ring-offset-0 cursor-pointer accent-[#D4AF37]"
                     />
                     <span className="text-xs text-[#E8E8EC] font-medium leading-relaxed">
-                      I swear that i&apos;ll pay courier fee if I don&apos;t accept Order at my Door
+                      I swear by Allah (SWT) that I will receive this parcel when rider comes to me to deliver it, if fail to do so I will pay delivery charges 300. Via easypaisa or bank account.
                     </span>
                   </label>
                   {formErrors.codAgreement && (
