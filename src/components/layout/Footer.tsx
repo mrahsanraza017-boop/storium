@@ -18,11 +18,11 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-transparent border-t border-[#262930]/80 pb-12 text-[#9Ea2AF]">
+    <footer className="w-full bg-black/85 backdrop-blur-xl border-t border-[#262930]/60 pb-12 text-[#9Ea2AF] opacity-85 hover:opacity-100 transition-opacity duration-300">
       {/* 4-Pillar Trust Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-b border-[#262930]/80">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-b border-[#262930]/60">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-[#0B0C0E]/75 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/60 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
             <div className="p-3 rounded-xl bg-[#121316] border border-[#262930] text-[#D4AF37] flex-shrink-0">
               <Truck className="w-5 h-5" />
             </div>
@@ -36,7 +36,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-[#0B0C0E]/75 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/60 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
             <div className="p-3 rounded-xl bg-[#121316] border border-[#262930] text-[#D4AF37] flex-shrink-0">
               <Clock className="w-5 h-5" />
             </div>
@@ -50,7 +50,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-[#0B0C0E]/75 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/60 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
             <div className="p-3 rounded-xl bg-[#121316] border border-[#262930] text-[#D4AF37] flex-shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
@@ -64,7 +64,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-[#0B0C0E]/75 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/60 backdrop-blur-md border border-[#262930]/80 hover:border-[#D4AF37]/30 transition-all shadow-lg">
             <div className="p-3 rounded-xl bg-[#121316] border border-[#262930] text-[#D4AF37] flex-shrink-0">
               <RefreshCw className="w-5 h-5" />
             </div>
