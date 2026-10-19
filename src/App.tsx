@@ -103,10 +103,12 @@ const AppContent: React.FC = () => {
       {/* Global Scroll-Driven Watch Background Canvas */}
       {showWatchBackground && <WatchBackgroundCanvas />}
 
-      {/* Top Luxury Navigation */}
-      <div className="relative z-30">
-        <Navbar />
-      </div>
+      {/* Top Luxury Navigation - hidden on Admin view for clean app shell */}
+      {currentPage !== 'admin' && (
+        <div className="relative z-30">
+          <Navbar />
+        </div>
+      )}
 
       {/* Main View Display with subtle luxury fade transition */}
       <main className="flex-1 w-full relative z-10" id="main-content">
@@ -126,10 +128,12 @@ const AppContent: React.FC = () => {
         </AnimatePresence>
       </main>
 
-      {/* Luxury Footer with Pakistan Trust Pillars */}
-      <div className="relative z-20">
-        <Footer />
-      </div>
+      {/* Luxury Footer with Pakistan Trust Pillars - hidden on Admin view */}
+      {currentPage !== 'admin' && (
+        <div className="relative z-20">
+          <Footer />
+        </div>
+      )}
 
       {/* Global Interactive Overlays */}
       <CartDrawer />

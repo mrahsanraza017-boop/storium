@@ -7,6 +7,7 @@ import {
   User,
   Menu,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
@@ -153,6 +154,23 @@ export const Navbar: React.FC = () => {
           >
             <User className="w-5 h-5" />
           </button>
+
+          {/* Admin Command Portal (visible if running in installed PWA or admin session) */}
+          {(typeof window !== 'undefined' && (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            (window.navigator as any).standalone === true ||
+            localStorage.getItem('storium_admin_dev_bypass') === 'true'
+          )) && (
+            <button
+              type="button"
+              onClick={() => handleNavClick('admin')}
+              className="py-1.5 px-3 rounded-full bg-[#D4AF37]/15 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-[#0B0C0E] border border-[#D4AF37]/40 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              title="Return to Admin Command Center"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Admin</span>
+            </button>
+          )}
 
           {/* Shopping Bag / Cart */}
           <button

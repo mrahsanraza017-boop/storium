@@ -242,9 +242,27 @@ function getInitialRoute(): {
 
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
   const searchParams = new URLSearchParams(window.location.search);
+  const pwaParam = searchParams.get('pwa');
+
+  const isStandalone = (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    pwaParam === 'admin' ||
+    pwaParam === '1' ||
+    document.referrer.includes('android-app://')
+  );
+
+  // If opened via PWA launcher or explicitly requested admin path/param
+  if (pwaParam === 'admin' || path === 'admin') {
+    return { page: 'admin', slug: null, category: null, subcategory: null };
+  }
+
+  // When launched from an installed app on home screen with no subpath, open Admin Panel directly
+  if (isStandalone && path === '' && !searchParams.get('page') && !searchParams.get('product')) {
+    return { page: 'admin', slug: null, category: null, subcategory: null };
+  }
 
   // Check path first
-  if (path === 'admin') return { page: 'admin', slug: null, category: null, subcategory: null };
   if (path === 'watches') return { page: 'watches', slug: null, category: 'watches', subcategory: null };
   if (path === 'accessories') return { page: 'accessories', slug: null, category: 'accessories', subcategory: null };
   if (path === 'shop') {
