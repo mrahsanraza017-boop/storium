@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, Shield, Truck, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ProductGallery } from './ProductGallery';
+import { DeliveryEstimator } from './DeliveryEstimator';
+import { BuyThreePromoBanner } from '../promotions/BuyThreePromoBanner';
 
 export const QuickViewModal: React.FC = () => {
   const { quickViewProduct, closeQuickView, addToCart, toggleWishlist, isInWishlist, navigate } =
@@ -111,6 +113,9 @@ export const QuickViewModal: React.FC = () => {
                   </span>
                 </div>
 
+                {/* Buy 3, Get 15% Off Offer Callout */}
+                <BuyThreePromoBanner product={quickViewProduct} className="mt-3" />
+
                 {/* Short Description */}
                 <p className="mt-4 text-sm text-[#CBD0DC] leading-relaxed">
                   {quickViewProduct.shortDescription || quickViewProduct.description}
@@ -216,15 +221,18 @@ export const QuickViewModal: React.FC = () => {
 
                 {/* Guarantees */}
                 <div className="grid grid-cols-2 gap-2 pt-4 border-t border-[#262930]/60 text-[11px] text-[#CBD0DC]">
-<div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-[#D4AF37]" />
-                      <span>1-Year International Warranty</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-[#D4AF37]" />
+                    <span>1-Year International Warranty</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#D4AF37]" />
                     <span>Free Insured Delivery (Pakistan)</span>
                   </div>
                 </div>
+
+                {/* Location Delivery Estimator */}
+                <DeliveryEstimator productPrice={quickViewProduct.salePrice ?? quickViewProduct.price} className="mt-4" />
               </div>
             </div>
           </motion.div>

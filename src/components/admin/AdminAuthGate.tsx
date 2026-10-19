@@ -41,7 +41,11 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
         };
     }, []);
 
-    const isAdmin = session?.user.app_metadata?.role === 'admin';
+    const isDev = Boolean(import.meta.env?.DEV);
+    const [devBypass, setDevBypass] = useState<boolean>(() => {
+        return isDev && typeof window !== 'undefined' && localStorage.getItem('storium_admin_dev_bypass') === 'true';
+    });
+    const isAdmin = session?.user.app_metadata?.role === 'admin' || devBypass;
 
     const handleSignIn = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -68,6 +72,10 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
     };
 
     const handleSignOut = async () => {
+        if (devBypass) {
+            localStorage.removeItem('storium_admin_dev_bypass');
+            setDevBypass(false);
+        }
         const supabase = await getSupabase();
         await supabase.auth.signOut();
         addToast('info', 'Admin Session Ended', 'The administration portal has been locked.');
@@ -128,6 +136,22 @@ export const AdminAuthGate: React.FC<AdminAuthGateProps> = ({ children }) => {
                     {isSubmitting ? <LockKeyhole className="h-4 w-4 animate-pulse" /> : <LogIn className="h-4 w-4" />}
                     {isSubmitting ? 'Authenticating...' : 'Enter Admin Portal'}
                 </button>
+
+                {isDev && (
+                    <div className="mt-6 pt-4 border-t border-[#262930] text-center">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                localStorage.setItem('storium_admin_dev_bypass', 'true');
+                                setDevBypass(true);
+                                addToast('info', 'Dev Preview Mode', 'Entered admin dashboard in local development mode.');
+                            }}
+                            className="text-xs text-[#D4AF37] hover:text-[#E5C378] transition-colors uppercase tracking-wider font-semibold"
+                        >
+                            Preview Admin Dashboard (Local Dev)
+                        </button>
+                    </div>
+                )}
             </form>
         </div>
     );

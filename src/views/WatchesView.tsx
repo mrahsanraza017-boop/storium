@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Watch, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
+import { SaleBanner } from '../components/promotions/SaleBanner';
+import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
@@ -114,6 +116,11 @@ export const WatchesView: React.FC = () => {
           </div>
         </div>
 
+        {/* Promotional Sale Banner */}
+        <div className="mb-8">
+          <SaleBanner variant="section" />
+        </div>
+
         {/* Filter Controls Area */}
         <div className="space-y-6 mb-10">
           {/* Top Row: Type Pills & Sort */}
@@ -185,6 +192,11 @@ export const WatchesView: React.FC = () => {
           emptyMessage="No timepieces match the current filters. Adjust your category selection."
           columns="4"
         />
+
+        {/* Curated Watch Deals Section */}
+        <div className="mt-16 pt-12 border-t border-[#262930]">
+          <WatchDealsSection />
+        </div>
       </div>
     </div>
 

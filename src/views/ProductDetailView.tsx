@@ -22,6 +22,9 @@ import { ProductGrid } from '../components/product/ProductGrid';
 import { MotionReveal } from '../components/animation/MotionReveal';
 import { ProductReviewsSection } from '../components/reviews/ProductReviewsSection';
 import { StarRating } from '../components/reviews/StarRating';
+import { DeliveryEstimator } from '../components/product/DeliveryEstimator';
+import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
+import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getProductSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
@@ -217,6 +220,9 @@ export const ProductDetailView: React.FC = () => {
                     : 'Currently on Backorder'}
                 </span>
               </div>
+
+              {/* Buy 3, Get 15% Off Promotional Offer Callout */}
+              <BuyThreePromoBanner product={product} />
 
               {/* Short Description */}
               <p className="text-sm sm:text-base text-[#D1D5E0] leading-relaxed pt-2 luxury-text-shadow">
@@ -422,6 +428,9 @@ export const ProductDetailView: React.FC = () => {
                   <span>7-Day Return</span>
                 </div>
               </div>
+
+              {/* Location-Based Delivery Estimator */}
+              <DeliveryEstimator productPrice={price} className="mt-4" />
             </div>
           </MotionReveal>
         </div>
@@ -582,6 +591,9 @@ export const ProductDetailView: React.FC = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Watch Deals & Curated Duos / Trios */}
+        <WatchDealsSection className="border-b border-[#262930]" />
 
         {/* Related Products Grid */}
         {relatedProducts.length > 0 && (

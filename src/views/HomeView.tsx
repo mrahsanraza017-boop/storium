@@ -9,6 +9,8 @@ import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { MotionReveal } from '../components/animation/MotionReveal';
 import { StarRating } from '../components/reviews/StarRating';
+import { SaleBanner } from '../components/promotions/SaleBanner';
+import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import {
@@ -112,7 +114,12 @@ export const HomeView: React.FC = () => {
           </div>
 
         </div>
-</section>
+      </section>
+
+      {/* Prominent Promotional Sale Banner Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 sm:-mt-8 mb-8 relative z-20">
+        <SaleBanner variant="section" />
+      </div>
 
       {/* 3. FEATURED WATCHES SHOWCASE
           Rendered through the Reusable ProductGrid component (Automatic animations)
@@ -265,6 +272,9 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Curated Luxury Watch Deals & Duos */}
+      <WatchDealsSection />
 
       {/* 5. BRAND PHILOSOPHY SECTION
           "Products you wear and carry should reflect your personality."

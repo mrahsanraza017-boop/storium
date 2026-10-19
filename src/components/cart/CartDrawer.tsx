@@ -10,6 +10,10 @@ export const CartDrawer: React.FC = () => {
     cart,
     cartCount,
     cartSubtotal,
+    cartDiscount,
+    cartDiscountDescription,
+    isBuyThreeEligible,
+    watchCount,
     cartShippingFee,
     cartTotal,
     removeFromCart,
@@ -92,6 +96,31 @@ export const CartDrawer: React.FC = () => {
                       <div
                         className="bg-gradient-to-r from-[#D4AF37] to-[#E5C378] h-full transition-all duration-300"
                         style={{ width: `${Math.min(100, (cartSubtotal / freeShippingThreshold) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Buy 3, Get 15% Off Watch Promo Mini Banner */}
+                {cart.length > 0 && (
+                  <div className={`mt-2.5 p-2.5 rounded-xl border text-[11px] ${
+                    isBuyThreeEligible
+                      ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
+                      : 'bg-[#181A1F] border-[#262930] text-[#CBD0DC]'
+                  }`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold flex items-center gap-1">
+                        <span>{isBuyThreeEligible ? '🎉' : '✨'}</span>
+                        <span>{isBuyThreeEligible ? '15% Off Watches Applied!' : 'Buy 3 Watches, Save 15%'}</span>
+                      </span>
+                      <span className="text-[10px] text-[#D4AF37] font-bold">{watchCount}/3</span>
+                    </div>
+                    <div className="w-full bg-[#0B0C0E] h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          isBuyThreeEligible ? 'bg-emerald-400' : 'bg-[#D4AF37]'
+                        }`}
+                        style={{ width: `${Math.min(100, (watchCount / 3) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -246,6 +275,15 @@ export const CartDrawer: React.FC = () => {
                         )}
                       </span>
                     </div>
+                    {cartDiscount > 0 && (
+                      <div className="flex justify-between text-emerald-400 font-semibold bg-emerald-950/30 p-2 rounded-lg border border-emerald-500/30 text-[11px]">
+                        <span className="flex items-center gap-1">
+                          <span>🏷️</span>
+                          <span>{cartDiscountDescription || '15% Off Watches'}</span>
+                        </span>
+                        <span>-Rs. {cartDiscount.toLocaleString()}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm font-bold text-[#F5F5F7] pt-2 border-t border-[#262930]">
                       <span>Total (PKR)</span>
                       <span className="text-base text-[#D4AF37]">

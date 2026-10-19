@@ -15,6 +15,7 @@ import '@sfpy/atoms/styles';
 import { useStore } from '../context/StoreContext';
 import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
 import { PaymentBadges } from '../components/common/PaymentBadges';
+import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
 import { Order } from '../types';
 
 const getProductPaymentMethods = (methods?: Array<'cod' | 'card'>): Array<'cod' | 'card'> =>
@@ -24,6 +25,8 @@ export const CheckoutView: React.FC = () => {
   const {
     cart,
     cartSubtotal,
+    cartDiscount,
+    cartDiscountDescription,
     cartShippingFee,
     cartTotal,
     createOrder,
@@ -268,6 +271,8 @@ export const CheckoutView: React.FC = () => {
         customer: formData,
         items: orderItems,
         subtotal: cartSubtotal,
+        discount: cartDiscount,
+        discountDescription: cartDiscountDescription,
         shippingFee: cartShippingFee,
         total: cartTotal,
         paymentMethod,
@@ -486,7 +491,15 @@ export const CheckoutView: React.FC = () => {
                   <select
                     id="checkout-city"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, city: val });
+                      if (typeof window !== 'undefined' && val) {
+                        try {
+                          localStorage.setItem('storium_user_city', val);
+                        } catch {}
+                      }
+                    }}
                     aria-label="Select City in Pakistan"
                     className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
                   >
@@ -668,6 +681,9 @@ export const CheckoutView: React.FC = () => {
                 Order Items ({cart.length})
               </h2>
 
+              {/* Promotional Offer Banner */}
+              <BuyThreePromoBanner />
+
               {/* Items summary */}
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                 {cart.map((item, idx) => {
@@ -714,6 +730,15 @@ export const CheckoutView: React.FC = () => {
                     )}
                   </span>
                 </div>
+                {cartDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-400 font-semibold bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/30 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span>🏷️</span>
+                      <span>{cartDiscountDescription || 'Special Promotion Savings'}</span>
+                    </span>
+                    <span>-Rs. {cartDiscount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base font-bold text-[#F5F5F7] pt-2 border-t border-[#262930]">
                   <span>Total (PKR)</span>
                   <span className="text-xl text-[#D4AF37]">

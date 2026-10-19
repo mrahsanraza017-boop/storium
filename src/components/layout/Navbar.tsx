@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
+import { SaleBanner } from '../promotions/SaleBanner';
 
 export const Navbar: React.FC = () => {
   const {
@@ -39,6 +40,9 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#0B0C0E]/90 backdrop-blur-xl border-b border-[#262930]/80">
+      {/* Dynamic Promotional Sale Banner */}
+      <SaleBanner variant="topbar" />
+
       {/* Top Luxury Announcement Bar (Nationwide Pakistan Delivery & COD) */}
       <div className="bg-gradient-to-r from-[#D4AF37] via-[#E5C378] to-[#D4AF37] border-b border-[#C5A059] py-1.5 px-4 text-center shadow-md">
         <p className="text-[11px] sm:text-xs text-black tracking-widest uppercase font-bold flex items-center justify-center gap-2">

@@ -88,6 +88,8 @@ export interface Order {
   customer: CustomerShippingAddress;
   items: OrderItem[];
   subtotal: number;
+  discount?: number;
+  discountDescription?: string;
   shippingFee: number;
   total: number;
   paymentMethod: 'cod' | 'card';
@@ -103,6 +105,61 @@ export interface Order {
   supabaseSynced?: boolean;
 }
 
+export interface SaleBannerConfig {
+  enabled: boolean;
+  announcementText: string;
+  badgeText: string;
+  highlightText: string;
+  ctaText: string;
+  ctaTarget: PageView;
+  couponCode?: string;
+  bgStyle?: 'gold' | 'dark' | 'gradient';
+}
+
+export interface WatchBundleDeal {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  requiredCount: 2 | 3;
+  discountPercentage?: number;
+  fixedBundlePrice?: number;
+  watchIds?: string[];
+  featured: boolean;
+  active: boolean;
+}
+
+export interface BuyThreePromoConfig {
+  enabled: boolean;
+  discountPercentage: number;
+  minWatches: number;
+  bannerTitle: string;
+  bannerSubtitle: string;
+}
+
+export interface CityDeliveryRule {
+  city: string;
+  minDays: number;
+  maxDays: number;
+  courier: string;
+  codAvailable: boolean;
+  available?: boolean;
+}
+
+export interface DeliveryEstimateConfig {
+  enabled?: boolean;
+  cutoffTime: string;
+  defaultMinDays: number;
+  defaultMaxDays: number;
+  rules: CityDeliveryRule[];
+}
+
+export interface PromotionsConfig {
+  saleBanner: SaleBannerConfig;
+  watchDeals: WatchBundleDeal[];
+  buyThreePromo: BuyThreePromoConfig;
+  deliveryEstimates: DeliveryEstimateConfig;
+}
 
 export interface ContactInquiry {
   id: string;
@@ -180,6 +237,8 @@ export interface BusinessSettings {
   };
   /** Private gateway notes (admin only, never rendered on the public website). */
   gatewayNotes: string;
+  /** Store promotions, sale banners, watch bundle deals, and location delivery rules. */
+  promotions: PromotionsConfig;
 }
 
 export const ACCESSORY_SUBCATEGORIES = [
@@ -217,3 +276,56 @@ export type PageView =
   | 'privacy-policy'
   | 'terms'
   | 'payment-complete';
+
+export interface Refund {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  amount: number;
+  reason: string;
+  status: 'requested' | 'approved' | 'processed' | 'rejected';
+  paymentMethod: 'cod' | 'card';
+  createdAt: string;
+  updatedAt?: string;
+  processedAt?: string;
+  notes?: string;
+  supabaseSynced?: boolean;
+}
+
+export interface AnalyticsEvent {
+  id?: string;
+  eventType: 'page_view' | 'session_start' | 'add_to_cart' | 'checkout_start' | 'purchase';
+  path: string;
+  pageTitle?: string;
+  referrer?: string;
+  source: 'direct' | 'google' | 'instagram' | 'facebook' | 'whatsapp' | 'referral' | string;
+  deviceType: 'mobile' | 'desktop' | 'tablet';
+  browser?: string;
+  city?: string;
+  country?: string;
+  sessionId: string;
+  visitorId: string;
+  createdAt: string;
+  metadata?: Record<string, any>;
+}
+
+export type DateRangePreset = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisMonth' | 'custom';
+
+export interface DateRangeFilter {
+  preset: DateRangePreset;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  type: 'order' | 'stock' | 'inquiry' | 'payment' | 'refund' | 'system';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  linkTab?: string;
+  data?: Record<string, any>;
+}

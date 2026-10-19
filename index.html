@@ -30,9 +30,14 @@
     <!-- Canonical (homepage fallback; route-aware canonical is injected at runtime by SEOHead) -->
     <link rel="canonical" href="https://storium.online/" />
 
-    <!-- Favicons -->
+    <!-- Favicons & PWA Manifest -->
     <link rel="icon" type="image/png" href="/logo.png?v=4" />
     <link rel="apple-touch-icon" href="/logo.png?v=4" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="STORIUM" />
 
     <!-- Preload Critical LCP Background Frame & Primary Fonts -->
     <link rel="preload" href="/frames/frame_000001.webp" as="image" type="image/webp" fetchpriority="high" />

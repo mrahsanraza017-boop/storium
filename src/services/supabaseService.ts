@@ -1,8 +1,8 @@
 import { getSupabase, SUPABASE_PROJECT_ID, SUPABASE_URL } from '../lib/supabase';
-import { Order, ContactInquiry, Product, CustomerUser, ProductMedia, ProductReview } from '../types';
+import { Order, ContactInquiry, Product, CustomerUser, ProductMedia, ProductReview, Refund, AnalyticsEvent } from '../types';
 import { compressImage } from '../utils/imageCompressor';
 
-export type { ContactInquiry };
+export type { ContactInquiry, Refund, AnalyticsEvent };
 
 export interface SupabaseSyncResult {
   success: boolean;
@@ -126,6 +126,10 @@ ALTER TABLE public.orders
     ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
 ALTER TABLE public.orders
     ADD COLUMN IF NOT EXISTS payment_failed_at TIMESTAMPTZ;
+ALTER TABLE public.orders
+    ADD COLUMN IF NOT EXISTS discount NUMERIC DEFAULT 0;
+ALTER TABLE public.orders
+    ADD COLUMN IF NOT EXISTS discount_description TEXT;
 
 -- Backfill: add phone_verified column to customer_profiles if missing
 ALTER TABLE public.customer_profiles
@@ -296,6 +300,89 @@ CREATE POLICY "Admin full reviews access"
 ON public.reviews FOR ALL
 USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
 WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ================================================================
+-- 14. Refunds table
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.refunds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id TEXT,
+    order_number TEXT NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_email TEXT NOT NULL,
+    amount NUMERIC NOT NULL DEFAULT 0,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'requested' CHECK (status IN ('requested', 'approved', 'processed', 'rejected')),
+    payment_method TEXT NOT NULL DEFAULT 'cod',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    processed_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.refunds ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin full refunds access" ON public.refunds;
+CREATE POLICY "Admin full refunds access"
+ON public.refunds FOR ALL
+USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ================================================================
+-- 15. Analytics Events table for privacy-conscious real tracking
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.analytics_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type TEXT NOT NULL,
+    path TEXT NOT NULL,
+    page_title TEXT,
+    referrer TEXT,
+    source TEXT NOT NULL DEFAULT 'direct',
+    device_type TEXT NOT NULL DEFAULT 'desktop',
+    browser TEXT,
+    city TEXT,
+    country TEXT DEFAULT 'Pakistan',
+    session_id TEXT NOT NULL,
+    visitor_id TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_created ON public.analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_session ON public.analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_visitor ON public.analytics_events(visitor_id);
+
+ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow anonymous analytics insert" ON public.analytics_events;
+CREATE POLICY "Allow anonymous analytics insert"
+ON public.analytics_events FOR INSERT
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admin read analytics" ON public.analytics_events;
+CREATE POLICY "Admin read analytics"
+ON public.analytics_events FOR SELECT
+USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ================================================================
+-- 16. Admin Push Subscriptions table for mobile order notifications
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.admin_push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    endpoint TEXT NOT NULL UNIQUE,
+    keys JSONB NOT NULL,
+    user_agent TEXT,
+    device_label TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.admin_push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin manage push subscriptions" ON public.admin_push_subscriptions;
+CREATE POLICY "Admin manage push subscriptions"
+ON public.admin_push_subscriptions FOR ALL
+USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 `;
 
 /**
@@ -304,7 +391,7 @@ WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 export async function saveOrderToSupabase(order: Order): Promise<SupabaseSyncResult> {
   try {
     const supabase = await getSupabase();
-    const payload = {
+    const payload: Record<string, any> = {
       order_number: order.orderNumber,
       customer_id: (await supabase.auth.getUser()).data.user?.id || null,
       customer_name: order.customer.fullName,
@@ -317,6 +404,8 @@ export async function saveOrderToSupabase(order: Order): Promise<SupabaseSyncRes
       notes: order.customer.notes || '',
       items: order.items,
       subtotal: order.subtotal,
+      discount: order.discount || 0,
+      discount_description: order.discountDescription || null,
       shipping_fee: order.shippingFee,
       total: order.total,
       payment_method: order.paymentMethod,
@@ -325,9 +414,19 @@ export async function saveOrderToSupabase(order: Order): Promise<SupabaseSyncRes
       tracking_number: order.trackingNumber || '',
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('orders')
       .insert([payload]);
+
+    // If column doesn't exist yet in user's Supabase instance, retry without discount columns
+    if (error && (error.message?.includes('discount') || error.code === 'PGRST204')) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.discount;
+      delete fallbackPayload.discount_description;
+      const retryRes = await supabase.from('orders').insert([fallbackPayload]);
+      data = retryRes.data;
+      error = retryRes.error;
+    }
 
     if (error) {
       console.warn('Supabase save order warning:', error);
@@ -667,6 +766,8 @@ export async function fetchSupabaseOrders(): Promise<Order[]> {
       },
       items: Array.isArray(row.items) ? row.items : [],
       subtotal: Number(row.subtotal),
+      discount: row.discount ? Number(row.discount) : 0,
+      discountDescription: row.discount_description || undefined,
       shippingFee: Number(row.shipping_fee),
       total: Number(row.total),
       paymentMethod: row.payment_method,
@@ -759,3 +860,267 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthStatus> {
   return result;
 }
 
+/**
+ * Fetch refunds from Supabase
+ */
+export async function fetchSupabaseRefunds(): Promise<Refund[]> {
+  try {
+    const supabase = await getSupabase();
+    const { data, error } = await supabase
+      .from('refunds')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+
+    return data.map((row: any): Refund => ({
+      id: row.id,
+      orderId: row.order_id || '',
+      orderNumber: row.order_number,
+      customerName: row.customer_name,
+      customerEmail: row.customer_email,
+      amount: Number(row.amount),
+      reason: row.reason,
+      status: row.status as Refund['status'],
+      paymentMethod: row.payment_method as 'cod' | 'card',
+      createdAt: row.created_at,
+      processedAt: row.processed_at || undefined,
+      notes: row.notes || undefined,
+      supabaseSynced: true,
+    }));
+  } catch (err) {
+    console.warn('Failed to fetch refunds from Supabase:', err);
+    return [];
+  }
+}
+
+/**
+ * Save a refund request to Supabase
+ */
+export async function saveRefundToSupabase(refund: Refund): Promise<SupabaseSyncResult> {
+  try {
+    const supabase = await getSupabase();
+    const payload = {
+      id: refund.id,
+      order_id: refund.orderId,
+      order_number: refund.orderNumber,
+      customer_name: refund.customerName,
+      customer_email: refund.customerEmail,
+      amount: refund.amount,
+      reason: refund.reason,
+      status: refund.status,
+      payment_method: refund.paymentMethod,
+      notes: refund.notes || null,
+      created_at: refund.createdAt,
+      processed_at: refund.processedAt || null,
+    };
+
+    const { data, error } = await supabase.from('refunds').upsert([payload]).select();
+    if (error) {
+      return { success: false, error: error.message, isPolicyError: error.code === '42501' };
+    }
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Update refund status in Supabase
+ */
+export async function updateRefundStatusInSupabase(
+  refundId: string,
+  status: Refund['status'],
+  notes?: string
+): Promise<SupabaseSyncResult> {
+  try {
+    const supabase = await getSupabase();
+    const updates: Record<string, any> = {
+      status,
+      processed_at: status === 'processed' || status === 'approved' ? new Date().toISOString() : null,
+    };
+    if (notes !== undefined) updates.notes = notes;
+
+    const { data, error } = await supabase.from('refunds').update(updates).eq('id', refundId).select();
+    if (error) {
+      return { success: false, error: error.message, isPolicyError: error.code === '42501' };
+    }
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Record a privacy-conscious analytics event in Supabase
+ */
+export async function recordAnalyticsEventInSupabase(event: AnalyticsEvent): Promise<SupabaseSyncResult> {
+  try {
+    const supabase = await getSupabase();
+    const payload = {
+      event_type: event.eventType,
+      path: event.path,
+      page_title: event.pageTitle || null,
+      referrer: event.referrer || null,
+      source: event.source || 'direct',
+      device_type: event.deviceType || 'desktop',
+      browser: event.browser || null,
+      city: event.city || null,
+      country: event.country || 'Pakistan',
+      session_id: event.sessionId,
+      visitor_id: event.visitorId,
+      metadata: event.metadata || {},
+      created_at: event.createdAt,
+    };
+
+    const { data, error } = await supabase.from('analytics_events').insert([payload]);
+    if (error) {
+      return { success: false, error: error.message, isTableMissing: error.code === 'PGRST205' };
+    }
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Fetch analytics events from Supabase for date range
+ */
+export async function fetchSupabaseAnalyticsEvents(
+  startDate?: string,
+  endDate?: string
+): Promise<AnalyticsEvent[]> {
+  try {
+    const supabase = await getSupabase();
+    let query = supabase.from('analytics_events').select('*').order('created_at', { ascending: false }).limit(2000);
+
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+
+    return data.map((row: any): AnalyticsEvent => ({
+      id: row.id,
+      eventType: row.event_type as AnalyticsEvent['eventType'],
+      path: row.path,
+      pageTitle: row.page_title,
+      referrer: row.referrer,
+      source: row.source,
+      deviceType: row.device_type,
+      browser: row.browser,
+      city: row.city,
+      country: row.country,
+      sessionId: row.session_id,
+      visitorId: row.visitor_id,
+      metadata: row.metadata,
+      createdAt: row.created_at,
+    }));
+  } catch (err) {
+    console.warn('Failed to load analytics events from Supabase:', err);
+    return [];
+  }
+}
+
+/**
+ * Subscribe to Supabase Realtime changes for orders table
+ */
+export function subscribeToOrdersRealtime(
+  onInsert?: (order: Order) => void,
+  onUpdate?: (order: Order) => void,
+  onDelete?: (orderId: string) => void
+): () => void {
+  let channel: any = null;
+
+  (async () => {
+    try {
+      const supabase = await getSupabase();
+      channel = supabase
+        .channel('realtime:orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload: any) => {
+            if (payload.eventType === 'INSERT' && onInsert && payload.new) {
+              const row = payload.new;
+              onInsert({
+                id: row.id,
+                orderNumber: row.order_number,
+                date: row.created_at,
+                customer: {
+                  fullName: row.customer_name,
+                  email: row.customer_email,
+                  phone: row.customer_phone,
+                  city: row.customer_city,
+                  address: row.customer_address,
+                  province: row.customer_province || 'Punjab',
+                  postalCode: row.postal_code,
+                  notes: row.notes,
+                },
+                items: Array.isArray(row.items) ? row.items : [],
+                subtotal: Number(row.subtotal),
+                discount: row.discount ? Number(row.discount) : 0,
+                discountDescription: row.discount_description || undefined,
+                shippingFee: Number(row.shipping_fee),
+                total: Number(row.total),
+                paymentMethod: row.payment_method,
+                paymentStatus: row.payment_status,
+                orderStatus: row.order_status,
+                trackingNumber: row.tracking_number,
+                rgTransactionRef: row.rg_transaction_ref || undefined,
+                paidAt: row.paid_at || undefined,
+                paymentFailedAt: row.payment_failed_at || undefined,
+                supabaseSynced: true,
+              });
+            } else if (payload.eventType === 'UPDATE' && onUpdate && payload.new) {
+              const row = payload.new;
+              onUpdate({
+                id: row.id,
+                orderNumber: row.order_number,
+                date: row.created_at,
+                customer: {
+                  fullName: row.customer_name,
+                  email: row.customer_email,
+                  phone: row.customer_phone,
+                  city: row.customer_city,
+                  address: row.customer_address,
+                  province: row.customer_province || 'Punjab',
+                  postalCode: row.postal_code,
+                  notes: row.notes,
+                },
+                items: Array.isArray(row.items) ? row.items : [],
+                subtotal: Number(row.subtotal),
+                discount: row.discount ? Number(row.discount) : 0,
+                discountDescription: row.discount_description || undefined,
+                shippingFee: Number(row.shipping_fee),
+                total: Number(row.total),
+                paymentMethod: row.payment_method,
+                paymentStatus: row.payment_status,
+                orderStatus: row.order_status,
+                trackingNumber: row.tracking_number,
+                rgTransactionRef: row.rg_transaction_ref || undefined,
+                paidAt: row.paid_at || undefined,
+                paymentFailedAt: row.payment_failed_at || undefined,
+                supabaseSynced: true,
+              });
+            } else if (payload.eventType === 'DELETE' && onDelete && payload.old) {
+              onDelete(payload.old.id || payload.old.order_number);
+            }
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription could not be established:', e);
+    }
+  })();
+
+  return () => {
+    if (channel) {
+      getSupabase().then((supabase) => supabase.removeChannel(channel)).catch(() => {});
+    }
+  };
+}

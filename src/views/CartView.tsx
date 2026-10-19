@@ -9,6 +9,10 @@ export const CartView: React.FC = () => {
     cart,
     cartCount,
     cartSubtotal,
+    cartDiscount,
+    cartDiscountDescription,
+    isBuyThreeEligible,
+    watchCount,
     cartShippingFee,
     cartTotal,
     removeFromCart,
@@ -83,6 +87,52 @@ export const CartView: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Items Table / List */}
           <div className="lg:col-span-8 space-y-4">
+            {/* Buy 3, Get 15% Off Dynamic Promotional Banner */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              isBuyThreeEligible
+                ? 'bg-gradient-to-r from-emerald-950/40 via-[#121316] to-[#D4AF37]/10 border-emerald-500/40 shadow-lg shadow-emerald-950/30'
+                : 'bg-[#121316] border-[#262930]'
+            }`}>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">{isBuyThreeEligible ? '🎉' : '✨'}</span>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-[#F5F5F7] uppercase tracking-wider">
+                      {isBuyThreeEligible
+                        ? '15% Off Bundle Discount Unlocked!'
+                        : 'Special Offer: Buy Any 3 Watches, Get 15% Off'}
+                    </h3>
+                    <p className="text-[11px] text-[#8E929E]">
+                      {isBuyThreeEligible
+                        ? `You have ${watchCount} eligible watches in your bag. 15% discount has been applied!`
+                        : `Add ${Math.max(0, 3 - watchCount)} more ${watchCount === 2 ? 'watch' : 'watches'} to unlock an instant 15% discount across your timepieces.`}
+                    </p>
+                  </div>
+                </div>
+                {!isBuyThreeEligible && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('watches')}
+                    className="hidden sm:inline-flex px-3 py-1.5 rounded-lg bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/30 text-[11px] font-bold uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
+                  >
+                    Browse Watches
+                  </button>
+                )}
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-[#181A1F] rounded-full h-2 overflow-hidden border border-[#262930]/80">
+                <div
+                  className={`h-full transition-all duration-500 rounded-full ${
+                    isBuyThreeEligible
+                      ? 'bg-gradient-to-r from-[#D4AF37] to-emerald-400'
+                      : 'bg-gradient-to-r from-[#D4AF37]/60 to-[#D4AF37]'
+                  }`}
+                  style={{ width: `${Math.min(100, (watchCount / 3) * 100)}%` }}
+                />
+              </div>
+            </div>
+
             {cart.map((item, idx) => {
               const price = item.product.salePrice ?? item.product.price;
               const variantKey = item.selectedVariant
@@ -203,6 +253,15 @@ export const CartView: React.FC = () => {
                     )}
                   </span>
                 </div>
+                {cartDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-400 font-semibold bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-500/30 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span>🏷️</span>
+                      <span>{cartDiscountDescription || 'Bundle Offer'}</span>
+                    </span>
+                    <span>-Rs. {cartDiscount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base font-bold text-[#F5F5F7] pt-3 border-t border-[#262930]">
                   <span>Estimated Total (PKR)</span>
                   <span className="text-xl text-[#D4AF37]">

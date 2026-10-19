@@ -12,9 +12,13 @@ import {
   ContactInquiry,
   ProductReview,
   BusinessSettings,
+  Refund,
+  AdminNotification,
+  WatchBundleDeal,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
 import { DEFAULT_BUSINESS_SETTINGS } from '../data/businessDefaults';
+import { sendOrderNotificationToAdmin } from '../services/pushNotificationService';
 import {
   saveOrderToSupabase,
   saveContactToSupabase,
@@ -33,7 +37,12 @@ import {
   updateReviewStatusInSupabase,
   toggleReviewFeaturedInSupabase,
   deleteReviewFromSupabase,
+  fetchSupabaseRefunds,
+  saveRefundToSupabase,
+  updateRefundStatusInSupabase,
+  subscribeToOrdersRealtime,
 } from '../services/supabaseService';
+import { trackPageView } from '../services/analyticsTracker';
 import {
   isPhoneNumberVerified,
   markPhoneNumberVerified,
@@ -82,9 +91,15 @@ interface StoreContextType {
   cart: CartItem[];
   cartCount: number;
   cartSubtotal: number;
+  cartDiscount: number;
+  cartDiscountDescription: string;
+  isBuyThreeEligible: boolean;
+  watchCount: number;
+  buyThreeDiscount: number;
   cartShippingFee: number;
   cartTotal: number;
   addToCart: (product: Product, quantity?: number, variant?: Record<string, string>) => void;
+  addWatchBundleToCart: (deal: WatchBundleDeal, products: Product[], variants?: Record<string, Record<string, string>>) => void;
   removeFromCart: (productId: string, variantKey?: string) => void;
   updateCartQuantity: (productId: string, quantity: number, variantKey?: string) => void;
   clearCart: () => void;
@@ -180,6 +195,17 @@ interface StoreContextType {
   addToast: (type: 'success' | 'info' | 'error', title: string, message?: string) => void;
   removeToast: (id: string) => void;
 
+  // Refunds
+  refunds: Refund[];
+  createRefund: (refundData: Omit<Refund, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Refund>;
+  updateRefundStatus: (refundId: string, status: Refund['status'], notes?: string) => Promise<void>;
+
+  // Notifications
+  notifications: AdminNotification[];
+  markNotificationRead: (id: string) => void;
+  clearAllNotifications: () => void;
+  addAdminNotification: (notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>) => void;
+
   // Business settings (editable from Admin -> Business Settings)
   businessSettings: BusinessSettings;
   updateBusinessSettings: (updates: Partial<BusinessSettings>) => void;
@@ -198,6 +224,8 @@ const STORAGE_KEYS = {
   REVIEWS: 'storium_reviews_v1',
   USER: 'storium_user_v1',
   SETTINGS: 'storium_settings_v1',
+  REFUNDS: 'storium_refunds_v1',
+  NOTIFICATIONS: 'storium_notifications_v1',
 };
 
 
@@ -384,6 +412,37 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [isSupabaseSyncing, setIsSupabaseSyncing] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
+  // Refunds state
+  const [refunds, setRefunds] = useState<Refund[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.REFUNDS);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return [];
+  });
+
+  // Admin Notifications state
+  const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return [
+      {
+        id: 'notif-pwa-welcome',
+        type: 'system',
+        title: 'Storium PWA Online',
+        message: 'Mobile-first PWA dashboard loaded with real-time analytics and live order monitoring.',
+        timestamp: new Date().toISOString(),
+        read: false,
+      },
+    ];
+  });
+
   // UI state
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -402,6 +461,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           ...parsed,
           socials: { ...DEFAULT_BUSINESS_SETTINGS.socials, ...(parsed.socials || {}) },
           policies: { ...DEFAULT_BUSINESS_SETTINGS.policies, ...(parsed.policies || {}) },
+          promotions: {
+            ...DEFAULT_BUSINESS_SETTINGS.promotions,
+            ...(parsed.promotions || {}),
+            saleBanner: { ...DEFAULT_BUSINESS_SETTINGS.promotions.saleBanner, ...(parsed.promotions?.saleBanner || {}) },
+            buyThreePromo: { ...DEFAULT_BUSINESS_SETTINGS.promotions.buyThreePromo, ...(parsed.promotions?.buyThreePromo || {}) },
+            deliveryEstimates: { ...DEFAULT_BUSINESS_SETTINGS.promotions.deliveryEstimates, ...(parsed.promotions?.deliveryEstimates || {}) },
+            watchDeals: parsed.promotions?.watchDeals?.length ? parsed.promotions.watchDeals : DEFAULT_BUSINESS_SETTINGS.promotions.watchDeals,
+          },
         };
       }
     } catch {
@@ -450,6 +517,22 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn('Storage save failed', e);
     }
   }, [orders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REFUNDS, JSON.stringify(refunds));
+    } catch (e) {
+      console.warn('Storage save failed', e);
+    }
+  }, [refunds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+    } catch (e) {
+      console.warn('Storage save failed', e);
+    }
+  }, [notifications]);
 
   useEffect(() => {
     try {
@@ -522,11 +605,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const syncWithSupabase = async () => {
     setIsSupabaseSyncing(true);
     try {
-      const [remoteOrders, remoteContacts, remoteProducts, remoteReviews] = await Promise.all([
+      const [remoteOrders, remoteContacts, remoteProducts, remoteReviews, remoteRefunds] = await Promise.all([
         fetchSupabaseOrders(),
         fetchSupabaseContacts(),
         fetchSupabaseProducts(),
         fetchSupabaseReviews(),
+        fetchSupabaseRefunds(),
       ]);
 
       if (remoteProducts.length > 0) setProducts(remoteProducts);
@@ -539,6 +623,17 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           // Keep any locally cached orders not yet on Supabase
           prev.forEach((o) => {
             if (!map.has(o.orderNumber)) map.set(o.orderNumber, o);
+          });
+          return Array.from(map.values());
+        });
+      }
+
+      if (remoteRefunds && remoteRefunds.length > 0) {
+        setRefunds((prev) => {
+          const map = new Map<string, Refund>();
+          remoteRefunds.forEach((r) => map.set(r.id, r));
+          prev.forEach((r) => {
+            if (!map.has(r.id)) map.set(r.id, r);
           });
           return Array.from(map.values());
         });
@@ -590,6 +685,56 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  // Real-time visitor tracking for page views & active session heartbeat
+  useEffect(() => {
+    trackPageView(currentPage, selectedSlug ? `Product: ${selectedSlug}` : `Page: ${currentPage}`);
+
+    const heartbeat = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        trackPageView(currentPage, selectedSlug ? `Product: ${selectedSlug}` : `Page: ${currentPage}`);
+      }
+    }, 60000);
+
+    return () => clearInterval(heartbeat);
+  }, [currentPage, selectedSlug]);
+
+  // Real-time Supabase listener for live orders
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = subscribeToOrdersRealtime(
+        (incomingOrder) => {
+          setOrders((prev) => {
+            if (prev.some((o) => o.orderNumber === incomingOrder.orderNumber || o.id === incomingOrder.id)) {
+              return prev;
+            }
+            return [incomingOrder, ...prev];
+          });
+          addAdminNotification({
+            type: 'order',
+            title: 'New Live Order',
+            message: `Order #${incomingOrder.orderNumber} for PKR ${incomingOrder.total?.toLocaleString()} from ${incomingOrder.customer.fullName}`,
+            linkTab: 'orders',
+            data: { orderId: incomingOrder.id, orderNumber: incomingOrder.orderNumber },
+          });
+          void sendOrderNotificationToAdmin(incomingOrder);
+          addToast('success', 'Realtime Order Received!', `Order #${incomingOrder.orderNumber} just placed.`);
+        },
+        (updatedOrder) => {
+          setOrders((prev) =>
+            prev.map((o) => (o.orderNumber === updatedOrder.orderNumber || o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
+          );
+        }
+      );
+    } catch (err) {
+      console.warn('Could not subscribe to orders realtime:', err);
+    }
+
+    return () => {
+      unsubscribe?.();
     };
   }, []);
 
@@ -694,12 +839,66 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return sum + effectivePrice * item.quantity;
   }, 0);
 
+  // Watch count & "Buy 3, Get 15% Off" promotion calculation
+  const watchItems = cart.filter((item) => item.product.category === 'watches');
+  const watchCount = watchItems.reduce((sum, item) => sum + item.quantity, 0);
+  const watchSubtotal = watchItems.reduce((sum, item) => {
+    const price = item.product.salePrice ?? item.product.price;
+    return sum + price * item.quantity;
+  }, 0);
+
+  const buyThreeConfig = businessSettings.promotions?.buyThreePromo;
+  const isBuyThreeEligible = Boolean(
+    buyThreeConfig?.enabled && watchCount >= (buyThreeConfig?.minWatches || 3)
+  );
+
+  const buyThreeDiscount = isBuyThreeEligible
+    ? Math.round(watchSubtotal * ((buyThreeConfig?.discountPercentage || 15) / 100))
+    : 0;
+
+  // Watch Bundle Deals evaluation (2-watch duo or 3-watch trio)
+  const watchDeals = businessSettings.promotions?.watchDeals || [];
+  const activeWatchDeals = watchDeals.filter((d) => d.active);
+
+  let bestDealDiscount = 0;
+  let bestDealDescription = '';
+
+  for (const deal of activeWatchDeals) {
+    if (watchCount >= deal.requiredCount) {
+      let dealDiscount = 0;
+      if (deal.fixedBundlePrice && deal.fixedBundlePrice > 0) {
+        dealDiscount = Math.max(0, watchSubtotal - deal.fixedBundlePrice);
+      } else if (deal.discountPercentage && deal.discountPercentage > 0) {
+        dealDiscount = Math.round(watchSubtotal * (deal.discountPercentage / 100));
+      }
+
+      if (dealDiscount > bestDealDiscount) {
+        bestDealDiscount = dealDiscount;
+        bestDealDescription = `${deal.title} (${deal.discountPercentage ? deal.discountPercentage + '% OFF' : 'Bundle Price'})`;
+      }
+    }
+  }
+
+  // Stacking Protection: Apply the maximum eligible promotional discount
+  let cartDiscount = 0;
+  let cartDiscountDescription = '';
+
+  if (buyThreeDiscount > 0 && buyThreeDiscount >= bestDealDiscount) {
+    cartDiscount = buyThreeDiscount;
+    cartDiscountDescription = `Buy 3+ Watches Offer (${buyThreeConfig?.discountPercentage || 15}% OFF)`;
+  } else if (bestDealDiscount > 0) {
+    cartDiscount = bestDealDiscount;
+    cartDiscountDescription = bestDealDescription;
+  }
+
+  const discountedSubtotal = Math.max(0, cartSubtotal - cartDiscount);
+
   // Editable shipping rules (Admin -> Business Settings): free above threshold, flat fee otherwise.
   const cartShippingFee =
-    cartSubtotal >= businessSettings.shippingFreeAbove || cartSubtotal === 0
+    discountedSubtotal >= businessSettings.shippingFreeAbove || cartSubtotal === 0
       ? 0
       : businessSettings.shippingFlatFee;
-  const cartTotal = cartSubtotal + cartShippingFee;
+  const cartTotal = discountedSubtotal + cartShippingFee;
 
   // Cart Actions
   const addToCart = (product: Product, quantity = 1, variant?: Record<string, string>) => {
@@ -723,6 +922,40 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     addToast('success', 'Added to Luxury Bag', `${product.name} (Qty: ${quantity})`);
+    setIsCartDrawerOpen(true);
+  };
+
+  const addWatchBundleToCart = (
+    deal: WatchBundleDeal,
+    productsToAdd: Product[],
+    variants?: Record<string, Record<string, string>>
+  ) => {
+    setCart((prev) => {
+      let nextCart = [...prev];
+      for (const prod of productsToAdd) {
+        const prodVariant = variants?.[prod.id];
+        const existingIndex = nextCart.findIndex(
+          (item) =>
+            item.product.id === prod.id &&
+            JSON.stringify(item.selectedVariant || {}) === JSON.stringify(prodVariant || {})
+        );
+        if (existingIndex > -1) {
+          nextCart[existingIndex] = {
+            ...nextCart[existingIndex],
+            quantity: nextCart[existingIndex].quantity + 1,
+          };
+        } else {
+          nextCart.push({ product: prod, quantity: 1, selectedVariant: prodVariant });
+        }
+      }
+      return nextCart;
+    });
+
+    addToast(
+      'success',
+      `${deal.title} Added!`,
+      `${productsToAdd.length} timepieces added to your bag with bundle savings applied.`
+    );
     setIsCartDrawerOpen(true);
   };
 
@@ -944,6 +1177,17 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setOrders((prev) => [newOrder, ...prev]);
     setLastPlacedOrder(newOrder);
     clearCart();
+
+    // Trigger instant real-time Web Push notification to admin phone/PWA
+    void sendOrderNotificationToAdmin(newOrder);
+
+    addAdminNotification({
+      type: 'order',
+      title: 'New Customer Order',
+      message: `Order #${newOrder.orderNumber} for PKR ${newOrder.total.toLocaleString()} from ${newOrder.customer.fullName} (${newOrder.customer.city})`,
+      linkTab: 'orders',
+      data: { orderId: newOrder.id, orderNumber: newOrder.orderNumber },
+    });
 
     // Automatically send luxury order confirmation email to customer
     void sendOrderConfirmationEmail(newOrder).then((emailRes) => {
@@ -1364,6 +1608,61 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return res;
   };
 
+  // Refunds operations
+  const createRefund = async (refundData: Omit<Refund, 'id' | 'createdAt' | 'updatedAt'>): Promise<Refund> => {
+    const newRefund: Refund = {
+      ...refundData,
+      id: 'ref-' + Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setRefunds((prev) => [newRefund, ...prev]);
+    void saveRefundToSupabase(newRefund).then((res) => {
+      if (!res.success) {
+        console.warn('Could not persist refund to Supabase:', res.error);
+      }
+    });
+    addToast('success', 'Refund Processed', `Refund of PKR ${newRefund.amount.toLocaleString()} logged for ${newRefund.orderNumber}`);
+    addAdminNotification({
+      type: 'refund',
+      title: 'Refund Issued',
+      message: `Refund of PKR ${newRefund.amount.toLocaleString()} for ${newRefund.orderNumber} (${newRefund.reason})`,
+      data: { refundId: newRefund.id, orderNumber: newRefund.orderNumber },
+    });
+    return newRefund;
+  };
+
+  const updateRefundStatus = async (refundId: string, status: Refund['status'], notes?: string): Promise<void> => {
+    setRefunds((prev) =>
+      prev.map((r) =>
+        r.id === refundId
+          ? { ...r, status, notes: notes || r.notes, updatedAt: new Date().toISOString() }
+          : r
+      )
+    );
+    await updateRefundStatusInSupabase(refundId, status, notes);
+    addToast('info', 'Refund Updated', `Refund status set to ${status}.`);
+  };
+
+  // Notifications operations
+  const addAdminNotification = (notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>) => {
+    const newNotif: AdminNotification = {
+      ...notif,
+      id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications((prev) => [newNotif, ...prev.slice(0, 99)]);
+  };
+
+  const markNotificationRead = (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -1386,9 +1685,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         cart,
         cartCount,
         cartSubtotal,
+        cartDiscount,
+        cartDiscountDescription,
+        isBuyThreeEligible,
+        watchCount,
+        buyThreeDiscount,
         cartShippingFee,
         cartTotal,
         addToCart,
+        addWatchBundleToCart,
         removeFromCart,
         updateCartQuantity,
         clearCart,
@@ -1412,6 +1717,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         sendTestEmail: sendTestConfirmationEmail,
         updateInquiryStatus,
         lastPlacedOrder,
+
+        refunds,
+        createRefund,
+        updateRefundStatus,
+
+        notifications,
+        markNotificationRead,
+        clearAllNotifications,
+        addAdminNotification,
 
         inquiries,
         submitContactInquiry,

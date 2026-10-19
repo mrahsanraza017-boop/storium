@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Plus,
@@ -17,18 +17,37 @@ import {
   ExternalLink,
   Printer,
   Navigation,
+  CreditCard,
+  RotateCcw,
+  Users,
+  TrendingUp,
+  Bell,
+  Download,
+  Smartphone,
+  LayoutDashboard,
+  MoreHorizontal,
+  ChevronDown,
+  ShoppingBag,
+  Sparkles,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
 
 import { AdminAuthGate } from '../components/admin/AdminAuthGate';
 import { AdminSupabaseTab } from '../components/admin/AdminSupabaseTab';
-
-
 import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
 import { AdminBusinessSettingsTab } from '../components/admin/AdminBusinessSettingsTab';
 import { AdminEmailTab } from '../components/admin/AdminEmailTab';
+import { AdminOverviewTab } from '../components/admin/AdminOverviewTab';
+import { AdminPaymentsTab } from '../components/admin/AdminPaymentsTab';
+import { AdminRefundsTab } from '../components/admin/AdminRefundsTab';
+import { AdminCustomersTab } from '../components/admin/AdminCustomersTab';
+import { AdminAnalyticsTab } from '../components/admin/AdminAnalyticsTab';
+import { AdminNotificationsTab } from '../components/admin/AdminNotificationsTab';
+import { AdminPromotionsTab } from '../components/admin/AdminPromotionsTab';
+import { isPwaInstallable, promptPwaInstall, isPwaInstalled, onPwaInstallAvailable } from '../services/pwaService';
+import { getLiveVisitorsCount } from '../services/analyticsTracker';
 import { uploadProductMedia } from '../services/supabaseService';
 import { ProductMedia } from '../types';
 import { compressImage } from '../utils/imageCompressor';
@@ -38,6 +57,8 @@ export const AdminView: React.FC = () => {
   const {
     products,
     orders,
+    refunds,
+    notifications,
     inquiries,
     reviews,
     addProduct,
@@ -52,7 +73,46 @@ export const AdminView: React.FC = () => {
     addToast,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inquiries' | 'reviews' | 'emails' | 'supabase' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    | 'overview'
+    | 'products'
+    | 'orders'
+    | 'payments'
+    | 'refunds'
+    | 'customers'
+    | 'promotions'
+    | 'analytics'
+    | 'notifications'
+    | 'inquiries'
+    | 'reviews'
+    | 'emails'
+    | 'supabase'
+    | 'settings'
+  >('overview');
+
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [liveVisitors, setLiveVisitors] = useState<number>(() => getLiveVisitorsCount());
+  const [canInstallPwa, setCanInstallPwa] = useState<boolean>(() => isPwaInstallable());
+  const [isInstalled, setIsInstalled] = useState<boolean>(() => isPwaInstalled());
+
+  useEffect(() => {
+    const unsub = onPwaInstallAvailable(() => {
+      setCanInstallPwa(isPwaInstallable());
+      setIsInstalled(isPwaInstalled());
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveVisitors(getLiveVisitorsCount());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadNotifsCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
 
 
   // Product management states
@@ -488,282 +548,304 @@ export const AdminView: React.FC = () => {
       <div className="w-full bg-transparent min-h-screen text-[#E8E8EC] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header Bar */}
-          <div className="py-8 border-b border-[#262930] mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="py-6 border-b border-[#262930] mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-1">
-                STORIUM Administrative Portal
-              </span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
+                  STORIUM Progressive Web App
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Sync
+                </span>
+              </div>
               <h1 className="text-2xl sm:text-3xl font-bold font-serif-luxury text-[#F5F5F7]">
                 Showroom Control Center
               </h1>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Live Visitor Indicator */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121316] border border-[#262930]">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+                <span className="font-mono text-xs font-bold text-emerald-400">{liveVisitors}</span>
+                <span className="text-[10px] text-[#8E929E] uppercase tracking-wider font-semibold">Online</span>
+              </div>
+
+              {/* Notification Bell */}
               <button
-                onClick={() => navigate('home')}
-                className="py-2 px-4 rounded-xl bg-[#181A1F] text-xs text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930]"
+                type="button"
+                onClick={() => setActiveTab('notifications')}
+                className="relative p-2 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] transition-all cursor-pointer"
+                title="Notifications & Alerts"
               >
-                Public Showroom &rarr;
+                <Bell className="w-4 h-4" />
+                {unreadNotifsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-[#D4AF37] text-[#0B0C0E] text-[9px] font-bold font-mono">
+                    {unreadNotifsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Install PWA Button */}
+              {canInstallPwa && !isInstalled && (
+                <button
+                  type="button"
+                  onClick={() => promptPwaInstall()}
+                  className="py-1.5 px-3 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-[#D4AF37]/20 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Install App</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => navigate('home')}
+                className="py-1.5 px-3.5 rounded-xl bg-[#181A1F] text-xs text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] transition-all"
+              >
+                Public Store &rarr;
               </button>
             </div>
           </div>
 
-          {/* Admin Navigation Tabs */}
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-3 mb-8 scrollbar-none">
+          {/* Admin Navigation Tabs (Desktop & Tablet) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'overview'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'overview'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              Overview &amp; Metrics
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Overview</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('products')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'products'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
-            >
-              <span>Product Catalog</span>
-              <span
-                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${activeTab === 'products' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
-                  }`}
-              >
-                {products.length}
-              </span>
-            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('orders')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'orders'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'orders'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <span>Orders &amp; Dispatch</span>
+              <Truck className="w-3.5 h-3.5" />
+              <span>Orders</span>
               <span
-                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${activeTab === 'orders' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
-                  }`}
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                  activeTab === 'orders' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
+                }`}
               >
                 {orders.length}
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'products'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Catalog</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                  activeTab === 'products' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
+                }`}
+              >
+                {products.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('payments')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'payments'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Payments</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('refunds')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'refunds'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Refunds</span>
+              {refunds.length > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                    activeTab === 'refunds' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
+                  }`}
+                >
+                  {refunds.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('customers')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'customers'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Customers</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('promotions')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'promotions'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Promotions</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('analytics')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'analytics'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Analytics</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('notifications')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'notifications'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Alerts</span>
+              {unreadNotifsCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#D4AF37] text-[#0B0C0E]">
+                  {unreadNotifsCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('inquiries')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'inquiries'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'inquiries'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <MessageSquare className={`w-3.5 h-3.5 ${activeTab === 'inquiries' ? 'text-[#0B0C0E]' : 'text-[#8E929E]'}`} />
-              <span>Concierge Inquiries</span>
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Inquiries</span>
               <span
-                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${activeTab === 'inquiries' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
-                  }`}
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                  activeTab === 'inquiries' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
+                }`}
               >
                 {inquiries.length}
               </span>
             </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('reviews')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'reviews'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'reviews'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <Star className={`w-3.5 h-3.5 ${activeTab === 'reviews' ? 'text-[#0B0C0E]' : 'text-[#8E929E]'}`} />
+              <Star className="w-3.5 h-3.5" />
               <span>Reviews</span>
               <span
-                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${activeTab === 'reviews' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
-                  }`}
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                  activeTab === 'reviews' ? 'bg-[#0B0C0E]/20 text-[#0B0C0E]' : 'bg-[#181A1F] text-[#8E929E]'
+                }`}
               >
                 {reviews.length}
               </span>
             </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('emails')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'emails'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'emails'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <Mail className={`w-3.5 h-3.5 ${activeTab === 'emails' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
-              <span>Email Receipts</span>
+              <Mail className="w-3.5 h-3.5" />
+              <span>Receipts</span>
             </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('supabase')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'supabase'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'supabase'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <Database className={`w-3.5 h-3.5 ${activeTab === 'supabase' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
-              <span>Supabase Cloud DB</span>
+              <Database className="w-3.5 h-3.5" />
+              <span>Cloud DB</span>
               <span className={`w-1.5 h-1.5 rounded-full ${activeTab === 'supabase' ? 'bg-[#0B0C0E]' : 'bg-emerald-400 animate-pulse'}`} />
             </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer ${activeTab === 'settings'
-                ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
-                : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
-                }`}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
             >
-              <Settings2 className={`w-3.5 h-3.5 ${activeTab === 'settings' ? 'text-[#0B0C0E]' : 'text-[#D4AF37]'}`} />
-              <span>Business Settings</span>
+              <Settings2 className="w-3.5 h-3.5" />
+              <span>Settings</span>
             </button>
           </div>
 
-          {/* TAB 1: OVERVIEW METRICS */}
+          {/* TAB 1: OVERVIEW METRICS (Shopify-Style PWA Realtime Dashboard) */}
           {activeTab === 'overview' && (
-            <div className="space-y-10">
-              {/* Stat Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
-                  <span className="text-xs text-[#8E929E] uppercase tracking-wider">
-                    Total Gross Revenue
-                  </span>
-                  <span className="block text-2xl sm:text-3xl font-bold text-[#D4AF37] font-serif-luxury">
-                    Rs. {totalRevenue.toLocaleString()}
-                  </span>
-                  <span className="text-[11px] text-emerald-400">All Pakistani orders processed</span>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
-                  <span className="text-xs text-[#8E929E] uppercase tracking-wider">
-                    Total Orders Placed
-                  </span>
-                  <span className="block text-2xl sm:text-3xl font-bold text-[#F5F5F7] font-serif-luxury">
-                    {orders.length} Orders
-                  </span>
-                  <span className="text-[11px] text-[#8E929E]">{pendingOrders} awaiting dispatch</span>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
-                  <span className="text-xs text-[#8E929E] uppercase tracking-wider">
-                    Active Showroom SKUs
-                  </span>
-                  <span className="block text-2xl sm:text-3xl font-bold text-[#F5F5F7] font-serif-luxury">
-                    {products.length} Items
-                  </span>
-                  <span className="text-[11px] text-[#8E929E]">Across Watches &amp; Accessories</span>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
-                  <span className="text-xs text-[#8E929E] uppercase tracking-wider">
-                    Low Stock Warnings
-                  </span>
-                  <span className="block text-2xl sm:text-3xl font-bold text-amber-400 font-serif-luxury">
-                    {lowStockProducts.length} Items
-                  </span>
-                  <span className="text-[11px] text-amber-400/80">Stock &le; 5 units remaining</span>
-                </div>
-              </div>
-
-              {/* Quick Actions & Recent Orders preview */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#262930] pb-3 gap-2">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
-                      Recent Patron Orders
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleRemoveAllRecent}
-                        title="Remove all orders from the store"
-                        className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/10 border border-rose-500/30"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Remove All</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('orders')}
-                        className="text-xs text-[#D4AF37] hover:underline"
-                      >
-                        View All &rarr;
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {orders.slice(0, 4).map((o) => (
-                      <div
-                        key={o.id}
-                        className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between text-xs gap-2"
-                      >
-                        <div className="min-w-0">
-                          <span className="font-mono font-bold text-[#D4AF37]">{o.orderNumber}</span>
-                          <span className="text-[#8E929E] block">
-                            {o.customer.fullName} &bull; {o.customer.city}
-                          </span>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="font-bold text-[#F5F5F7]">
-                            Rs. {o.total.toLocaleString()}
-                          </span>
-                          <span className="block text-[10px] text-emerald-400">{o.orderStatus}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOrder(o.orderNumber)}
-                          title={`Delete order ${o.orderNumber}`}
-                          className="p-1.5 rounded-lg bg-[#181A1F] text-[#8E929E] hover:text-rose-400 border border-[#262930] flex-shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#121316] border border-[#262930] space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#262930] pb-3">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
-                      Inventory Attention Needed
-                    </h2>
-                    <button
-                      onClick={handleOpenAdd}
-                      className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add New SKU</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {lowStockProducts.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={p.thumbnail}
-                            alt={p.name}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                          <div>
-                            <span className="font-semibold text-[#F5F5F7] block">{p.name}</span>
-                            <span className="text-[10px] font-mono text-[#8E929E]">{p.sku}</span>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
-                          {p.stockQuantity} left
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AdminOverviewTab
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onOpenAddProduct={handleOpenAdd}
+            />
           )}
 
           {/* TAB 2: PRODUCTS MANAGEMENT */}
@@ -1506,19 +1588,39 @@ export const AdminView: React.FC = () => {
           </AnimatePresence>
 
 
-          {/* TAB 4: CONCIERGE INQUIRIES */}
+          {/* TAB 3: PAYMENTS MODULE */}
+          {activeTab === 'payments' && <AdminPaymentsTab />}
+
+          {/* TAB 4: REFUNDS MODULE */}
+          {activeTab === 'refunds' && <AdminRefundsTab />}
+
+          {/* TAB 5: CUSTOMERS DIRECTORY */}
+          {activeTab === 'customers' && <AdminCustomersTab />}
+
+          {/* TAB 6: ANALYTICS & FUNNEL */}
+          {activeTab === 'analytics' && <AdminAnalyticsTab />}
+
+          {/* TAB 7: NOTIFICATIONS CENTER */}
+          {activeTab === 'notifications' && (
+            <AdminNotificationsTab onNavigateTab={(tab) => setActiveTab(tab)} />
+          )}
+
+          {/* TAB: PROMOTIONS & DEALS */}
+          {activeTab === 'promotions' && <AdminPromotionsTab />}
+
+          {/* TAB 8: CONCIERGE INQUIRIES */}
           {activeTab === 'inquiries' && <AdminInquiriesTab />}
 
-          {/* TAB 5: PRODUCT REVIEWS */}
+          {/* TAB 9: PRODUCT REVIEWS */}
           {activeTab === 'reviews' && <AdminReviewsTab />}
 
-          {/* TAB 6: EMAIL RECEIPTS & DISPATCH */}
+          {/* TAB 10: EMAIL RECEIPTS & DISPATCH */}
           {activeTab === 'emails' && <AdminEmailTab />}
 
-          {/* TAB 7: SUPABASE CLOUD BACKEND */}
+          {/* TAB 11: SUPABASE CLOUD BACKEND */}
           {activeTab === 'supabase' && <AdminSupabaseTab />}
 
-          {/* TAB 8: BUSINESS SETTINGS */}
+          {/* TAB 12: BUSINESS SETTINGS */}
           {activeTab === 'settings' && <AdminBusinessSettingsTab />}
 
           {/* Modal: Add/Edit Product */}
@@ -1923,6 +2025,253 @@ export const AdminView: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Mobile Bottom Navigation Bar (Mobile-first PWA experience) */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0C0E]/95 backdrop-blur-md border-t border-[#262930] px-2 py-1.5 flex items-center justify-around safe-bottom">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('overview');
+                setIsMobileMoreOpen(false);
+              }}
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl text-[10px] font-semibold transition-all ${
+                activeTab === 'overview' ? 'text-[#D4AF37]' : 'text-[#8E929E]'
+              }`}
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              <span>Overview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('orders');
+                setIsMobileMoreOpen(false);
+              }}
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl text-[10px] font-semibold relative transition-all ${
+                activeTab === 'orders' ? 'text-[#D4AF37]' : 'text-[#8E929E]'
+              }`}
+            >
+              <Truck className="w-5 h-5" />
+              <span>Orders</span>
+              {orders.length > 0 && (
+                <span className="absolute top-0 right-1 px-1 py-0.2 rounded-full bg-[#D4AF37] text-[#0B0C0E] text-[8px] font-mono font-bold">
+                  {orders.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('products');
+                setIsMobileMoreOpen(false);
+              }}
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl text-[10px] font-semibold transition-all ${
+                activeTab === 'products' ? 'text-[#D4AF37]' : 'text-[#8E929E]'
+              }`}
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span>Catalog</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('payments');
+                setIsMobileMoreOpen(false);
+              }}
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl text-[10px] font-semibold transition-all ${
+                activeTab === 'payments' ? 'text-[#D4AF37]' : 'text-[#8E929E]'
+              }`}
+            >
+              <CreditCard className="w-5 h-5" />
+              <span>Payments</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMoreOpen((prev) => !prev)}
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl text-[10px] font-semibold relative transition-all ${
+                isMobileMoreOpen ? 'text-[#D4AF37]' : 'text-[#8E929E]'
+              }`}
+            >
+              <MoreHorizontal className="w-5 h-5" />
+              <span>More</span>
+              {unreadNotifsCount > 0 && (
+                <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+          </div>
+
+          {/* Mobile "More" Slide-up Sheet */}
+          <AnimatePresence>
+            {isMobileMoreOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end"
+                onClick={() => setIsMobileMoreOpen(false)}
+              >
+                <motion.div
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="w-full bg-[#121316] border-t border-[#262930] rounded-t-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-[#262930] pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
+                      <h3 className="font-bold font-serif-luxury text-sm text-[#F5F5F7]">
+                        All Admin Modules
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setIsMobileMoreOpen(false)}
+                      className="p-1 rounded-lg text-[#8E929E] hover:text-[#F5F5F7]"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button
+                      onClick={() => {
+                        setActiveTab('refunds');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <RotateCcw className="w-4 h-4 text-rose-400" />
+                      <span>Refunds</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('customers');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Users className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Customers</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('analytics');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <TrendingUp className="w-4 h-4 text-purple-400" />
+                      <span>Analytics</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('notifications');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Bell className="w-4 h-4 text-emerald-400" />
+                        <span>Alerts</span>
+                      </div>
+                      {unreadNotifsCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-[#D4AF37] text-[#0B0C0E] text-[9px] font-mono font-bold">
+                          {unreadNotifsCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('promotions');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Promotions</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('inquiries');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <MessageSquare className="w-4 h-4 text-sky-400" />
+                      <span>Inquiries</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('reviews');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Star className="w-4 h-4 text-amber-400" />
+                      <span>Reviews</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('emails');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Mail className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Email Receipts</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('supabase');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Database className="w-4 h-4 text-emerald-400" />
+                      <span>Cloud DB</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('settings');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="col-span-2 p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Settings2 className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Business &amp; Policy Settings</span>
+                    </button>
+                  </div>
+
+                  {canInstallPwa && !isInstalled && (
+                    <button
+                      onClick={() => {
+                        promptPwaInstall();
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5C378] text-[#0B0C0E] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/20"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Install Storium Admin App</span>
+                    </button>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </AdminAuthGate>
