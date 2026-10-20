@@ -66,12 +66,12 @@ $message = "🛡️ *STORIUM AI Concierge* — Security Verification\n\n"
          . "👉 *{$otp}*{$orderTotalText}\n\n"
          . "Please enter this code on the checkout screen to confirm your order dispatch.\n\n"
          . "This code expires in 10 minutes.\n\n"
-         . "— Storium AI WhatsApp Agent\n"
+         . "— Shami (Storium AI Agent)\n"
          . "Official Concierge: +92 321 5993022";
 
 $dispatchedViaApi = false;
 $apiError = null;
-$agentProviderUsed = 'Storium AI Agent';
+$agentProviderUsed = 'Shami (Storium AI Agent)';
 
 // Provider 1: Meta WhatsApp Cloud API (graph.facebook.com)
 $metaToken = $config['meta_access_token'] ?? $config['api_key'] ?? '';
@@ -143,11 +143,11 @@ if (!$dispatchedViaApi && !empty($config['ultramsg_instance_id']) && !empty($con
 
 // Customer direct WhatsApp click URL (allows one-tap chat with code or Storium AI Concierge)
 $whatsappUrl = 'https://wa.me/' . rawurlencode($normalizedPhone) . '?text=' . rawurlencode($message);
-$aiAgentChatUrl = 'https://wa.me/' . rawurlencode($conciergePhone) . '?text=' . rawurlencode("Salam Storium AI Agent, please send my 6-digit order verification code for mobile +{$normalizedPhone}");
+$aiAgentChatUrl = 'https://wa.me/' . rawurlencode($conciergePhone) . '?text=' . rawurlencode("Salam Shami! Please send my 6-digit order verification code for mobile +{$normalizedPhone}");
 
 echo json_encode(array(
     'success'           => true,
-    'agent_name'        => 'Storium AI WhatsApp Agent',
+    'agent_name'        => 'Shami (Storium AI Agent)',
     'phone'             => $normalizedPhone,
     'maskedPhone'       => $maskedPhone,
     'token'             => $token,

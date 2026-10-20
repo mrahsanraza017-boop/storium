@@ -187,7 +187,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
             <div>
               <div className="flex items-center gap-1.5 text-[10px] text-[#25D366] font-bold tracking-widest uppercase">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Storium AI Security Agent</span>
+                <span>Shami — Storium AI Agent</span>
               </div>
               <h2 className="text-xl font-bold font-serif-luxury text-white">
                 WhatsApp Verification
@@ -200,7 +200,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
               <span className="text-[#8E929E]">Dispatched by:</span>
               <span className="text-[#25D366] font-semibold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
-                Storium AI WhatsApp Agent
+                Shami (AI Security Agent)
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
@@ -210,7 +210,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
           </div>
 
           <p className="text-xs text-[#CBD0DC] leading-relaxed mb-5">
-            Storium AI Agent has generated your 6-digit security code. Enter it below to confirm your order dispatch:
+            Shami has generated your 6-digit security code. Enter it below to confirm your order dispatch:
           </p>
 
           {/* 6 Digit Inputs */}
@@ -288,7 +288,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
               )}
             </button>
 
-            {/* Direct Connect with Storium AI Agent on WhatsApp */}
+            {/* Direct Connect with Shami on WhatsApp */}
             <a
               href={session.aiAgentChatUrl || session.whatsappUrl}
               target="_blank"
@@ -296,7 +296,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
               className="w-full py-3 px-4 rounded-xl bg-[#161920] hover:bg-[#20242D] border border-[#25D366]/30 text-xs text-[#F5F5F7] hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <ExternalLink className="w-3.5 h-3.5 text-[#25D366]" />
-              <span>Request / View Code from Storium AI Agent</span>
+              <span>Chat with Shami on WhatsApp to Get Code</span>
             </a>
           </div>
 

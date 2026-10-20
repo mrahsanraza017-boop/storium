@@ -17,7 +17,7 @@ return array(
     'provider' => 'meta',
 
     // Storium AI Agent Configuration
-    'agent_name' => 'Storium AI WhatsApp Agent',
+    'agent_name' => 'Shami (Storium AI Agent)',
     'agent_role' => 'Order Security & OTP Verification',
 
     // Secret salt for HMAC OTP signing (ensures stateless tamper-proof code verification)
