@@ -10,12 +10,12 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { WatchBackgroundCanvas } from './components/animation/WatchBackgroundCanvas';
 import { AmbientBackground } from './components/animation/AmbientBackground';
 
-// Eagerly load HomeView for instant First Contentful Paint / LCP
+// Eagerly load HomeView and AccessoriesView for instant rendering
 import { HomeView } from './views/HomeView';
+import { AccessoriesView } from './views/AccessoriesView';
 
 // Lazily load other views to minimize initial JS bundle
 const WatchesView = lazy(() => import('./views/WatchesView').then((m) => ({ default: m.WatchesView })));
-const AccessoriesView = lazy(() => import('./views/AccessoriesView').then((m) => ({ default: m.AccessoriesView })));
 const ShopView = lazy(() => import('./views/ShopView').then((m) => ({ default: m.ShopView })));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView').then((m) => ({ default: m.ProductDetailView })));
 const CartView = lazy(() => import('./views/CartView').then((m) => ({ default: m.CartView })));

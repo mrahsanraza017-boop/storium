@@ -1,9 +1,9 @@
 /**
- * STORIUM Progressive Web App Service Worker (v1.0)
+ * STORIUM Progressive Web App Service Worker (v2.0)
  * Fast, secure, luxury caching with strict exclusions for payment & admin data.
  */
 
-const CACHE_NAME = 'storium-pwa-v1';
+const CACHE_NAME = 'storium-pwa-v2';
 
 // Core shell assets to pre-cache on install
 const PRECACHE_ASSETS = [
