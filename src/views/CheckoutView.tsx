@@ -407,7 +407,7 @@ export const CheckoutView: React.FC = () => {
         const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
         setOtpSession(session);
         setIsOtpModalOpen(true);
-        addToast('info', 'WhatsApp Verification', 'A 6-digit code has been dispatched to your WhatsApp.');
+        addToast('info', 'Storium AI Security Agent', 'A 6-digit verification code has been dispatched to your WhatsApp.');
       } catch (err) {
         console.error('WhatsApp OTP dispatch error:', err);
         addToast('error', 'Delivery Error', 'Could not dispatch WhatsApp verification. Please try again.');
@@ -423,7 +423,7 @@ export const CheckoutView: React.FC = () => {
   const handleOtpVerified = () => {
     setIsPhoneVerified(true);
     setIsOtpModalOpen(false);
-    addToast('success', 'Mobile Verified', 'WhatsApp number verified successfully.');
+    addToast('success', 'Mobile Verified', 'WhatsApp authenticated by Storium AI Security Agent.');
     executeOrderPlacement();
   };
 
@@ -432,7 +432,7 @@ export const CheckoutView: React.FC = () => {
     try {
       const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
       setOtpSession(session);
-      addToast('info', 'New Code Sent', 'A fresh 6-digit code was sent to your WhatsApp.');
+      addToast('info', 'Storium AI Agent', 'A fresh 6-digit code was sent to your WhatsApp.');
     } catch (err) {
       addToast('error', 'Resend Failed', 'Could not resend verification code.');
     } finally {

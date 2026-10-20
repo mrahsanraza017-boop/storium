@@ -13,8 +13,12 @@
  */
 
 return array(
-    // Active provider: 'concierge' | 'ultramsg' | 'greenapi' | 'meta' | 'twilio'
-    'provider' => 'concierge',
+    // Active provider: 'meta' | 'agent' | 'ultramsg' | 'greenapi' | 'twilio' | 'concierge'
+    'provider' => 'meta',
+
+    // Storium AI Agent Configuration
+    'agent_name' => 'Storium AI WhatsApp Agent',
+    'agent_role' => 'Order Security & OTP Verification',
 
     // Secret salt for HMAC OTP signing (ensures stateless tamper-proof code verification)
     'hmac_secret' => 'storium_whatsapp_otp_secret_key_99238472',
@@ -23,20 +27,24 @@ return array(
     'concierge_phone' => '923215993022',
     'store_name' => 'STORIUM Pakistan',
 
-    // UltraMsg Configuration (if provider is 'ultramsg')
-    'ultramsg_instance_id' => '', // e.g. 'instance12345'
-    'ultramsg_token'       => '', // e.g. 'abcdef123456'
+    // WhatsApp Agent API Key provided by merchant
+    'api_key' => 'WAAVgsJaXz3iGtDYEZAGrzaKVIXWoK6TPYrpb2u1WpU4G4GsgZAEZBOaGrfcNwcZC6lENywypF4r6An0FZBnDSpiWdSZCRwstoCeQEfgRZCqvRXrEy9l83TEWM2r0f0VOnfaYVeOUnqdmqJAZBYTkziZCZAPEwnsAdpvAVUVEgGaZBy7lwD6sZB6QZD',
 
-    // Green API Configuration (if provider is 'greenapi')
+    // Meta Cloud API Configuration
+    // If using Meta WhatsApp Cloud API:
+    'meta_access_token'    => 'WAAVgsJaXz3iGtDYEZAGrzaKVIXWoK6TPYrpb2u1WpU4G4GsgZAEZBOaGrfcNwcZC6lENywypF4r6An0FZBnDSpiWdSZCRwstoCeQEfgRZCqvRXrEy9l83TEWM2r0f0VOnfaYVeOUnqdmqJAZBYTkziZCZAPEwnsAdpvAVUVEgGaZBy7lwD6sZB6QZD',
+    'meta_phone_number_id' => '', // 15-digit ID from Meta Developers WhatsApp > API Setup
+    'meta_waba_id'         => '', // WhatsApp Business Account ID
+
+    // UltraMsg Configuration (fallback)
+    'ultramsg_instance_id' => '',
+    'ultramsg_token'       => '',
+
+    // Green API Configuration (fallback)
     'greenapi_id_instance' => '',
     'greenapi_api_token'   => '',
 
-    // Meta Cloud API Configuration (if provider is 'meta')
-    'meta_phone_number_id' => '',
-    'meta_access_token'    => '',
-    'meta_template_name'   => '', // Optional template name
-
-    // Twilio WhatsApp Configuration (if provider is 'twilio')
+    // Twilio WhatsApp Configuration
     'twilio_account_sid'   => '',
     'twilio_auth_token'    => '',
     'twilio_whatsapp_from' => 'whatsapp:+14155238886',

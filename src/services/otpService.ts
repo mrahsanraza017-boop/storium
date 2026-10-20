@@ -12,6 +12,11 @@ export interface OtpSession {
   expiresAt: number;
   devOtp?: string;
   whatsappUrl?: string;
+  aiAgentChatUrl?: string;
+  dispatchedViaApi?: boolean;
+  agentName?: string;
+  provider?: string;
+  apiError?: string;
 }
 
 /**
@@ -71,7 +76,7 @@ export const generateOtpCode = (): string => {
 };
 
 /**
- * Dispatches WhatsApp OTP to customer's mobile number
+ * Dispatches WhatsApp OTP to customer's mobile number via Storium AI WhatsApp Agent
  */
 export const sendWhatsAppOtp = async (
   rawPhone: string,
@@ -83,9 +88,12 @@ export const sendWhatsAppOtp = async (
   const clientGeneratedOtp = generateOtpCode();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-  // Default direct WhatsApp chat link (Customer can also click to receive/verify with Concierge)
+  // Default direct WhatsApp chat link to customer
   const message = `Salam ${customerName}! Your STORIUM Pakistan order verification code is: *${clientGeneratedOtp}*.\n\nEnter this 6-digit code to confirm your order dispatch.`;
   const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+  const aiAgentChatUrl = `https://wa.me/923215993022?text=${encodeURIComponent(
+    `Salam Storium AI Agent, please send my 6-digit order verification code for mobile +${normalizedPhone}`
+  )}`;
 
   try {
     // Attempt backend PHP WhatsApp dispatch
@@ -112,6 +120,11 @@ export const sendWhatsAppOtp = async (
           expiresAt: data.expiresAt ? data.expiresAt * 1000 : expiresAt,
           devOtp: data.devOtp || clientGeneratedOtp,
           whatsappUrl: data.whatsappUrl || whatsappUrl,
+          aiAgentChatUrl: data.aiAgentChatUrl || aiAgentChatUrl,
+          dispatchedViaApi: Boolean(data.dispatchedViaApi),
+          agentName: data.agent_name || 'Storium AI WhatsApp Agent',
+          provider: data.provider || 'Storium AI Agent',
+          apiError: data.apiError,
         };
       }
     }
@@ -128,6 +141,10 @@ export const sendWhatsAppOtp = async (
     expiresAt,
     devOtp: clientGeneratedOtp,
     whatsappUrl,
+    aiAgentChatUrl,
+    dispatchedViaApi: false,
+    agentName: 'Storium AI WhatsApp Agent',
+    provider: 'Storium AI Agent',
   };
 };
 

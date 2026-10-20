@@ -205,6 +205,95 @@ function runCourierDevPlugin() {
           return;
         }
 
+        // 4. Send WhatsApp OTP via Storium AI Agent
+        if (url.startsWith('/api/send-whatsapp-otp.php')) {
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', (chunk: any) => { body += chunk; });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body || '{}');
+                const rawPhone = String(parsed.phone || '').replace(/\D/g, '');
+                let normalizedPhone = rawPhone;
+                if (rawPhone.startsWith('03')) normalizedPhone = '92' + rawPhone.slice(1);
+                else if (rawPhone.startsWith('3') && rawPhone.length === 10) normalizedPhone = '92' + rawPhone;
+
+                const otp = parsed.clientOtp && /^\d{6}$/.test(parsed.clientOtp)
+                  ? parsed.clientOtp
+                  : String(Math.floor(100000 + Math.random() * 900000));
+
+                const maskedPhone = '+92 ' + normalizedPhone.slice(2, 5) + ' •••••' + normalizedPhone.slice(-2);
+                const expiresAt = Math.floor(Date.now() / 1000) + 600;
+                const token = `dev_token_${normalizedPhone}_${otp}_${expiresAt}`;
+
+                const customerName = parsed.customerName || 'Valued Customer';
+                const message = `🛡️ *STORIUM AI Concierge* — Security Verification\n\nSalam ${customerName}!\n\nYour 6-digit order verification code is:\n👉 *${otp}*\n\nPlease enter this code on the checkout screen to confirm your order dispatch.\n\n— Storium AI WhatsApp Agent`;
+                const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+                const aiAgentChatUrl = `https://wa.me/923215993022?text=${encodeURIComponent(
+                  `Salam Storium AI Agent, please send my 6-digit order verification code for mobile +${normalizedPhone}`
+                )}`;
+
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                  success: true,
+                  agent_name: 'Storium AI WhatsApp Agent',
+                  phone: normalizedPhone,
+                  maskedPhone,
+                  token,
+                  expiresAt,
+                  dispatchedViaApi: false,
+                  provider: 'Storium AI Agent',
+                  whatsappUrl,
+                  aiAgentChatUrl,
+                  devOtp: otp,
+                }));
+              } catch (e: any) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ success: false, error: e?.message || 'Error generating OTP' }));
+              }
+            });
+            return;
+          }
+        }
+
+        // 5. Verify WhatsApp OTP
+        if (url.startsWith('/api/verify-whatsapp-otp.php')) {
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', (chunk: any) => { body += chunk; });
+            req.on('end', () => {
+              try {
+                const parsed = JSON.parse(body || '{}');
+                const otp = String(parsed.otp || '').trim();
+                const token = String(parsed.token || '');
+                const devOtp = String(parsed.devOtp || '');
+
+                const isValid = otp.length === 6 && (token.includes(`_${otp}_`) || otp === devOtp);
+
+                res.setHeader('Content-Type', 'application/json');
+                if (isValid) {
+                  res.end(JSON.stringify({
+                    verified: true,
+                    message: 'WhatsApp authenticated successfully by Storium AI Agent.',
+                  }));
+                } else {
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({
+                    verified: false,
+                    message: 'Incorrect verification code. Please check your WhatsApp.',
+                  }));
+                }
+              } catch (e: any) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ verified: false, message: e?.message || 'Verification error' }));
+              }
+            });
+            return;
+          }
+        }
+
         next();
       });
     },

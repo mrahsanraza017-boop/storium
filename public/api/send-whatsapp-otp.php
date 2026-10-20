@@ -58,14 +58,64 @@ $token = hash_hmac('sha256', "{$normalizedPhone}:{$otp}:{$expiresAt}", $hmacSecr
 // Format masked phone for UI
 $maskedPhone = '+92 ' . substr($normalizedPhone, 2, 3) . ' •••••' . substr($normalizedPhone, -2);
 
-// Compose WhatsApp Message
-$message = "Salam {$customerName}!\n\nYour {$storeName} order verification code is:\n\n*{$otp}*\n\nPlease enter this 6-digit code on the checkout screen to confirm your order dispatch.\n\nHelpline: +92 321 5993022";
+// Compose Storium AI WhatsApp Agent Message
+$orderTotalText = !empty($data['orderTotal']) ? "\nOrder Total: Rs. " . number_format((float)$data['orderTotal']) : "";
+$message = "🛡️ *STORIUM AI Concierge* — Security Verification\n\n"
+         . "Salam {$customerName}!\n\n"
+         . "Your 6-digit order verification code is:\n"
+         . "👉 *{$otp}*{$orderTotalText}\n\n"
+         . "Please enter this code on the checkout screen to confirm your order dispatch.\n\n"
+         . "This code expires in 10 minutes.\n\n"
+         . "— Storium AI WhatsApp Agent\n"
+         . "Official Concierge: +92 321 5993022";
 
 $dispatchedViaApi = false;
 $apiError = null;
+$agentProviderUsed = 'Storium AI Agent';
 
-// Provider 1: UltraMsg (https://ultramsg.com)
-if ($provider === 'ultramsg' && !empty($config['ultramsg_instance_id']) && !empty($config['ultramsg_token'])) {
+// Provider 1: Meta WhatsApp Cloud API (graph.facebook.com)
+$metaToken = $config['meta_access_token'] ?? $config['api_key'] ?? '';
+$metaPhoneId = trim((string)($config['meta_phone_number_id'] ?? ''));
+
+if (!empty($metaToken) && !empty($metaPhoneId)) {
+    $apiUrl = 'https://graph.facebook.com/v21.0/' . rawurlencode($metaPhoneId) . '/messages';
+    $payload = json_encode(array(
+        'messaging_product' => 'whatsapp',
+        'recipient_type'    => 'individual',
+        'to'                => $normalizedPhone,
+        'type'              => 'text',
+        'text'              => array(
+            'preview_url' => false,
+            'body'        => $message,
+        ),
+    ));
+
+    $ch = curl_init($apiUrl);
+    curl_setopt_array($ch, array(
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_HTTPHEADER     => array(
+            'Authorization: Bearer ' . $metaToken,
+            'Content-Type: application/json',
+        ),
+    ));
+    $apiResponse = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        $dispatchedViaApi = true;
+        $agentProviderUsed = 'Meta WhatsApp Cloud API';
+    } else {
+        $apiError = "Meta API HTTP {$httpCode}: " . substr((string)$apiResponse, 0, 200);
+    }
+}
+
+// Provider 2: UltraMsg API (fallback)
+if (!$dispatchedViaApi && !empty($config['ultramsg_instance_id']) && !empty($config['ultramsg_token'])) {
     $postData = http_build_query(array(
         'token' => $config['ultramsg_token'],
         'to'    => '+' . $normalizedPhone,
@@ -82,81 +132,30 @@ if ($provider === 'ultramsg' && !empty($config['ultramsg_instance_id']) && !empt
         CURLOPT_HTTPHEADER     => array('Content-Type: application/x-www-form-urlencoded'),
     ));
     $apiResponse = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if ($httpCode >= 200 && $httpCode < 300) {
         $dispatchedViaApi = true;
+        $agentProviderUsed = 'UltraMsg Gateway';
     }
 }
 
-// Provider 2: Green API (https://green-api.com)
-if (!$dispatchedViaApi && $provider === 'greenapi' && !empty($config['greenapi_id_instance']) && !empty($config['greenapi_api_token'])) {
-    $apiUrl = 'https://api.green-api.com/waInstance' . rawurlencode($config['greenapi_id_instance']) . '/sendMessage/' . rawurlencode($config['greenapi_api_token']);
-    $payload = json_encode(array(
-        'chatId'  => $normalizedPhone . '@c.us',
-        'message' => $message,
-    ));
-
-    $ch = curl_init($apiUrl);
-    curl_setopt_array($ch, array(
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 8,
-        CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
-    ));
-    $apiResponse = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode >= 200 && $httpCode < 300) {
-        $dispatchedViaApi = true;
-    }
-}
-
-// Provider 3: Meta WhatsApp Cloud API (graph.facebook.com)
-if (!$dispatchedViaApi && $provider === 'meta' && !empty($config['meta_phone_number_id']) && !empty($config['meta_access_token'])) {
-    $apiUrl = 'https://graph.facebook.com/v18.0/' . rawurlencode($config['meta_phone_number_id']) . '/messages';
-    $payload = json_encode(array(
-        'messaging_product' => 'whatsapp',
-        'to'                => $normalizedPhone,
-        'type'              => 'text',
-        'text'              => array('body' => $message),
-    ));
-
-    $ch = curl_init($apiUrl);
-    curl_setopt_array($ch, array(
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 8,
-        CURLOPT_HTTPHEADER     => array(
-            'Authorization: Bearer ' . $config['meta_access_token'],
-            'Content-Type: application/json',
-        ),
-    ));
-    $apiResponse = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode >= 200 && $httpCode < 300) {
-        $dispatchedViaApi = true;
-    }
-}
-
-// Customer direct WhatsApp click URL (allows one-tap chat with code or concierge)
+// Customer direct WhatsApp click URL (allows one-tap chat with code or Storium AI Concierge)
 $whatsappUrl = 'https://wa.me/' . rawurlencode($normalizedPhone) . '?text=' . rawurlencode($message);
-$conciergeChatUrl = 'https://wa.me/' . rawurlencode($conciergePhone) . '?text=' . rawurlencode("Salam Storium, my order verification code is: {$otp} for mobile: +{$normalizedPhone}");
+$aiAgentChatUrl = 'https://wa.me/' . rawurlencode($conciergePhone) . '?text=' . rawurlencode("Salam Storium AI Agent, please send my 6-digit order verification code for mobile +{$normalizedPhone}");
 
 echo json_encode(array(
     'success'           => true,
+    'agent_name'        => 'Storium AI WhatsApp Agent',
     'phone'             => $normalizedPhone,
     'maskedPhone'       => $maskedPhone,
     'token'             => $token,
     'expiresAt'         => $expiresAt,
     'dispatchedViaApi'  => $dispatchedViaApi,
+    'provider'          => $agentProviderUsed,
+    'apiError'          => $apiError,
     'whatsappUrl'       => $whatsappUrl,
-    'conciergeChatUrl'  => $conciergeChatUrl,
+    'aiAgentChatUrl'    => $aiAgentChatUrl,
     'devOtp'            => $debugMode ? $otp : null,
 ));
