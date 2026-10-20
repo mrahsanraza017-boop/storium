@@ -210,6 +210,7 @@ interface StoreContextType {
   businessSettings: BusinessSettings;
   updateBusinessSettings: (updates: Partial<BusinessSettings>) => void;
   resetBusinessSettings: () => void;
+  setStorewideShippingFee: (flatFee: number, freeAbove?: number) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -789,6 +790,24 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     addToast('info', 'Settings Reset', 'Business settings were restored to the website defaults.');
   };
 
+  // Quick Storewide Shipping Fee Editor for Admin Panel (applies to all products nationwide)
+  const setStorewideShippingFee = (flatFee: number, freeAbove?: number) => {
+    const nextFlatFee = Math.max(0, Number(flatFee) || 0);
+    const nextFreeAbove = freeAbove !== undefined ? Math.max(0, Number(freeAbove) || 0) : businessSettings.shippingFreeAbove;
+    setBusinessSettings((prev) => ({
+      ...prev,
+      shippingFlatFee: nextFlatFee,
+      shippingFreeAbove: nextFreeAbove,
+    }));
+    addToast(
+      'success',
+      'Shipping Fee Updated Storewide',
+      nextFlatFee === 0
+        ? 'Free Delivery has been activated for all products nationwide.'
+        : `Flat shipping fee set to Rs. ${nextFlatFee.toLocaleString()} storewide across all products.`
+    );
+  };
+
   // Helper to build canonical relative URL for routes
   const getUrlForRoute = (
     page: PageView,
@@ -911,11 +930,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   const discountedSubtotal = Math.max(0, cartSubtotal - cartDiscount);
 
-  // Editable shipping rules (Admin -> Business Settings): free above threshold, flat fee otherwise.
-  const cartShippingFee =
-    discountedSubtotal >= businessSettings.shippingFreeAbove || cartSubtotal === 0
-      ? 0
-      : businessSettings.shippingFlatFee;
+  // Editable shipping rules (Admin -> Products / Business Settings):
+  // Free delivery if order total qualifies for free shipping threshold, flat fee otherwise.
+  const freeThreshold = Number(businessSettings.shippingFreeAbove) || 0;
+  const flatFee = Number(businessSettings.shippingFlatFee) || 0;
+  const isFreeEligible = freeThreshold > 0 && discountedSubtotal >= freeThreshold;
+  const cartShippingFee = cartSubtotal === 0 || isFreeEligible ? 0 : flatFee;
   const cartTotal = discountedSubtotal + cartShippingFee;
 
   // Cart Actions
@@ -1785,6 +1805,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         businessSettings,
         updateBusinessSettings,
         resetBusinessSettings,
+        setStorewideShippingFee,
       }}
     >
       {children}

@@ -14,7 +14,11 @@ import {
 import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
 import '@sfpy/atoms/styles';
 import { useStore } from '../context/StoreContext';
-import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
+import {
+  MAJOR_PAKISTAN_CITIES,
+  ALL_PAKISTAN_CITIES,
+  getProvinceForCity,
+} from '../data/initialData';
 import { PaymentBadges } from '../components/common/PaymentBadges';
 import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
 import { WhatsAppOtpModal } from '../components/checkout/WhatsAppOtpModal';
@@ -53,15 +57,39 @@ export const CheckoutView: React.FC = () => {
     }, ['cod', 'card']);
   }, [cart]);
 
-  const [formData, setFormData] = useState({
-    fullName: currentUser?.fullName || '',
-    email: currentUser?.email || '',
-    phone: currentUser?.phone || '',
-    address: currentUser?.address || '',
-    city: currentUser?.city || 'Lahore',
-    province: 'Punjab',
-    postalCode: '',
-    notes: '',
+  const [isCustomCity, setIsCustomCity] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedCity = localStorage.getItem('storium_user_city');
+        if (savedCity && !ALL_PAKISTAN_CITIES.includes(savedCity)) {
+          return true;
+        }
+      } catch {}
+    }
+    return Boolean(currentUser?.city && !ALL_PAKISTAN_CITIES.includes(currentUser.city));
+  });
+
+  const [formData, setFormData] = useState(() => {
+    let initialCity = currentUser?.city || '';
+    if (!initialCity && typeof window !== 'undefined') {
+      try {
+        initialCity = localStorage.getItem('storium_user_city') || '';
+      } catch {}
+    }
+    if (!initialCity) initialCity = 'Lahore';
+
+    const inferredProvince = getProvinceForCity(initialCity) || 'Punjab';
+
+    return {
+      fullName: currentUser?.fullName || '',
+      email: currentUser?.email || '',
+      phone: currentUser?.phone || '',
+      address: currentUser?.address || '',
+      city: initialCity,
+      province: inferredProvince,
+      postalCode: '',
+      notes: '',
+    };
   });
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card'>(
@@ -557,30 +585,115 @@ export const CheckoutView: React.FC = () => {
 
                 {/* City */}
                 <div>
-                  <label htmlFor="checkout-city" className="block uppercase tracking-wider text-[#CBD0DC] mb-1.5 font-medium">
-                    City (Pakistan) *
-                  </label>
-                  <select
-                    id="checkout-city"
-                    value={formData.city}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, city: val });
-                      if (typeof window !== 'undefined' && val) {
-                        try {
-                          localStorage.setItem('storium_user_city', val);
-                        } catch {}
-                      }
-                    }}
-                    aria-label="Select City in Pakistan"
-                    className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
-                  >
-                    {MAJOR_PAKISTAN_CITIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="checkout-city" className="block uppercase tracking-wider text-[#CBD0DC] font-medium text-xs">
+                      City (Pakistan) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isCustomCity;
+                        setIsCustomCity(next);
+                        if (!next && !ALL_PAKISTAN_CITIES.includes(formData.city)) {
+                          const fallbackCity = 'Lahore';
+                          setFormData((prev) => ({
+                            ...prev,
+                            city: fallbackCity,
+                            province: getProvinceForCity(fallbackCity) || prev.province,
+                          }));
+                        }
+                      }}
+                      className="text-[11px] text-[#D4AF37] hover:text-[#F3E5AB] transition-colors underline cursor-pointer"
+                    >
+                      {isCustomCity ? '← Choose from 180+ Cities' : '+ Enter Custom City / Town'}
+                    </button>
+                  </div>
+
+                  {isCustomCity ? (
+                    <div className="space-y-1.5">
+                      <input
+                        id="checkout-city"
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const inferredProvince = getProvinceForCity(val);
+                          setFormData({
+                            ...formData,
+                            city: val,
+                            ...(inferredProvince ? { province: inferredProvince } : {}),
+                          });
+                          if (typeof window !== 'undefined' && val) {
+                            try {
+                              localStorage.setItem('storium_user_city', val);
+                            } catch {}
+                          }
+                        }}
+                        placeholder="Type your city, town, or tehsil name..."
+                        aria-label="Custom City Name"
+                        required
+                        className={`w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border text-[#F5F5F7] placeholder-[#626673] focus:outline-none ${
+                          formErrors.city
+                            ? 'border-rose-500/80 focus:border-rose-400'
+                            : 'border-[#D4AF37]/50 focus:border-[#D4AF37]'
+                        }`}
+                      />
+                      <p className="text-[10px] text-[#8E929E]">
+                        Custom city entered. We deliver nationwide across all tehsils and villages via courier.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <select
+                        id="checkout-city"
+                        value={formData.city}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__custom_city__') {
+                            setIsCustomCity(true);
+                            setFormData({ ...formData, city: '' });
+                            return;
+                          }
+                          const inferredProvince = getProvinceForCity(val);
+                          setFormData({
+                            ...formData,
+                            city: val,
+                            ...(inferredProvince ? { province: inferredProvince } : {}),
+                          });
+                          if (typeof window !== 'undefined' && val) {
+                            try {
+                              localStorage.setItem('storium_user_city', val);
+                            } catch {}
+                          }
+                        }}
+                        aria-label="Select City in Pakistan"
+                        className={`w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border text-[#F5F5F7] focus:outline-none ${
+                          formErrors.city
+                            ? 'border-rose-500/80 focus:border-rose-400'
+                            : 'border-[#262930] focus:border-[#D4AF37]'
+                        }`}
+                      >
+                        <optgroup label="⭐ Major Metropolitan Hubs">
+                          {MAJOR_PAKISTAN_CITIES.map((c) => (
+                            <option key={`major-${c}`} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="📍 All Pakistan Cities &amp; Districts (A to Z)">
+                          {ALL_PAKISTAN_CITIES.map((c) => (
+                            <option key={`all-${c}`} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <option value="__custom_city__">✍️ Other / Custom City (Type Manually)...</option>
+                      </select>
+                    </div>
+                  )}
+                  {formErrors.city && (
+                    <p className="text-rose-400 text-[11px] mt-1">{formErrors.city}</p>
+                  )}
                 </div>
 
                 {/* Province */}

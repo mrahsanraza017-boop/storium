@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Save, RotateCcw, Upload, X, Info, Building2, Phone } from 'lucide-react';
+import { Save, RotateCcw, Upload, X, Info, Building2, Phone, Truck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { uploadProductMedia } from '../../services/supabaseService';
 
@@ -256,28 +256,119 @@ export const AdminBusinessSettingsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Payment gateway & shipping */}
+        {/* Payment gateway & Storewide Shipping */}
         <div className={sectionCard}>
-          <h3 className={sectionTitle}>
-            <Save className="w-4 h-4 text-[#D4AF37]" />
-            Payment Gateway &amp; Shipping
-          </h3>
+          <div className="flex items-center justify-between border-b border-[#262930] pb-3 mb-4">
+            <h3 className={sectionTitle}>
+              <Truck className="w-4 h-4 text-[#D4AF37]" />
+              Payment Gateway &amp; Storewide Shipping
+            </h3>
+            <span className="text-[10px] uppercase tracking-wider text-[#D4AF37] font-semibold bg-[#D4AF37]/10 px-2 py-0.5 rounded-md border border-[#D4AF37]/20">
+              All Products
+            </span>
+          </div>
+
           <div className="space-y-4">
             <div>
               <label className={labelClass} htmlFor="set-gateway">Payment Gateway Name</label>
               <input id="set-gateway" className={inputClass} value={form.paymentGatewayName} onChange={(e) => set('paymentGatewayName', e.target.value)} placeholder="Online Payment Gateway" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass} htmlFor="set-free-above">Free Delivery Above (PKR)</label>
-                <input id="set-free-above" type="number" min={0} className={inputClass} value={form.shippingFreeAbove} onChange={(e) => set('shippingFreeAbove', Number(e.target.value))} />
+
+            <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-semibold text-[#F5F5F7] flex items-center gap-1.5">
+                    <span>Storewide Shipping Fee (All Products)</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-normal">&#10003; Live</span>
+                  </h4>
+                  <p className="text-[11px] text-[#8E929E]">Applied automatically across all products at Cart and Checkout.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const flat = Math.max(0, Number(form.shippingFlatFee) || 0);
+                    const freeAbove = Math.max(0, Number(form.shippingFreeAbove) || 0);
+                    updateBusinessSettings({
+                      shippingFlatFee: flat,
+                      shippingFreeAbove: freeAbove,
+                    });
+                    addToast(
+                      'success',
+                      'Shipping Fee Saved Storewide',
+                      flat === 0
+                        ? 'Free Delivery active for all products nationwide.'
+                        : `Flat shipping fee set to Rs. ${flat.toLocaleString()} across all products.`
+                    );
+                  }}
+                  className="py-1 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold transition-all shadow-sm cursor-pointer self-start sm:self-auto flex items-center gap-1.5"
+                >
+                  <Save className="w-3 h-3" />
+                  <span>Quick Save Shipping</span>
+                </button>
               </div>
-              <div>
-                <label className={labelClass} htmlFor="set-flat-fee">Standard Delivery Fee (PKR)</label>
-                <input id="set-flat-fee" type="number" min={0} className={inputClass} value={form.shippingFlatFee} onChange={(e) => set('shippingFlatFee', Number(e.target.value))} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass} htmlFor="set-flat-fee">Standard Flat Delivery Fee (PKR)</label>
+                  <input id="set-flat-fee" type="number" min={0} className={inputClass} value={form.shippingFlatFee} onChange={(e) => set('shippingFlatFee', Number(e.target.value))} />
+                  <span className="text-[10px] text-[#8E929E] mt-1 block">Set to 0 for nationwide Free Delivery.</span>
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="set-free-above">Free Delivery Threshold (PKR)</label>
+                  <input id="set-free-above" type="number" min={0} className={inputClass} value={form.shippingFreeAbove} onChange={(e) => set('shippingFreeAbove', Number(e.target.value))} />
+                  <span className="text-[10px] text-[#8E929E] mt-1 block">Free delivery above this cart amount (0 to disable).</span>
+                </div>
+              </div>
+
+              {/* Quick Fee Presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-[#262930]/60">
+                <span className="text-[10px] text-[#8E929E] uppercase tracking-wider font-semibold mr-1">Quick Presets:</span>
+                <button
+                  type="button"
+                  onClick={() => set('shippingFlatFee', 0)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                    form.shippingFlatFee === 0
+                      ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                      : 'bg-[#181A1F] text-[#CBD0DC] hover:text-[#D4AF37] border-[#262930]'
+                  }`}
+                >
+                  Free (Rs. 0)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set('shippingFlatFee', 250)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                    form.shippingFlatFee === 250
+                      ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                      : 'bg-[#181A1F] text-[#CBD0DC] hover:text-[#D4AF37] border-[#262930]'
+                  }`}
+                >
+                  Rs. 250
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set('shippingFlatFee', 300)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                    form.shippingFlatFee === 300
+                      ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                      : 'bg-[#181A1F] text-[#CBD0DC] hover:text-[#D4AF37] border-[#262930]'
+                  }`}
+                >
+                  Rs. 300
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set('shippingFlatFee', 500)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                    form.shippingFlatFee === 500
+                      ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                      : 'bg-[#181A1F] text-[#CBD0DC] hover:text-[#D4AF37] border-[#262930]'
+                  }`}
+                >
+                  Rs. 500
+                </button>
               </div>
             </div>
-            <p className="text-[10px] text-[#8E929E]">Applied automatically at cart and checkout.</p>
           </div>
         </div>
 

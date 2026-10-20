@@ -73,6 +73,8 @@ export const AdminView: React.FC = () => {
     sendConfirmationEmail,
     navigate,
     addToast,
+    businessSettings,
+    setStorewideShippingFee,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -96,6 +98,16 @@ export const AdminView: React.FC = () => {
   const [liveVisitors, setLiveVisitors] = useState<number>(() => getLiveVisitorsCount());
   const [canInstallPwa, setCanInstallPwa] = useState<boolean>(() => isPwaInstallable());
   const [isInstalled, setIsInstalled] = useState<boolean>(() => isPwaInstalled());
+
+  // Storewide Shipping Fee Editor State (applies across all products)
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+  const [shippingFlatInput, setShippingFlatInput] = useState<number>(() => businessSettings.shippingFlatFee);
+  const [shippingFreeAboveInput, setShippingFreeAboveInput] = useState<number>(() => businessSettings.shippingFreeAbove);
+
+  useEffect(() => {
+    setShippingFlatInput(businessSettings.shippingFlatFee);
+    setShippingFreeAboveInput(businessSettings.shippingFreeAbove);
+  }, [businessSettings.shippingFlatFee, businessSettings.shippingFreeAbove]);
 
   useEffect(() => {
     const unsub = onPwaInstallAvailable(() => {
@@ -866,6 +878,53 @@ export const AdminView: React.FC = () => {
           {/* TAB 2: PRODUCTS MANAGEMENT */}
           {activeTab === 'products' && (
             <div className="space-y-6">
+              {/* Storewide Shipping Fee Quick Control Card */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#181A1F] via-[#141518] to-[#181A1F] border border-[#262930] shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="p-2.5 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 flex-shrink-0">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-sm text-[#F5F5F7]">Storewide Shipping Fee</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-mono font-bold border border-[#D4AF37]/20">
+                        Applies to All Products
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#8E929E] mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>
+                        Standard Flat Fee:{' '}
+                        <strong className="text-[#F5F5F7] font-mono">
+                          {businessSettings.shippingFlatFee === 0 ? 'FREE DELIVERY (Rs. 0)' : `Rs. ${businessSettings.shippingFlatFee.toLocaleString()}`}
+                        </strong>
+                      </span>
+                      <span>&bull;</span>
+                      <span>
+                        Free Shipping Threshold:{' '}
+                        <strong className="text-[#F5F5F7] font-mono">
+                          {businessSettings.shippingFreeAbove > 0 ? `Orders above Rs. ${businessSettings.shippingFreeAbove.toLocaleString()}` : 'Disabled'}
+                        </strong>
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShippingFlatInput(businessSettings.shippingFlatFee);
+                      setShippingFreeAboveInput(businessSettings.shippingFreeAbove);
+                      setIsShippingModalOpen(true);
+                    }}
+                    className="py-2 px-4 rounded-xl bg-[#20232A] hover:bg-[#2A2E37] text-[#D4AF37] hover:text-[#F3E5AB] border border-[#D4AF37]/40 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Change Shipping Fee</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="relative w-full sm:w-80">
                   <Search className="w-4 h-4 text-[#8E929E] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -2139,6 +2198,205 @@ export const AdminView: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* STOREWIDE SHIPPING FEE EDIT MODAL */}
+          <AnimatePresence>
+            {isShippingModalOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="w-full max-w-lg rounded-3xl bg-[#121316] border border-[#262930] p-6 sm:p-8 space-y-6 shadow-2xl relative"
+                >
+                  <div className="flex items-center justify-between border-b border-[#262930] pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold font-serif-luxury text-[#F5F5F7]">
+                          Storewide Shipping Fee
+                        </h2>
+                        <p className="text-xs text-[#8E929E]">
+                          Edit delivery charges applied to all products nationwide.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsShippingModalOpen(false)}
+                      className="p-1.5 rounded-lg bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block uppercase tracking-wider text-[#CBD0DC] text-xs font-semibold mb-1.5">
+                        Standard Delivery Flat Fee (PKR) *
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={shippingFlatInput}
+                        onChange={(e) => setShippingFlatInput(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37] font-mono text-sm"
+                        placeholder="e.g. 500 (or 0 for Free Delivery)"
+                      />
+                      <p className="text-[11px] text-[#8E929E] mt-1">
+                        Applied to all products in cart. Set to <strong>0</strong> to activate nationwide free delivery on every order.
+                      </p>
+                    </div>
+
+                    {/* Quick Presets for Flat Fee */}
+                    <div>
+                      <span className="block uppercase tracking-wider text-[#8E929E] text-[10px] font-semibold mb-1.5">
+                        Quick Fee Presets
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShippingFlatInput(0)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFlatInput === 0
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Free (Rs. 0)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShippingFlatInput(250)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFlatInput === 250
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Rs. 250
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShippingFlatInput(300)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFlatInput === 300
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Rs. 300
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShippingFlatInput(500)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFlatInput === 500
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Rs. 500
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block uppercase tracking-wider text-[#CBD0DC] text-xs font-semibold mb-1.5">
+                        Free Delivery Threshold (PKR)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={shippingFreeAboveInput}
+                        onChange={(e) => setShippingFreeAboveInput(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37] font-mono text-sm"
+                        placeholder="e.g. 15000 (0 to disable)"
+                      />
+                      <p className="text-[11px] text-[#8E929E] mt-1">
+                        Orders equal to or above this subtotal receive automatic free delivery. Set to <strong>0</strong> to disable free threshold.
+                      </p>
+                    </div>
+
+                    {/* Quick Presets for Free Threshold */}
+                    <div>
+                      <span className="block uppercase tracking-wider text-[#8E929E] text-[10px] font-semibold mb-1.5">
+                        Threshold Presets
+                      </span>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShippingFreeAboveInput(0)}
+                          className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFreeAboveInput === 0
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Disabled (0)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShippingFreeAboveInput(10000)}
+                          className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFreeAboveInput === 10000
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Above Rs. 10k
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShippingFreeAboveInput(15000)}
+                          className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold border transition-all text-center cursor-pointer ${
+                            shippingFreeAboveInput === 15000
+                              ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37] font-bold'
+                              : 'bg-[#181A1F] text-[#CBD0DC] border-[#262930] hover:border-[#D4AF37]/50'
+                          }`}
+                        >
+                          Above Rs. 15k
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[11px] text-[#8E929E] flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">&#10003;</span>
+                    <span>Instantly affects cart drawer, cart page, and checkout for all products across the website.</span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#262930]">
+                    <button
+                      type="button"
+                      onClick={() => setIsShippingModalOpen(false)}
+                      className="py-2.5 px-4 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-xs text-[#CBD0DC] border border-[#262930] transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStorewideShippingFee(shippingFlatInput, shippingFreeAboveInput);
+                        setIsShippingModalOpen(false);
+                      }}
+                      className="py-2.5 px-5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#D4AF37]/20 transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Save Storewide Fee</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Mobile Bottom Navigation Bar (Mobile-first PWA experience) */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0C0E]/95 backdrop-blur-md border-t border-[#262930] px-2 py-1.5 flex items-center justify-around safe-bottom">

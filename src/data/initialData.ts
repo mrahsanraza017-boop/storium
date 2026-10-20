@@ -333,21 +333,10 @@ export const INITIAL_ORDERS: Order[] = [];
 
 export const INITIAL_REVIEWS: ProductReview[] = [];
 
-export const MAJOR_PAKISTAN_CITIES = [
-  'Karachi',
-  'Lahore',
-  'Islamabad',
-  'Rawalpindi',
-  'Faisalabad',
-  'Multan',
-  'Peshawar',
-  'Quetta',
-  'Sialkot',
-  'Gujranwala',
-  'Hyderabad',
-  'Abbottabad',
-  'Bahawalpur',
-  'Sargodha',
-  'Sukkur',
-  'Wah Cantt',
-];
+export {
+  MAJOR_PAKISTAN_CITIES,
+  ALL_PAKISTAN_CITIES,
+  PAKISTAN_CITIES_DATA,
+  getProvinceForCity,
+} from './pakistanCities';
+
