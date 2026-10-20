@@ -107,12 +107,12 @@ export const AccessoriesView: React.FC = () => {
             <div className="coming-soon-glow-orb absolute w-[300px] sm:w-[560px] md:w-[750px] h-[300px] sm:h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.25)_0%,rgba(212,175,55,0.06)_50%,transparent_75%)] rounded-full blur-3xl pointer-events-none -z-10" />
 
             {/* Luxury Tagline Display */}
-            <div className="max-w-5xl mx-auto px-4 py-8 z-10 text-center">
-              <h1 className="leading-tight">
-                <span className="coming-soon-giant-text font-serif-luxury font-bold text-center tracking-[0.04em] sm:tracking-[0.08em] text-4xl sm:text-6xl md:text-7xl lg:text-8xl block py-2">
+            <div className="max-w-4xl mx-auto px-4 py-8 z-10 text-center">
+              <h1 className="leading-snug">
+                <span className="font-bold text-3xl sm:text-5xl md:text-6xl text-white font-serif-luxury tracking-wide block py-2 drop-shadow-lg">
                   Complete Your Presence.
                 </span>
-                <span className="font-normal font-sans text-base sm:text-xl md:text-2xl lg:text-3xl text-[#CBD0DC] tracking-wide block mt-4 sm:mt-6 opacity-90">
+                <span className="font-normal font-sans text-base sm:text-lg md:text-xl text-[#CBD0DC] tracking-wide block mt-3 sm:mt-4 opacity-90">
                   Expanding our collection Soon.
                 </span>
               </h1>
@@ -128,9 +128,9 @@ export const AccessoriesView: React.FC = () => {
                   <Tag className="w-3 h-3 text-[#D4AF37]" />
                   <span>Curated Showroom Accoutrements</span>
                 </div>
-                <h1 className="text-3xl sm:text-5xl font-serif-luxury text-white">
-                  <span className="font-bold gold-glow-heading">Complete Your Presence.</span>{' '}
-                  <span className="font-normal text-base sm:text-xl text-[#CBD0DC] block sm:inline sm:ml-2">
+                <h1 className="font-serif-luxury text-white">
+                  <span className="font-bold text-2xl sm:text-4xl block sm:inline">Complete Your Presence.</span>{' '}
+                  <span className="font-normal font-sans text-base sm:text-lg text-[#CBD0DC] block sm:inline sm:ml-2 mt-1 sm:mt-0">
                     Expanding our collection Soon.
                   </span>
                 </h1>
