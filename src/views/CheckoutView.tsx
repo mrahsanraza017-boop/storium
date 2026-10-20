@@ -9,6 +9,7 @@ import {
   Loader2,
   ShieldCheck,
   Mail,
+  CheckCircle2,
 } from 'lucide-react';
 import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
 import '@sfpy/atoms/styles';
@@ -16,6 +17,8 @@ import { useStore } from '../context/StoreContext';
 import { MAJOR_PAKISTAN_CITIES } from '../data/initialData';
 import { PaymentBadges } from '../components/common/PaymentBadges';
 import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
+import { WhatsAppOtpModal } from '../components/checkout/WhatsAppOtpModal';
+import { sendWhatsAppOtp, OtpSession } from '../services/otpService';
 import { Order } from '../types';
 
 const getProductPaymentMethods = (methods?: Array<'cod' | 'card'>): Array<'cod' | 'card'> =>
@@ -68,6 +71,12 @@ export const CheckoutView: React.FC = () => {
   const [codAgreement, setCodAgreement] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
+
+  // WhatsApp Mobile OTP Verification state
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSession, setOtpSession] = useState<OtpSession | null>(null);
 
   // SafePay Atoms session — set once a card session + auth token is created.
   const [safepaySession, setSafepaySession] = useState<{
@@ -236,7 +245,14 @@ export const CheckoutView: React.FC = () => {
   const validate = () => {
     const errors: Record<string, string> = {};
     if (!formData.fullName.trim()) errors.fullName = 'Please enter your full name';
-    if (!formData.phone.trim()) errors.phone = 'Please provide your Pakistani phone number';
+    if (!formData.phone.trim()) {
+      errors.phone = 'Please provide your Pakistani phone number';
+    } else {
+      const cleanPhone = formData.phone.replace(/\D/g, '');
+      if (cleanPhone.length < 10 || cleanPhone.length > 13) {
+        errors.phone = 'Please enter a valid Pakistani mobile number (e.g. 03001234567)';
+      }
+    }
     if (!formData.email.trim() || !formData.email.includes('@')) errors.email = 'Valid email required';
     if (!formData.address.trim()) errors.address = 'Street address is required';
     if (!formData.city.trim()) errors.city = 'Please specify your city';
@@ -249,11 +265,7 @@ export const CheckoutView: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (allowedPaymentMethods.length === 0 || !allowedPaymentMethods.includes(paymentMethod)) return;
-    if (!validate()) return;
-
+  const executeOrderPlacement = async () => {
     setIsSubmitting(true);
 
     try {
@@ -352,6 +364,51 @@ export const CheckoutView: React.FC = () => {
       addToast('error', 'Order Could Not Be Completed', message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (allowedPaymentMethods.length === 0 || !allowedPaymentMethods.includes(paymentMethod)) return;
+    if (!validate()) return;
+
+    // Mobile OTP verification via WhatsApp required for both COD and Gateway payment
+    if (!isPhoneVerified) {
+      setIsSendingOtp(true);
+      try {
+        const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
+        setOtpSession(session);
+        setIsOtpModalOpen(true);
+        addToast('info', 'WhatsApp Verification', 'A 6-digit code has been dispatched to your WhatsApp.');
+      } catch (err) {
+        console.error('WhatsApp OTP dispatch error:', err);
+        addToast('error', 'Delivery Error', 'Could not dispatch WhatsApp verification. Please try again.');
+      } finally {
+        setIsSendingOtp(false);
+      }
+      return;
+    }
+
+    await executeOrderPlacement();
+  };
+
+  const handleOtpVerified = () => {
+    setIsPhoneVerified(true);
+    setIsOtpModalOpen(false);
+    addToast('success', 'Mobile Verified', 'WhatsApp number verified successfully.');
+    executeOrderPlacement();
+  };
+
+  const handleResendOtp = async () => {
+    setIsSendingOtp(true);
+    try {
+      const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
+      setOtpSession(session);
+      addToast('info', 'New Code Sent', 'A fresh 6-digit code was sent to your WhatsApp.');
+    } catch (err) {
+      addToast('error', 'Resend Failed', 'Could not resend verification code.');
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -465,18 +522,33 @@ export const CheckoutView: React.FC = () => {
 
                 {/* Phone */}
                 <div>
-                  <label htmlFor="checkout-phone" className="block uppercase tracking-wider text-[#CBD0DC] mb-1.5 font-medium">
-                    Phone Number (SMS / WhatsApp) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="checkout-phone" className="block uppercase tracking-wider text-[#CBD0DC] font-medium">
+                      Phone Number (WhatsApp) *
+                    </label>
+                    {isPhoneVerified && (
+                      <span className="text-[11px] text-[#25D366] font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                        <span>Verified via WhatsApp</span>
+                      </span>
+                    )}
+                  </div>
                   <input
                     id="checkout-phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value });
+                      if (isPhoneVerified) setIsPhoneVerified(false);
+                    }}
                     placeholder="+92 300 1234567"
                     aria-label="Phone Number"
                     required
-                    className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37]"
+                    className={`w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border text-[#F5F5F7] placeholder-[#626673] focus:outline-none transition-colors ${
+                      isPhoneVerified
+                        ? 'border-[#25D366]/50 focus:border-[#25D366]'
+                        : 'border-[#262930] focus:border-[#D4AF37]'
+                    }`}
                   />
                   {formErrors.phone && (
                     <p className="text-rose-400 text-[11px] mt-1">{formErrors.phone}</p>
@@ -790,7 +862,7 @@ export const CheckoutView: React.FC = () => {
               {/* Submit CTA */}
               <button
                 type="submit"
-                disabled={isSubmitting || allowedPaymentMethods.length === 0}
+                disabled={isSubmitting || isSendingOtp || allowedPaymentMethods.length === 0}
                 className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] disabled:opacity-50 text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-bold shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
@@ -798,9 +870,16 @@ export const CheckoutView: React.FC = () => {
                     <Loader2 className="w-4 h-4 animate-spin text-[#0B0C0E]" />
                     <span>Confirming Your Order...</span>
                   </>
+                ) : isSendingOtp ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-[#0B0C0E]" />
+                    <span>Connecting WhatsApp Verification...</span>
+                  </>
                 ) : (
                   <>
-                    <span>Confirm Order &bull; Rs. {cartTotal.toLocaleString()}</span>
+                    <span>
+                      {isPhoneVerified ? 'Confirm Order' : 'Verify Mobile & Confirm Order'} &bull; Rs. {cartTotal.toLocaleString()}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -1047,6 +1126,16 @@ export const CheckoutView: React.FC = () => {
         </div>
       </div>
     )}
+
+      {/* WhatsApp Mobile OTP Verification Modal */}
+      <WhatsAppOtpModal
+        isOpen={isOtpModalOpen}
+        onClose={() => setIsOtpModalOpen(false)}
+        session={otpSession}
+        onVerified={handleOtpVerified}
+        onResend={handleResendOtp}
+        isResending={isSendingOtp}
+      />
     </>
   );
 };

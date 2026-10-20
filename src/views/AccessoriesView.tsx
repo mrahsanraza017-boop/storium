@@ -100,16 +100,23 @@ export const AccessoriesView: React.FC = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* If no accessories have been uploaded yet: Big Size & Fully Animated Coming Soon */}
+        {/* If no accessories have been uploaded yet: Big Size & Luxury Statement Display */}
         {allAccessories.length === 0 ? (
           <div className="relative min-h-[75vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden select-none">
             {/* Ambient Breathing Radial Gold Aura */}
             <div className="coming-soon-glow-orb absolute w-[300px] sm:w-[560px] md:w-[750px] h-[300px] sm:h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.25)_0%,rgba(212,175,55,0.06)_50%,transparent_75%)] rounded-full blur-3xl pointer-events-none -z-10" />
 
-            {/* Big Size Fully Animated Coming Soon Text */}
-            <h1 className="coming-soon-giant-text font-serif-luxury font-black text-center uppercase tracking-[0.14em] sm:tracking-[0.2em] md:tracking-[0.26em] text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] leading-none py-6">
-              Coming Soon
-            </h1>
+            {/* Luxury Tagline Display */}
+            <div className="max-w-5xl mx-auto px-4 py-8 z-10 text-center">
+              <h1 className="leading-tight">
+                <span className="coming-soon-giant-text font-serif-luxury font-bold text-center tracking-[0.04em] sm:tracking-[0.08em] text-4xl sm:text-6xl md:text-7xl lg:text-8xl block py-2">
+                  Complete Your Presence.
+                </span>
+                <span className="font-normal font-sans text-base sm:text-xl md:text-2xl lg:text-3xl text-[#CBD0DC] tracking-wide block mt-4 sm:mt-6 opacity-90">
+                  Expanding our collection Soon.
+                </span>
+              </h1>
+            </div>
           </div>
         ) : (
           /* When products are added: Automatically render full collection UI! */
@@ -121,8 +128,11 @@ export const AccessoriesView: React.FC = () => {
                   <Tag className="w-3 h-3 text-[#D4AF37]" />
                   <span>Curated Showroom Accoutrements</span>
                 </div>
-                <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-white gold-glow-heading">
-                  Accessories
+                <h1 className="text-3xl sm:text-5xl font-serif-luxury text-white">
+                  <span className="font-bold gold-glow-heading">Complete Your Presence.</span>{' '}
+                  <span className="font-normal text-base sm:text-xl text-[#CBD0DC] block sm:inline sm:ml-2">
+                    Expanding our collection Soon.
+                  </span>
                 </h1>
                 <p className="text-sm sm:text-base text-[#D1D5E0] max-w-2xl leading-relaxed luxury-text-shadow">
                   Precision-machined titanium essentials, vegetable-tanned Tuscan leather goods, and sartorial accents crafted to command presence and elevate your lifestyle.
