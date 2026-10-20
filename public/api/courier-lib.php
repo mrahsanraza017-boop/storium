@@ -120,9 +120,13 @@ if (!function_exists('courier_create_order')) {
             return array('success' => false, 'error' => 'cURL error booking with RUN Couriers: ' . $err);
         }
 
-        $json = json_decode((string) $res, true);
+        $rawStr = trim((string) $res);
+        $json = json_decode($rawStr, true);
+        if (is_string($json)) {
+            return array('success' => false, 'error' => $json, 'raw' => $json);
+        }
         if (!is_array($json)) {
-            return array('success' => false, 'error' => 'Invalid response from RUN Couriers: ' . substr((string) $res, 0, 300));
+            return array('success' => false, 'error' => 'Response from RUN Couriers: ' . substr($rawStr, 0, 300), 'raw' => $rawStr);
         }
 
         $trackingNo = (string) ($json['tracking_no'] ?? '');
@@ -198,6 +202,17 @@ if (!function_exists('courier_track_order')) {
             $altRes = curl_exec($chAlt);
             curl_close($chAlt);
             $json = json_decode((string) $altRes, true);
+        }
+
+        if (is_string($json)) {
+            return array(
+                'success'        => false,
+                'tracking_no'    => $trackingNo,
+                'current_status' => 'Not Found',
+                'history'        => array(),
+                'error'          => $json,
+                'raw'            => $json,
+            );
         }
 
         $history = array();

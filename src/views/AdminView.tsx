@@ -52,8 +52,13 @@ import { isPwaInstallable, promptPwaInstall, isPwaInstalled, onPwaInstallAvailab
 import { getLiveVisitorsCount } from '../services/analyticsTracker';
 import { uploadProductMedia } from '../services/supabaseService';
 import { ProductMedia } from '../types';
-import { compressImage } from '../utils/imageCompressor';
-import { bookWithRunCouriers, trackRunCourier, TrackingHistoryItem } from '../services/courierService';
+import {
+  bookWithRunCouriers,
+  trackRunCourier,
+  checkRunCourierStatus,
+  TrackingHistoryItem,
+  CourierGatewayStatus,
+} from '../services/courierService';
 
 export const AdminView: React.FC = () => {
   const {
@@ -146,9 +151,12 @@ export const AdminView: React.FC = () => {
   const [bookingCourierOrder, setBookingCourierOrder] = useState<Order | null>(null);
   const [bookingWeight, setBookingWeight] = useState<number>(0.5);
   const [bookingPieces, setBookingPieces] = useState<number>(1);
+  const [bookingCollectionAmount, setBookingCollectionAmount] = useState<number>(0);
   const [bookingSpecialInstruction, setBookingSpecialInstruction] = useState<string>('Fragile Luxury Timepiece - Handle with Care');
   const [isBookingCourier, setIsBookingCourier] = useState<boolean>(false);
   const [quickTrackingInput, setQuickTrackingInput] = useState<string>('');
+  const [courierGatewayStatus, setCourierGatewayStatus] = useState<CourierGatewayStatus | null>(null);
+  const [isCheckingCourier, setIsCheckingCourier] = useState<boolean>(false);
   const [trackingModalData, setTrackingModalData] = useState<{
     orderNumber: string;
     trackingNo: string;
@@ -157,11 +165,39 @@ export const AdminView: React.FC = () => {
     loading: boolean;
   } | null>(null);
 
+  useEffect(() => {
+    if (activeTab === 'orders' && courierGatewayStatus === null && !isCheckingCourier) {
+      checkRunCourierStatus()
+        .then((status) => {
+          setCourierGatewayStatus(status);
+        })
+        .catch(() => {});
+    }
+  }, [activeTab, courierGatewayStatus, isCheckingCourier]);
+
+  const handleCheckCourierStatus = async () => {
+    setIsCheckingCourier(true);
+    try {
+      const status = await checkRunCourierStatus();
+      setCourierGatewayStatus(status);
+      if (status.connected) {
+        addToast('success', 'RUN Couriers Live', `Gateway is online & responding. Client Code: ${status.client_code} (${status.latency_ms || 120}ms)`);
+      } else {
+        addToast('error', 'Gateway Issue', status.message);
+      }
+    } catch (err: any) {
+      addToast('error', 'Status Check Failed', err?.message || 'Could not verify RUN Couriers status');
+    } finally {
+      setIsCheckingCourier(false);
+    }
+  };
+
   const handleOpenBookingModal = (order: Order) => {
     setBookingCourierOrder(order);
     setBookingWeight(0.5);
     setBookingPieces(order.items.reduce((acc, it) => acc + (it.quantity || 1), 0) || 1);
     setBookingSpecialInstruction('Fragile Luxury Timepiece - Handle with Care');
+    setBookingCollectionAmount(order.paymentMethod === 'cod' ? (order.total || 0) : 0);
   };
 
   const handleConfirmRunCourierBooking = async () => {
@@ -172,6 +208,7 @@ export const AdminView: React.FC = () => {
         weight: bookingWeight,
         pieces: bookingPieces,
         specialInstruction: bookingSpecialInstruction,
+        collectionAmount: String(bookingCollectionAmount),
       });
 
       if (res.success) {
@@ -1117,36 +1154,55 @@ export const AdminView: React.FC = () => {
               </div>
 
               {/* Quick RUN Courier Tracking Console */}
-              <form
-                onSubmit={handleQuickTrackSubmit}
-                className="p-3.5 rounded-2xl bg-[#121316] border border-[#262930] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl"
-              >
-                <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="p-4 rounded-2xl bg-[#121316] border border-[#262930] flex flex-col lg:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="flex items-center gap-3 w-full lg:w-auto">
                   <div className="p-2.5 rounded-xl bg-[#0B0C0E] border border-[#D4AF37]/30 text-[#D4AF37] flex-shrink-0">
-                    <Navigation className="w-4 h-4" />
+                    <Truck className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        RUN Couriers Live Tracking Console
+                        RUN Couriers Live Integration
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
-                        Gateway Connected
-                      </span>
+                      {courierGatewayStatus === null ? (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-semibold border flex items-center gap-1 bg-[#181A1F] text-[#8E929E] border-[#262930]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          Checking Status...
+                        </span>
+                      ) : courierGatewayStatus.connected ? (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-semibold border flex items-center gap-1 bg-emerald-950/60 text-emerald-400 border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Live Connected ({courierGatewayStatus.latency_ms || 120}ms)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[9px] font-semibold border flex items-center gap-1 bg-rose-950/60 text-rose-300 border-rose-500/40">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                          Offline (Check Hostinger /public_html)
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleCheckCourierStatus}
+                        disabled={isCheckingCourier}
+                        className="text-[10px] py-0.5 px-2 rounded-md bg-[#181A1F] hover:bg-[#20232A] text-[#D4AF37] hover:text-[#F3E5AB] border border-[#D4AF37]/30 transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-2.5 h-2.5 ${isCheckingCourier ? 'animate-spin' : ''}`} />
+                        <span>{isCheckingCourier ? 'Testing...' : 'Test Connection'}</span>
+                      </button>
                     </div>
-                    <p className="text-[11px] text-[#8E929E]">
-                      Client Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong> &bull; API Auth: <strong className="text-emerald-400 font-mono">Verified</strong>
+                    <p className="text-[11px] text-[#8E929E] mt-0.5">
+                      Client Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong> &bull; Auth: <strong className="text-emerald-400 font-mono">cf78••••4e</strong> &bull; Portal: <span className="text-[#F5F5F7]">portal.runcourier.com</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <form onSubmit={handleQuickTrackSubmit} className="flex items-center gap-2 w-full lg:w-auto">
                   <input
                     type="text"
                     value={quickTrackingInput}
                     onChange={(e) => setQuickTrackingInput(e.target.value)}
-                    placeholder="Enter RUN tracking # (e.g. 2400123456)..."
-                    className="flex-1 md:w-72 py-2 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] font-mono focus:outline-none focus:border-[#D4AF37]"
+                    placeholder="Enter RUN tracking # (e.g. 22320269337378)..."
+                    className="flex-1 lg:w-72 py-2 px-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] font-mono focus:outline-none focus:border-[#D4AF37]"
                   />
                   <button
                     type="submit"
@@ -1156,8 +1212,8 @@ export const AdminView: React.FC = () => {
                     <Navigation className="w-3.5 h-3.5" />
                     <span>Track</span>
                   </button>
-                </div>
-              </form>
+                </form>
+              </div>
 
               {/* Orders Table */}
               <div className="rounded-2xl bg-[#121316] border border-[#262930] overflow-x-auto shadow-xl">
@@ -1562,11 +1618,29 @@ export const AdminView: React.FC = () => {
                         <span className="text-white font-bold">{bookingCourierOrder.customer.city}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#8E929E]">Collection Amount (COD):</span>
-                        <span className="font-bold text-[#D4AF37]">
-                          {bookingCourierOrder.paymentMethod === 'cod' ? `Rs. ${bookingCourierOrder.total.toLocaleString()}` : 'Rs. 0 (Card Paid)'}
+                        <span className="text-[#8E929E]">Payment Mode:</span>
+                        <span className="font-semibold text-white uppercase text-[10px]">
+                          {bookingCourierOrder.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Prepaid (Card / Gateway)'}
                         </span>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-[#CBD0DC] font-semibold mb-1">
+                        COD Collection Amount (PKR) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={bookingCollectionAmount}
+                        onChange={(e) => setBookingCollectionAmount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs font-mono font-bold text-[#D4AF37] focus:outline-none focus:border-[#D4AF37]"
+                      />
+                      <span className="text-[10px] text-[#8E929E] mt-1 block">
+                        {bookingCourierOrder.paymentMethod === 'cod'
+                          ? 'Cash to be collected from recipient upon delivery.'
+                          : 'Order paid online. Note: If your RUN Couriers account is COD-only, RUN requires a collection amount > 0.'}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
