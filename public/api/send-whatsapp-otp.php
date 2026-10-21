@@ -79,7 +79,9 @@ $metaPhoneId = trim((string)($config['meta_phone_number_id'] ?? ''));
 
 if (!empty($metaToken) && !empty($metaPhoneId)) {
     $apiUrl = 'https://graph.facebook.com/v21.0/' . rawurlencode($metaPhoneId) . '/messages';
-    $payload = json_encode(array(
+    
+    // Attempt 1: Standard branded text message
+    $payloadText = json_encode(array(
         'messaging_product' => 'whatsapp',
         'recipient_type'    => 'individual',
         'to'                => $normalizedPhone,
@@ -93,7 +95,7 @@ if (!empty($metaToken) && !empty($metaPhoneId)) {
     $ch = curl_init($apiUrl);
     curl_setopt_array($ch, array(
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_POSTFIELDS     => $payloadText,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => array(
@@ -106,11 +108,58 @@ if (!empty($metaToken) && !empty($metaPhoneId)) {
     $curlErr = curl_error($ch);
     curl_close($ch);
 
+    $respData = json_decode((string)$apiResponse, true);
+
     if ($httpCode >= 200 && $httpCode < 300) {
         $dispatchedViaApi = true;
         $agentProviderUsed = 'Meta WhatsApp Cloud API';
     } else {
-        $apiError = "Meta API HTTP {$httpCode}: " . substr((string)$apiResponse, 0, 200);
+        $metaErrCode = isset($respData['error']['code']) ? (int)$respData['error']['code'] : 0;
+        $metaErrMsg  = isset($respData['error']['message']) ? $respData['error']['message'] : (string)$apiResponse;
+        
+        // If outside 24h window (code 131047), attempt sending via template
+        if ($metaErrCode === 131047) {
+            $templateName = !empty($config['meta_template_name']) ? $config['meta_template_name'] : 'hello_world';
+            $templateLang = !empty($config['meta_template_lang']) ? $config['meta_template_lang'] : 'en_US';
+            
+            $payloadTemplate = json_encode(array(
+                'messaging_product' => 'whatsapp',
+                'to'                => $normalizedPhone,
+                'type'              => 'template',
+                'template'          => array(
+                    'name'     => $templateName,
+                    'language' => array('code' => $templateLang),
+                ),
+            ));
+
+            $chTpl = curl_init($apiUrl);
+            curl_setopt_array($chTpl, array(
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payloadTemplate,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_HTTPHEADER     => array(
+                    'Authorization: Bearer ' . $metaToken,
+                    'Content-Type: application/json',
+                ),
+            ));
+            $tplResponse = curl_exec($chTpl);
+            $tplHttpCode = (int) curl_getinfo($chTpl, CURLINFO_HTTP_CODE);
+            curl_close($chTpl);
+
+            if ($tplHttpCode >= 200 && $tplHttpCode < 300) {
+                $dispatchedViaApi = true;
+                $agentProviderUsed = 'Meta WhatsApp Cloud API (Template)';
+            } else {
+                $apiError = "Meta API Error: " . $metaErrMsg;
+            }
+        } elseif ($metaErrCode === 190) {
+            $apiError = "Meta Access Token has expired. Please refresh the token in Meta for Developers or use a Permanent System User Token.";
+        } elseif ($metaErrCode === 131030) {
+            $apiError = "Recipient phone (+{$normalizedPhone}) is not in your Meta WhatsApp test recipient list. Add it in Meta for Developers > WhatsApp > API Setup.";
+        } else {
+            $apiError = "Meta API HTTP {$httpCode}: " . $metaErrMsg;
+        }
     }
 }
 

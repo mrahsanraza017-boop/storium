@@ -5,7 +5,6 @@ import {
   X,
   Loader2,
   RefreshCw,
-  ExternalLink,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
@@ -144,12 +143,6 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
     inputRefs.current[0]?.focus();
   };
 
-  const handleDevAutoFill = () => {
-    if (session.devOtp && session.devOtp.length === 6) {
-      setDigits(session.devOtp.split(''));
-      setErrorMsg(null);
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -175,46 +168,23 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
             <X className="w-5 h-5" />
           </button>
 
-          {/* Header icon badge */}
-          <div className="flex items-center gap-3.5 mb-4">
-            <div className="relative w-12 h-12 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 flex items-center justify-center text-[#25D366] shadow-lg shadow-[#25D366]/10 flex-shrink-0">
-              {/* WhatsApp Emerald SVG */}
+          {/* Clean & Elegant Header: Enter Code */}
+          <div className="text-center mb-6 pt-2">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 flex items-center justify-center text-[#25D366] shadow-lg shadow-[#25D366]/10">
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                 <path d="M12.031 2C6.5 2 2 6.5 2 12.031c0 1.97.575 3.805 1.572 5.352L2.24 21.76l4.526-1.282A9.98 9.98 0 0 0 12.031 22C17.562 22 22 17.5 22 12.031 22 6.5 17.562 2 12.031 2zm5.786 14.285c-.244.689-1.22 1.26-1.848 1.332-.573.066-1.264.123-3.774-.913-3.155-1.302-5.187-4.508-5.344-4.717-.153-.21-1.272-1.694-1.272-3.23 0-1.537.808-2.296 1.096-2.607.288-.31.628-.39.838-.39.21 0 .42.002.605.011.196.009.46-.074.72.551.272.651.928 2.26.101 2.457.08.196.134.425.02.664-.114.238-.172.387-.342.585-.17.198-.358.443-.51.595-.17.17-.348.354-.15.694.198.34.88 1.45 1.887 2.348 1.299 1.157 2.395 1.517 2.735 1.687.34.17.539.143.738-.086.2-.228.85-1.002 1.077-1.344.228-.342.455-.285.766-.17.31.115 1.97.93 2.31 1.1.34.17.567.255.652.396.085.142.085.823-.159 1.512z" />
               </svg>
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0F1115] animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-[10px] text-[#25D366] font-bold tracking-widest uppercase">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Shami — Storium AI Agent</span>
-              </div>
-              <h2 className="text-xl font-bold font-serif-luxury text-white">
-                WhatsApp Verification
-              </h2>
-            </div>
+            <h2 className="text-2xl font-bold font-serif-luxury text-white tracking-wide">
+              Enter Code
+            </h2>
+            <p className="text-xs text-[#8E929E] mt-1.5">
+              Enter the 6-digit verification code sent to your WhatsApp
+            </p>
           </div>
-
-          <div className="p-3 rounded-xl bg-[#14161C] border border-[#262A34] mb-5">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-[#8E929E]">Dispatched by:</span>
-              <span className="text-[#25D366] font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
-                Shami (AI Security Agent)
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[#8E929E]">Customer Mobile:</span>
-              <span className="font-bold text-[#E5C378] font-mono">{session.maskedPhone}</span>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#CBD0DC] leading-relaxed mb-5">
-            Shami has generated your 6-digit security code. Enter it below to confirm your order dispatch:
-          </p>
 
           {/* 6 Digit Inputs */}
-          <div className="flex justify-between items-center gap-2 sm:gap-3 mb-6">
+          <div className="flex justify-center items-center gap-2 sm:gap-3 mb-6">
             {digits.map((digit, index) => (
               <input
                 key={index}
@@ -229,7 +199,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
                 onChange={(e) => handleDigitChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 disabled={isVerifying || !!successMsg}
-                className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-xl sm:text-2xl font-mono font-bold rounded-2xl bg-[#090A0D] border transition-all outline-none ${
+                className={`w-12 h-14 sm:w-13 sm:h-15 text-center text-xl sm:text-2xl font-mono font-bold rounded-xl bg-[#090A0D] border transition-all outline-none ${
                   digit
                     ? 'border-[#25D366] text-[#25D366] shadow-sm shadow-[#25D366]/20'
                     : 'border-[#2B2F38] text-white focus:border-[#D4AF37]'
@@ -263,7 +233,7 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
             </motion.div>
           )}
 
-          {/* Action Buttons */}
+          {/* Primary Action Button: Confirm Order */}
           <div className="space-y-3">
             <button
               type="button"
@@ -278,61 +248,36 @@ export const WhatsAppOtpModal: React.FC<WhatsAppOtpModalProps> = ({
               {isVerifying ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Code...</span>
+                  <span>Confirming Order...</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Verify &amp; Confirm Order</span>
+                  <span>Confirm Order</span>
                 </>
               )}
             </button>
-
-            {/* Direct Connect with Shami on WhatsApp */}
-            <a
-              href={session.aiAgentChatUrl || session.whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 px-4 rounded-xl bg-[#161920] hover:bg-[#20242D] border border-[#25D366]/30 text-xs text-[#F5F5F7] hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-[#25D366]" />
-              <span>Chat with Shami on WhatsApp to Get Code</span>
-            </a>
           </div>
 
           {/* Resend & Timer */}
-          <div className="mt-5 pt-4 border-t border-[#232730] flex items-center justify-between text-xs text-[#8E929E]">
-            <span>Didn&apos;t receive code?</span>
+          <div className="mt-5 text-center text-xs text-[#8E929E]">
             {countdown > 0 ? (
-              <span className="font-mono text-[#D4AF37]">
-                Resend in {countdown}s
+              <span>
+                Didn&apos;t receive code?{' '}
+                <span className="font-mono text-[#D4AF37]">Resend in {countdown}s</span>
               </span>
             ) : (
               <button
                 type="button"
                 onClick={handleResendClick}
                 disabled={isResending}
-                className="text-[#25D366] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                className="text-[#25D366] hover:underline font-semibold inline-flex items-center gap-1.5 cursor-pointer"
               >
-                <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
                 <span>Resend Code</span>
               </button>
             )}
           </div>
-
-          {/* Dev / Test Auto-Fill Helper (Shows only if devOtp is active) */}
-          {session.devOtp && (
-            <div className="mt-4 pt-3 border-t border-dashed border-[#2B2F38] flex items-center justify-between text-[11px] text-[#8E929E]">
-              <span>Test/Demo Code: <strong className="text-[#D4AF37] font-mono">{session.devOtp}</strong></span>
-              <button
-                type="button"
-                onClick={handleDevAutoFill}
-                className="text-[#D4AF37] hover:underline cursor-pointer font-bold"
-              >
-                Auto-fill
-              </button>
-            </div>
-          )}
         </motion.div>
       </div>
     </AnimatePresence>

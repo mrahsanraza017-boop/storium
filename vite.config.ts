@@ -233,6 +233,40 @@ function runCourierDevPlugin() {
                   `Salam Shami! Please send my 6-digit order verification code for mobile +${normalizedPhone}`
                 )}`;
 
+                let dispatchedViaApi = false;
+                let apiError = null;
+                const metaToken = 'EAAcFPk7gFA4BSZCrAWWp1ZAZAMFC8ur2e6tqJP3uspyg6jkne68we4PchGYHlgFO5yA4HfP9EFLZCZA7g1UilmeRE2mxOOQUu6ugHuL8AO7erQjITi2ZAlTEdZA5ZClZAK2akR4aUmVxuLFeUrWe0VHmytGRHy68Pv8J5ILCi4bZC5PrKLKpFKEUQaYRNeqQQEGSiDwJosbbYSmKTgPjHADjZBTvp1CGWOOGUvtN2vVWMucrGhJ6OlsBPzpnMb82afkpE2tFtxz5TtFi925CIcftPJ9WZCGOd3h1imcaZCLQ8LwZDZD';
+                const metaPhoneId = '1417248708132316';
+
+                if (metaToken && metaPhoneId) {
+                  try {
+                    const metaRes = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${metaToken}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        recipient_type: 'individual',
+                        to: normalizedPhone,
+                        type: 'text',
+                        text: { preview_url: false, body: message },
+                      }),
+                    });
+                    const metaData = await metaRes.json() as any;
+                    if (metaRes.ok) {
+                      dispatchedViaApi = true;
+                    } else {
+                      apiError = metaData?.error?.message || 'Meta API error';
+                      console.warn('Meta WhatsApp Cloud API error:', metaData?.error);
+                    }
+                  } catch (fetchErr: any) {
+                    apiError = fetchErr?.message || 'Failed to reach Meta Cloud API';
+                    console.warn('Meta WhatsApp Cloud fetch error:', fetchErr?.message);
+                  }
+                }
+
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({
                   success: true,
@@ -241,8 +275,9 @@ function runCourierDevPlugin() {
                   maskedPhone,
                   token,
                   expiresAt,
-                  dispatchedViaApi: false,
-                  provider: 'Shami (Storium AI Agent)',
+                  dispatchedViaApi,
+                  provider: dispatchedViaApi ? 'Meta WhatsApp Cloud API' : 'Shami (Storium AI Agent)',
+                  apiError,
                   whatsappUrl,
                   aiAgentChatUrl,
                   devOtp: otp,
