@@ -1,0 +1,43 @@
+name: Automated Production Build & Deploy Branch
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Compile Production Web App
+        run: npm run build
+
+      - name: Copy Backend APIs and Configs to dist/api
+        run: |
+          mkdir -p dist/api
+          cp -r public/api/* dist/api/ || true
+          cp public/.htaccess dist/.htaccess || true
+
+      - name: Deploy to 'deploy' Branch on GitHub
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: deploy
+          commit_message: "Automated production release: ${{ github.sha }}"
