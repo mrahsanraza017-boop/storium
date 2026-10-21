@@ -29,12 +29,12 @@ return array(
     'store_name' => 'STORIUM Pakistan',
 
     // WhatsApp Agent API Key provided by merchant
-    'api_key' => 'WAAVgsJaXz3iGtDYEZAGrzaKVIXWoK6TPYrpb2u1WpU4G4GsgZAEZBOaGrfcNwcZC6lENywypF4r6An0FZBnDSpiWdSZCRwstoCeQEfgRZCqvRXrEy9l83TEWM2r0f0VOnfaYVeOUnqdmqJAZBYTkziZCZAPEwnsAdpvAVUVEgGaZBy7lwD6sZB6QZD',
+    'api_key' => 'EAAcFPk7gFA4BSZCrAWWp1ZAZAMFC8ur2e6tqJP3uspyg6jkne68we4PchGYHlgFO5yA4HfP9EFLZCZA7g1UilmeRE2mxOOQUu6ugHuL8AO7erQjITi2ZAlTEdZA5ZClZAK2akR4aUmVxuLFeUrWe0VHmytGRHy68Pv8J5ILCi4bZC5PrKLKpFKEUQaYRNeqQQEGSiDwJosbbYSmKTgPjHADjZBTvp1CGWOOGUvtN2vVWMucrGhJ6OlsBPzpnMb82afkpE2tFtxz5TtFi925CIcftPJ9WZCGOd3h1imcaZCLQ8LwZDZD',
 
     // Meta Cloud API Configuration
     // If using Meta WhatsApp Cloud API:
-    'meta_access_token'    => 'WAAVgsJaXz3iGtDYEZAGrzaKVIXWoK6TPYrpb2u1WpU4G4GsgZAEZBOaGrfcNwcZC6lENywypF4r6An0FZBnDSpiWdSZCRwstoCeQEfgRZCqvRXrEy9l83TEWM2r0f0VOnfaYVeOUnqdmqJAZBYTkziZCZAPEwnsAdpvAVUVEgGaZBy7lwD6sZB6QZD',
-    'meta_phone_number_id' => '', // 15-digit ID from Meta Developers WhatsApp > API Setup
+    'meta_access_token'    => 'EAAcFPk7gFA4BSZCrAWWp1ZAZAMFC8ur2e6tqJP3uspyg6jkne68we4PchGYHlgFO5yA4HfP9EFLZCZA7g1UilmeRE2mxOOQUu6ugHuL8AO7erQjITi2ZAlTEdZA5ZClZAK2akR4aUmVxuLFeUrWe0VHmytGRHy68Pv8J5ILCi4bZC5PrKLKpFKEUQaYRNeqQQEGSiDwJosbbYSmKTgPjHADjZBTvp1CGWOOGUvtN2vVWMucrGhJ6OlsBPzpnMb82afkpE2tFtxz5TtFi925CIcftPJ9WZCGOd3h1imcaZCLQ8LwZDZD',
+    'meta_phone_number_id' => '1417248708132316', // 15-digit ID from Meta Developers WhatsApp > API Setup
     'meta_waba_id'         => '', // WhatsApp Business Account ID
 
     // UltraMsg Configuration (fallback)

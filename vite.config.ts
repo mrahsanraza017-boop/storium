@@ -230,19 +230,19 @@ function runCourierDevPlugin() {
                 const message = `🛡️ *STORIUM AI Concierge* — Security Verification\n\nSalam ${customerName}!\n\nYour 6-digit order verification code is:\n👉 *${otp}*\n\nPlease enter this code on the checkout screen to confirm your order dispatch.\n\n— Storium AI WhatsApp Agent`;
                 const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
                 const aiAgentChatUrl = `https://wa.me/923215993022?text=${encodeURIComponent(
-                  `Salam Storium AI Agent, please send my 6-digit order verification code for mobile +${normalizedPhone}`
+                  `Salam Shami! Please send my 6-digit order verification code for mobile +${normalizedPhone}`
                 )}`;
 
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({
                   success: true,
-                  agent_name: 'Storium AI WhatsApp Agent',
+                  agent_name: 'Shami (Storium AI Agent)',
                   phone: normalizedPhone,
                   maskedPhone,
                   token,
                   expiresAt,
                   dispatchedViaApi: false,
-                  provider: 'Storium AI Agent',
+                  provider: 'Shami (Storium AI Agent)',
                   whatsappUrl,
                   aiAgentChatUrl,
                   devOtp: otp,
