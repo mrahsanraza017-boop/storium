@@ -38,6 +38,7 @@ import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
 import { AdminAuthGate } from '../components/admin/AdminAuthGate';
 import { AdminSupabaseTab } from '../components/admin/AdminSupabaseTab';
 import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
+import { compressImage } from '../utils/imageCompressor';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
 import { AdminBusinessSettingsTab } from '../components/admin/AdminBusinessSettingsTab';
 import { AdminEmailTab } from '../components/admin/AdminEmailTab';

@@ -534,18 +534,33 @@ export const CheckoutView: React.FC = () => {
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="checkout-email" className="block uppercase tracking-wider text-[#CBD0DC] mb-1.5 font-medium">
-                    Email Address *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="checkout-email" className="block uppercase tracking-wider text-[#CBD0DC] font-medium">
+                      Email Address *
+                    </label>
+                    {isEmailVerified && (
+                      <span className="text-[11px] text-[#D4AF37] font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span>Verified</span>
+                      </span>
+                    )}
+                  </div>
                   <input
                     id="checkout-email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (isEmailVerified) setIsEmailVerified(false);
+                    }}
                     placeholder="name@example.com"
                     aria-label="Email Address"
                     required
-                    className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37]"
+                    className={`w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border text-[#F5F5F7] placeholder-[#626673] focus:outline-none transition-colors ${
+                      isEmailVerified
+                        ? 'border-[#D4AF37]/50 focus:border-[#D4AF37]'
+                        : 'border-[#262930] focus:border-[#D4AF37]'
+                    }`}
                   />
                   {formErrors.email && (
                     <p className="text-rose-400 text-[11px] mt-1">{formErrors.email}</p>
@@ -554,33 +569,18 @@ export const CheckoutView: React.FC = () => {
 
                 {/* Phone */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="checkout-phone" className="block uppercase tracking-wider text-[#CBD0DC] font-medium">
-                      Phone Number (WhatsApp) *
-                    </label>
-                    {isPhoneVerified && (
-                      <span className="text-[11px] text-[#25D366] font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
-                        <span>Verified via WhatsApp</span>
-                      </span>
-                    )}
-                  </div>
+                  <label htmlFor="checkout-phone" className="block uppercase tracking-wider text-[#CBD0DC] mb-1.5 font-medium">
+                    Phone Number (Mobile) *
+                  </label>
                   <input
                     id="checkout-phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => {
-                      setFormData({ ...formData, phone: e.target.value });
-                      if (isPhoneVerified) setIsPhoneVerified(false);
-                    }}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+92 300 1234567"
                     aria-label="Phone Number"
                     required
-                    className={`w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border text-[#F5F5F7] placeholder-[#626673] focus:outline-none transition-colors ${
-                      isPhoneVerified
-                        ? 'border-[#25D366]/50 focus:border-[#25D366]'
-                        : 'border-[#262930] focus:border-[#D4AF37]'
-                    }`}
+                    className="w-full py-3 px-4 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] placeholder-[#626673] focus:outline-none focus:border-[#D4AF37]"
                   />
                   {formErrors.phone && (
                     <p className="text-rose-400 text-[11px] mt-1">{formErrors.phone}</p>
