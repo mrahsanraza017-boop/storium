@@ -21,8 +21,8 @@ import {
 } from '../data/initialData';
 import { PaymentBadges } from '../components/common/PaymentBadges';
 import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
-import { WhatsAppOtpModal } from '../components/checkout/WhatsAppOtpModal';
-import { sendWhatsAppOtp, OtpSession } from '../services/otpService';
+import { EmailOtpModal } from '../components/checkout/EmailOtpModal';
+import { sendEmailOtp, EmailOtpSession } from '../services/emailOtpService';
 import { Order } from '../types';
 
 const getProductPaymentMethods = (methods?: Array<'cod' | 'card'>): Array<'cod' | 'card'> =>
@@ -100,11 +100,11 @@ export const CheckoutView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
-  // WhatsApp Mobile OTP Verification state
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [otpSession, setOtpSession] = useState<OtpSession | null>(null);
+  // Email OTP Verification state
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isEmailOtpModalOpen, setIsEmailOtpModalOpen] = useState(false);
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
+  const [emailOtpSession, setEmailOtpSession] = useState<EmailOtpSession | null>(null);
 
   // SafePay Atoms session — set once a card session + auth token is created.
   const [safepaySession, setSafepaySession] = useState<{
@@ -400,19 +400,23 @@ export const CheckoutView: React.FC = () => {
     if (allowedPaymentMethods.length === 0 || !allowedPaymentMethods.includes(paymentMethod)) return;
     if (!validate()) return;
 
-    // Mobile OTP verification via WhatsApp required for both COD and Gateway payment
-    if (!isPhoneVerified) {
-      setIsSendingOtp(true);
+    // Email OTP verification required before order placement
+    if (!isEmailVerified) {
+      setIsSendingEmailOtp(true);
       try {
-        const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
-        setOtpSession(session);
-        setIsOtpModalOpen(true);
-        addToast('info', 'Storium AI Security Agent', 'A 6-digit verification code has been dispatched to your WhatsApp.');
+        const session = await sendEmailOtp(formData.email, formData.fullName, cartTotal);
+        setEmailOtpSession(session);
+        setIsEmailOtpModalOpen(true);
+        addToast(
+          'info',
+          'Verification Code Sent',
+          `A 6-digit confirmation code has been dispatched to ${session.maskedEmail}.`
+        );
       } catch (err) {
-        console.error('WhatsApp OTP dispatch error:', err);
-        addToast('error', 'Delivery Error', 'Could not dispatch WhatsApp verification. Please try again.');
+        console.error('Email OTP dispatch error:', err);
+        addToast('error', 'Delivery Error', 'Could not dispatch verification email. Please try again.');
       } finally {
-        setIsSendingOtp(false);
+        setIsSendingEmailOtp(false);
       }
       return;
     }
@@ -420,23 +424,23 @@ export const CheckoutView: React.FC = () => {
     await executeOrderPlacement();
   };
 
-  const handleOtpVerified = () => {
-    setIsPhoneVerified(true);
-    setIsOtpModalOpen(false);
-    addToast('success', 'Mobile Verified', 'WhatsApp authenticated by Storium AI Security Agent.');
+  const handleEmailOtpVerified = () => {
+    setIsEmailVerified(true);
+    setIsEmailOtpModalOpen(false);
+    addToast('success', 'Email Verified', 'Email verified successfully. Confirming order...');
     executeOrderPlacement();
   };
 
-  const handleResendOtp = async () => {
-    setIsSendingOtp(true);
+  const handleResendEmailOtp = async () => {
+    setIsSendingEmailOtp(true);
     try {
-      const session = await sendWhatsAppOtp(formData.phone, formData.fullName, cartTotal);
-      setOtpSession(session);
-      addToast('info', 'Storium AI Agent', 'A fresh 6-digit code was sent to your WhatsApp.');
-    } catch (err) {
-      addToast('error', 'Resend Failed', 'Could not resend verification code.');
+      const session = await sendEmailOtp(formData.email, formData.fullName, cartTotal);
+      setEmailOtpSession(session);
+      addToast('info', 'Code Resent', `A fresh 6-digit code was sent to ${session.maskedEmail}.`);
+    } catch {
+      addToast('error', 'Resend Failed', 'Could not resend verification email.');
     } finally {
-      setIsSendingOtp(false);
+      setIsSendingEmailOtp(false);
     }
   };
 
@@ -975,7 +979,7 @@ export const CheckoutView: React.FC = () => {
               {/* Submit CTA */}
               <button
                 type="submit"
-                disabled={isSubmitting || isSendingOtp || allowedPaymentMethods.length === 0}
+                disabled={isSubmitting || isSendingEmailOtp || allowedPaymentMethods.length === 0}
                 className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] disabled:opacity-50 text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-bold shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
@@ -983,15 +987,15 @@ export const CheckoutView: React.FC = () => {
                     <Loader2 className="w-4 h-4 animate-spin text-[#0B0C0E]" />
                     <span>Confirming Your Order...</span>
                   </>
-                ) : isSendingOtp ? (
+                ) : isSendingEmailOtp ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-[#0B0C0E]" />
-                    <span>Connecting WhatsApp Verification...</span>
+                    <span>Sending Verification Code...</span>
                   </>
                 ) : (
                   <>
                     <span>
-                      {isPhoneVerified ? 'Confirm Order' : 'Verify Mobile & Confirm Order'} &bull; Rs. {cartTotal.toLocaleString()}
+                      Confirm Order &bull; Rs. {cartTotal.toLocaleString()}
                     </span>
                     <ArrowRight className="w-4 h-4" />
                   </>
@@ -1240,14 +1244,14 @@ export const CheckoutView: React.FC = () => {
       </div>
     )}
 
-      {/* WhatsApp Mobile OTP Verification Modal */}
-      <WhatsAppOtpModal
-        isOpen={isOtpModalOpen}
-        onClose={() => setIsOtpModalOpen(false)}
-        session={otpSession}
-        onVerified={handleOtpVerified}
-        onResend={handleResendOtp}
-        isResending={isSendingOtp}
+      {/* Email OTP Verification Modal */}
+      <EmailOtpModal
+        isOpen={isEmailOtpModalOpen}
+        onClose={() => setIsEmailOtpModalOpen(false)}
+        session={emailOtpSession}
+        onVerified={handleEmailOtpVerified}
+        onResend={handleResendEmailOtp}
+        isResending={isSendingEmailOtp}
       />
     </>
   );

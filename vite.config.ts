@@ -205,95 +205,52 @@ function runCourierDevPlugin() {
           return;
         }
 
-        // 4. Send WhatsApp OTP via Storium AI Agent
-        if (url.startsWith('/api/send-whatsapp-otp.php')) {
+        // 4. Send Email OTP
+        if (url.startsWith('/api/send-email-otp.php')) {
           if (req.method === 'POST') {
             let body = '';
             req.on('data', (chunk: any) => { body += chunk; });
             req.on('end', async () => {
               try {
                 const parsed = JSON.parse(body || '{}');
-                const rawPhone = String(parsed.phone || '').replace(/\D/g, '');
-                let normalizedPhone = rawPhone;
-                if (rawPhone.startsWith('03')) normalizedPhone = '92' + rawPhone.slice(1);
-                else if (rawPhone.startsWith('3') && rawPhone.length === 10) normalizedPhone = '92' + rawPhone;
-
+                const email = String(parsed.email || '').trim().toLowerCase();
                 const otp = parsed.clientOtp && /^\d{6}$/.test(parsed.clientOtp)
                   ? parsed.clientOtp
                   : String(Math.floor(100000 + Math.random() * 900000));
 
-                const maskedPhone = '+92 ' + normalizedPhone.slice(2, 5) + ' •••••' + normalizedPhone.slice(-2);
+                const parts = email.split('@');
+                const namePart = parts[0] || '';
+                const domainPart = parts[1] || 'example.com';
+                const maskedEmail = (namePart.length <= 2
+                  ? namePart[0] + '***'
+                  : namePart[0] + '***' + namePart.slice(-1)) + '@' + domainPart;
+
                 const expiresAt = Math.floor(Date.now() / 1000) + 600;
-                const token = `dev_token_${normalizedPhone}_${otp}_${expiresAt}`;
-
-                const customerName = parsed.customerName || 'Valued Customer';
-                const message = `🛡️ *STORIUM AI Concierge* — Security Verification\n\nSalam ${customerName}!\n\nYour 6-digit order verification code is:\n👉 *${otp}*\n\nPlease enter this code on the checkout screen to confirm your order dispatch.\n\n— Storium AI WhatsApp Agent`;
-                const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
-                const aiAgentChatUrl = `https://wa.me/923215993022?text=${encodeURIComponent(
-                  `Salam Shami! Please send my 6-digit order verification code for mobile +${normalizedPhone}`
-                )}`;
-
-                let dispatchedViaApi = false;
-                let apiError = null;
-                const metaToken = 'EAAcFPk7gFA4BSZCrAWWp1ZAZAMFC8ur2e6tqJP3uspyg6jkne68we4PchGYHlgFO5yA4HfP9EFLZCZA7g1UilmeRE2mxOOQUu6ugHuL8AO7erQjITi2ZAlTEdZA5ZClZAK2akR4aUmVxuLFeUrWe0VHmytGRHy68Pv8J5ILCi4bZC5PrKLKpFKEUQaYRNeqQQEGSiDwJosbbYSmKTgPjHADjZBTvp1CGWOOGUvtN2vVWMucrGhJ6OlsBPzpnMb82afkpE2tFtxz5TtFi925CIcftPJ9WZCGOd3h1imcaZCLQ8LwZDZD';
-                const metaPhoneId = '1417248708132316';
-
-                if (metaToken && metaPhoneId) {
-                  try {
-                    const metaRes = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
-                      method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${metaToken}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        messaging_product: 'whatsapp',
-                        recipient_type: 'individual',
-                        to: normalizedPhone,
-                        type: 'text',
-                        text: { preview_url: false, body: message },
-                      }),
-                    });
-                    const metaData = await metaRes.json() as any;
-                    if (metaRes.ok) {
-                      dispatchedViaApi = true;
-                    } else {
-                      apiError = metaData?.error?.message || 'Meta API error';
-                      console.warn('Meta WhatsApp Cloud API error:', metaData?.error);
-                    }
-                  } catch (fetchErr: any) {
-                    apiError = fetchErr?.message || 'Failed to reach Meta Cloud API';
-                    console.warn('Meta WhatsApp Cloud fetch error:', fetchErr?.message);
-                  }
-                }
+                const token = `dev_email_token_${email}_${otp}_${expiresAt}`;
 
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({
                   success: true,
-                  agent_name: 'Shami (Storium AI Agent)',
-                  phone: normalizedPhone,
-                  maskedPhone,
+                  email,
+                  maskedEmail,
                   token,
                   expiresAt,
-                  dispatchedViaApi,
-                  provider: dispatchedViaApi ? 'Meta WhatsApp Cloud API' : 'Shami (Storium AI Agent)',
-                  apiError,
-                  whatsappUrl,
-                  aiAgentChatUrl,
+                  dispatched: true,
+                  method: 'dev_server',
                   devOtp: otp,
                 }));
               } catch (e: any) {
                 res.statusCode = 500;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ success: false, error: e?.message || 'Error generating OTP' }));
+                res.end(JSON.stringify({ success: false, error: e?.message || 'Error generating Email OTP' }));
               }
             });
             return;
           }
         }
 
-        // 5. Verify WhatsApp OTP
-        if (url.startsWith('/api/verify-whatsapp-otp.php')) {
+        // 5. Verify Email OTP
+        if (url.startsWith('/api/verify-email-otp.php')) {
           if (req.method === 'POST') {
             let body = '';
             req.on('data', (chunk: any) => { body += chunk; });
@@ -310,19 +267,19 @@ function runCourierDevPlugin() {
                 if (isValid) {
                   res.end(JSON.stringify({
                     verified: true,
-                    message: 'WhatsApp authenticated successfully by Storium AI Agent.',
+                    message: 'Email verified successfully.',
                   }));
                 } else {
                   res.statusCode = 400;
                   res.end(JSON.stringify({
                     verified: false,
-                    message: 'Incorrect verification code. Please check your WhatsApp.',
+                    error: 'Incorrect verification code. Please check your email inbox.',
                   }));
                 }
               } catch (e: any) {
                 res.statusCode = 500;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ verified: false, message: e?.message || 'Verification error' }));
+                res.end(JSON.stringify({ verified: false, error: e?.message || 'Verification error' }));
               }
             });
             return;
