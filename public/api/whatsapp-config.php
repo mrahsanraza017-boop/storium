@@ -22,6 +22,7 @@ return array(
 
     // Secret salt for HMAC OTP signing (ensures stateless tamper-proof code verification)
     'hmac_secret' => 'storium_whatsapp_otp_secret_key_99238472',
+    'webhook_verify_token' => 'storium_ai_webhook_secret_2026',
 
     // Store WhatsApp Concierge Helpline (Pakistani format 923XXXXXXXXX)
     'concierge_phone' => '923215993022',
