@@ -1,0 +1,17 @@
+# STORIUM SPA fallback — route all non-file/non-dir requests to index.html
+# Required on static hosts (Hostinger/shared Apache/LiteSpeed) so client-side
+# routes like /admin resolve to the React app instead of returning 404.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Don't rewrite the actual entry file
+  RewriteRule ^index\.html$ - [L]
+
+  # Serve existing files/dirs directly (assets, images, frames, fonts)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Everything else -> the React app
+  RewriteRule ^ /index.html [L]
+</IfModule>
