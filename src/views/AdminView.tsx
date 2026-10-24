@@ -81,6 +81,8 @@ export const AdminView: React.FC = () => {
     addToast,
     businessSettings,
     setStorewideShippingFee,
+    syncWithSupabase,
+    isSupabaseSyncing,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -1142,6 +1144,17 @@ export const AdminView: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => void syncWithSupabase().then(() => addToast('info', 'Cloud Synced', 'Orders list refreshed.'))}
+                  disabled={isSupabaseSyncing}
+                  className="flex-shrink-0 py-2 px-3.5 rounded-xl bg-[#121316] hover:bg-[#181A1F] border border-[#262930] hover:border-[#D4AF37]/50 text-xs text-[#E8E8EC] font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  title="Force refresh orders from Supabase cloud"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#D4AF37] ${isSupabaseSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSupabaseSyncing ? 'Syncing...' : 'Refresh'}</span>
+                </button>
 
                 <button
                   type="button"

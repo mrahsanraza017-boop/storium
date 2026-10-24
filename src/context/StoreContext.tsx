@@ -634,51 +634,50 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (remoteProducts.length > 0) setProducts(remoteProducts);
 
-      if (remoteOrders && remoteOrders.length > 0) {
+      if (Array.isArray(remoteOrders)) {
         setOrders((prev) => {
           const map = new Map<string, Order>();
           // Remote Supabase orders take precedence
-          remoteOrders.forEach((o) => map.set(o.orderNumber, o));
-          // Keep any locally cached orders not yet on Supabase
+          remoteOrders.forEach((o) => map.set(o.orderNumber, { ...o, supabaseSynced: true }));
+          // Keep only locally cached orders that have NEVER been synced to Supabase
           prev.forEach((o) => {
-            if (!map.has(o.orderNumber)) map.set(o.orderNumber, o);
+            if (!o.supabaseSynced && !map.has(o.orderNumber)) {
+              map.set(o.orderNumber, o);
+            }
           });
-          return Array.from(map.values());
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(merged));
+          } catch (e) {
+            console.warn('Storage save failed', e);
+          }
+          return merged;
         });
       }
 
-      if (remoteRefunds && remoteRefunds.length > 0) {
+      if (Array.isArray(remoteRefunds)) {
         setRefunds((prev) => {
           const map = new Map<string, Refund>();
           remoteRefunds.forEach((r) => map.set(r.id, r));
-          prev.forEach((r) => {
-            if (!map.has(r.id)) map.set(r.id, r);
-          });
           return Array.from(map.values());
         });
       }
 
-      if (remoteContacts && remoteContacts.length > 0) {
+      if (Array.isArray(remoteContacts)) {
         setInquiries((prev) => {
           const map = new Map<string, ContactInquiry>();
           remoteContacts.forEach((c) => {
             if (c.id) map.set(c.id, c);
           });
-          prev.forEach((c) => {
-            if (c.id && !map.has(c.id)) map.set(c.id, c);
-          });
           return Array.from(map.values());
         });
       }
 
-      if (remoteReviews && remoteReviews.length > 0) {
+      if (Array.isArray(remoteReviews)) {
         setReviews((prev) => {
           const map = new Map<string, ProductReview>();
           remoteReviews.forEach((r) => {
             if (r.id) map.set(r.id, r);
-          });
-          prev.forEach((r) => {
-            if (r.id && !map.has(r.id)) map.set(r.id, r);
           });
           return Array.from(map.values());
         });
@@ -690,20 +689,41 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Background sync on mount (deferred until after first paint / idle)
+  // Background sync on mount, visibility changes, and periodic polling
   useEffect(() => {
     let cancelled = false;
     const run = () => {
       if (cancelled) return;
       void syncWithSupabase();
     };
+
     if (typeof window.requestIdleCallback === 'function') {
       window.requestIdleCallback(run, { timeout: 3000 });
     } else {
       window.setTimeout(run, 1500);
     }
+
+    const handleVisibilityOrFocus = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        void syncWithSupabase();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    // Periodic sync every 20 seconds while app is in foreground
+    const interval = window.setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        void syncWithSupabase();
+      }
+    }, 20000);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.clearInterval(interval);
     };
   }, []);
 
@@ -720,7 +740,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(heartbeat);
   }, [currentPage, selectedSlug]);
 
-  // Real-time Supabase listener for live orders
+  // Real-time Supabase listener for live orders (Insert, Update, Delete)
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     try {
@@ -746,6 +766,20 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           setOrders((prev) =>
             prev.map((o) => (o.orderNumber === updatedOrder.orderNumber || o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
           );
+        },
+        (deletedIdentifier) => {
+          if (!deletedIdentifier) return;
+          setOrders((prev) => {
+            const filtered = prev.filter(
+              (o) => o.id !== deletedIdentifier && o.orderNumber !== deletedIdentifier
+            );
+            try {
+              localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
+            } catch (e) {
+              console.warn('Failed to update localStorage on realtime delete', e);
+            }
+            return filtered;
+          });
         }
       );
     } catch (err) {
@@ -1299,7 +1333,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Delete one order from local state (public + admin) and Supabase.
   const deleteOrder = async (orderNumber: string) => {
-    setOrders((prev) => prev.filter((o) => o.orderNumber !== orderNumber));
+    setOrders((prev) => {
+      const filtered = prev.filter((o) => o.orderNumber !== orderNumber);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('LocalStorage save failed', e);
+      }
+      return filtered;
+    });
     const result = await deleteOrderFromSupabase(orderNumber);
     if (!result.success) {
       addToast('error', 'Order Delete Failed', result.error || 'The order could not be removed from the cloud.');
@@ -1310,7 +1352,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const deleteOrdersByNumber = async (orderNumbers: string[]) => {
     if (orderNumbers.length === 0) return;
     const toDelete = new Set(orderNumbers);
-    setOrders((prev) => prev.filter((o) => !toDelete.has(o.orderNumber)));
+    setOrders((prev) => {
+      const filtered = prev.filter((o) => !toDelete.has(o.orderNumber));
+      try {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('LocalStorage save failed', e);
+      }
+      return filtered;
+    });
     await Promise.all(orderNumbers.map((num) => deleteOrderFromSupabase(num)));
   };
 
