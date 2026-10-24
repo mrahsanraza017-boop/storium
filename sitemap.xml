@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Core Showroom & Collections -->
+  <url>
+    <loc>https://storium.online/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/watches</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/accessories</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/shop</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Product Pages -->
+  <url>
+    <loc>https://storium.online/product/storium-chrono-obsidian-stealth</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Chrono Obsidian Stealth</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://storium.online/product/storium-astral-automatic-champagne-gold</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Astral Automatic Champagne Gold</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://storium.online/product/storium-quantum-skeleton-titanium</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1547996160-71dfa63582b9?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Quantum Skeleton Titanium</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://storium.online/product/storium-eclipse-minimalist-noir</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Eclipse Minimalist Noir</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://storium.online/product/storium-vanguard-diver-300m</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1539185441755-769473a23570?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Vanguard Diver 300M</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://storium.online/product/storium-monolith-gmt-dual-time</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&amp;w=1200&amp;auto=format&amp;fit=crop</image:loc>
+      <image:title>STORIUM Monolith GMT Dual-Time</image:title>
+    </image:image>
+  </url>
+
+  <!-- Brand & Experience -->
+  <url>
+    <loc>https://storium.online/about</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/contact</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Customer Service & Legal Policies -->
+  <url>
+    <loc>https://storium.online/shipping-policy</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/return-policy</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://storium.online/terms</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+</urlset>

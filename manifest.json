@@ -1,0 +1,76 @@
+{
+  "name": "STORIUM Admin Command Center",
+  "short_name": "STORIUM Admin",
+  "description": "Administrative command center, live order notifications, and real-time analytics for STORIUM.",
+  "start_url": "/?pwa=admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0C0E",
+  "theme_color": "#0B0C0E",
+  "dir": "ltr",
+  "lang": "en",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/emblem.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Orders",
+      "short_name": "Orders",
+      "description": "Manage showroom orders and shipments",
+      "url": "/?pwa=admin#orders",
+      "icons": [{ "src": "/favicon-64.png", "sizes": "64x64" }]
+    },
+    {
+      "name": "Products Catalog",
+      "short_name": "Catalog",
+      "description": "Showroom SKUs, timepieces, and accessories",
+      "url": "/?pwa=admin#products",
+      "icons": [{ "src": "/favicon-64.png", "sizes": "64x64" }]
+    },
+    {
+      "name": "Realtime Analytics",
+      "short_name": "Analytics",
+      "description": "Live visitors, traffic sources, and revenue metrics",
+      "url": "/?pwa=admin#analytics",
+      "icons": [{ "src": "/favicon-64.png", "sizes": "64x64" }]
+    },
+    {
+      "name": "Notifications & Alerts",
+      "short_name": "Notifications",
+      "description": "Order alerts and mobile device pairing",
+      "url": "/?pwa=admin#notifications",
+      "icons": [{ "src": "/favicon-64.png", "sizes": "64x64" }]
+    }
+  ]
+}
