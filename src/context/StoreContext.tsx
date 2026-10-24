@@ -42,7 +42,7 @@ import {
   updateRefundStatusInSupabase,
   subscribeToOrdersRealtime,
 } from '../services/supabaseService';
-import { trackPageView } from '../services/analyticsTracker';
+import { trackPageView, trackEvent } from '../services/analyticsTracker';
 import {
   isPhoneNumberVerified,
   markPhoneNumberVerified,
@@ -995,6 +995,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
     addToast('success', 'Added to Luxury Bag', `${product.name} (Qty: ${quantity})`);
     setIsCartDrawerOpen(true);
+
+    trackEvent('add_to_cart', {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: 'product',
+      value: (product.salePrice || product.price) * quantity,
+      currency: 'PKR',
+    });
   };
 
   const addWatchBundleToCart = (
@@ -1249,6 +1257,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setOrders((prev) => [newOrder, ...prev]);
     setLastPlacedOrder(newOrder);
     clearCart();
+
+    trackEvent('purchase', {
+      value: newOrder.total,
+      currency: 'PKR',
+      content_type: 'product',
+      content_ids: newOrder.items.map((it) => it.product.id),
+      num_items: newOrder.items.reduce((acc, it) => acc + it.quantity, 0),
+      order_id: newOrder.orderNumber,
+    });
 
     // Trigger instant real-time Web Push notification to admin phone/PWA
     void sendOrderNotificationToAdmin(newOrder);

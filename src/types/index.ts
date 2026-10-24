@@ -296,7 +296,7 @@ export interface Refund {
 
 export interface AnalyticsEvent {
   id?: string;
-  eventType: 'page_view' | 'session_start' | 'add_to_cart' | 'checkout_start' | 'purchase';
+  eventType: 'page_view' | 'session_start' | 'add_to_cart' | 'checkout_start' | 'initiate_checkout' | 'purchase' | 'view_content' | string;
   path: string;
   pageTitle?: string;
   referrer?: string;

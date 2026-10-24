@@ -140,13 +140,18 @@ export function trackPageView(path: string, pageTitle?: string): AnalyticsEvent 
   // Sync to Supabase in background
   recordAnalyticsEventInSupabase(event).catch(() => {});
 
-  // GA4 support: forward if gtag is installed on window
+  // GA4 & Meta Pixel SPA PageView support
   try {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'page_view', {
-        page_path: path,
-        page_title: pageTitle || document.title,
-      });
+    if (typeof window !== 'undefined') {
+      if ((window as any).gtag) {
+        (window as any).gtag('event', 'page_view', {
+          page_path: path,
+          page_title: pageTitle || document.title,
+        });
+      }
+      if ((window as any).fbq) {
+        (window as any).fbq('track', 'PageView');
+      }
     }
   } catch {}
 
@@ -173,8 +178,26 @@ export function trackEvent(eventType: AnalyticsEvent['eventType'], metadata?: Re
   recordAnalyticsEventInSupabase(event).catch(() => {});
 
   try {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', eventType, metadata || {});
+    if (typeof window !== 'undefined') {
+      if ((window as any).gtag) {
+        (window as any).gtag('event', eventType, metadata || {});
+      }
+      if ((window as any).fbq) {
+        const metaEventMap: Record<string, string> = {
+          add_to_cart: 'AddToCart',
+          initiate_checkout: 'InitiateCheckout',
+          purchase: 'Purchase',
+          view_content: 'ViewContent',
+          contact: 'Contact',
+          lead: 'Lead',
+        };
+        const standardEvent = metaEventMap[eventType];
+        if (standardEvent) {
+          (window as any).fbq('track', standardEvent, metadata || {});
+        } else {
+          (window as any).fbq('trackCustom', eventType, metadata || {});
+        }
+      }
     }
   } catch {}
 }

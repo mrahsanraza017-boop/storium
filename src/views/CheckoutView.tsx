@@ -23,6 +23,7 @@ import { PaymentBadges } from '../components/common/PaymentBadges';
 import { BuyThreePromoBanner } from '../components/promotions/BuyThreePromoBanner';
 import { EmailOtpModal } from '../components/checkout/EmailOtpModal';
 import { sendEmailOtp, EmailOtpSession } from '../services/emailOtpService';
+import { trackEvent } from '../services/analyticsTracker';
 import { Order } from '../types';
 
 const getProductPaymentMethods = (methods?: Array<'cod' | 'card'>): Array<'cod' | 'card'> =>
@@ -131,6 +132,17 @@ export const CheckoutView: React.FC = () => {
       setPaymentMethod(allowedPaymentMethods[0] || 'cod');
     }
   }, [allowedPaymentMethods, paymentMethod]);
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      trackEvent('initiate_checkout', {
+        value: cartTotal,
+        currency: 'PKR',
+        num_items: cart.length,
+        content_ids: cart.map((i) => i.product.id),
+      });
+    }
+  }, []);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // If order was just placed, display success confirmation

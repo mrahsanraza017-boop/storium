@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Heart,
@@ -28,6 +28,7 @@ import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getProductSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
+import { trackEvent } from '../services/analyticsTracker';
 
 export const ProductDetailView: React.FC = () => {
   const {
@@ -50,6 +51,18 @@ export const ProductDetailView: React.FC = () => {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'specs' | 'features' | 'shipping' | 'warranty'>('specs');
   const [isShareOpen, setIsShareOpen] = useState(false);
+
+  useEffect(() => {
+    if (product) {
+      trackEvent('view_content', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.salePrice || product.price,
+        currency: 'PKR',
+      });
+    }
+  }, [product?.id]);
 
   if (!product) {
     return (
