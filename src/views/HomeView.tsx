@@ -24,7 +24,8 @@ export const HomeView: React.FC = () => {
 
   const showroomWatches = products.filter((p) => p.category === 'watches');
   const featuredWatches = showroomWatches.filter((p) => p.featured);
-  const showcaseWatches = featuredWatches.length > 0 ? featuredWatches : showroomWatches.slice(0, 4);
+  // Ensure strictly only 4 products are shown on the homepage
+  const showcaseWatches = (featuredWatches.length > 0 ? featuredWatches : showroomWatches).slice(0, 4);
   const flagshipProduct = products.find((p) => p.id === 'storium-aethelgard-chrono') || products[0];
   const featuredReviews = getFeaturedHomeReviews();
 
@@ -142,13 +143,25 @@ export const HomeView: React.FC = () => {
               onClick={() => navigate('watches')}
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-[#D4AF37] hover:text-[#E5C378] transition-colors cursor-pointer"
             >
-              <span>View All Watches ({products.filter((p) => p.category === 'watches').length})</span>
+              <span>View All</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Automatic Product Animation Grid */}
+          {/* Automatic Product Animation Grid (Exactly 4 items) */}
           <ProductGrid products={showcaseWatches} columns="4" />
+
+          {/* Centered View All Button Linking to Watches Page */}
+          <div className="mt-12 flex justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('watches')}
+              className="py-3.5 px-8 sm:px-10 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-extrabold shadow-[0_6px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_10px_35px_rgba(212,175,55,0.5)] transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+            </button>
+          </div>
         </div>
       </section>
 

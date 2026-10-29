@@ -211,11 +211,17 @@ interface StoreContextType {
   updateBusinessSettings: (updates: Partial<BusinessSettings>) => void;
   resetBusinessSettings: () => void;
   setStorewideShippingFee: (flatFee: number, freeAbove?: number) => void;
+
+  // Theme (Dark / Light)
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+  setTheme: (theme: 'dark' | 'light') => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
+  THEME: 'storium_theme_v1',
   PRODUCTS: 'storium_products_v1',
   CATEGORIES: 'storium_categories_v1',
   CART: 'storium_cart_v1',
@@ -333,6 +339,49 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(initialRoute.slug);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(initialRoute.category);
   const [activeSubcategoryFilter, setActiveSubcategoryFilter] = useState<string | null>(initialRoute.subcategory);
+
+  // Theme State (Dark / Light) with LocalStorage Persistence
+  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
+    try {
+      const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || localStorage.getItem('storium_theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme;
+      }
+    } catch {
+      // fallback
+    }
+    return 'dark'; // Luxury dark default
+  });
+
+  const setTheme = (newTheme: 'dark' | 'light') => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
+      localStorage.setItem('storium_theme', newTheme);
+    } catch {}
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.classList.remove('light');
+      root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
+    }
+
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', theme === 'light' ? '#F8F9FA' : '#0B0C0E');
+    }
+  }, [theme]);
 
   // Data State with LocalStorage Persistence
   const [products, setProducts] = useState<Product[]>(() => {
@@ -1037,6 +1086,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       `${productsToAdd.length} timepieces added to your bag with bundle savings applied.`
     );
     setIsCartDrawerOpen(true);
+
+    trackEvent('add_to_cart', {
+      content_name: deal.title,
+      content_ids: productsToAdd.map((p) => p.id),
+      content_type: 'product',
+      value: deal.bundlePrice,
+      currency: 'PKR',
+      num_items: productsToAdd.length,
+    });
   };
 
   const removeFromCart = (productId: string, variantKey?: string) => {
@@ -1082,6 +1140,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         return prev.filter((id) => id !== productId);
       } else {
         addToast('success', 'Saved to Wishlist', product?.name);
+        if (product) {
+          trackEvent('add_to_wishlist', {
+            content_name: product.name,
+            content_ids: [product.id],
+            content_type: 'product',
+            value: product.salePrice || product.price,
+            currency: 'PKR',
+          });
+        }
         return [...prev, productId];
       }
     });
@@ -1873,6 +1940,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         updateBusinessSettings,
         resetBusinessSettings,
         setStorewideShippingFee,
+
+        theme,
+        toggleTheme,
+        setTheme,
       }}
     >
       {children}

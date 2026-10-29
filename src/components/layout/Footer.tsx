@@ -3,6 +3,7 @@ import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Us
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
 import { PaymentBadges } from '../common/PaymentBadges';
+import { trackEvent } from '../../services/analyticsTracker';
 
 export const Footer: React.FC = () => {
   const { navigate, addToast, businessSettings } = useStore();
@@ -13,6 +14,11 @@ export const Footer: React.FC = () => {
     e.preventDefault();
     if (!emailInput) return;
     setIsSubscribed(true);
+    trackEvent('subscribe', {
+      value: 0,
+      currency: 'PKR',
+      predicted_ltv: 0,
+    });
     addToast('success', 'Subscribed', `You have joined the ${businessSettings.businessName} newsletter list.`);
     setEmailInput('');
   };

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizePhoneNumber } from '../../services/customerAuthService';
+import { trackEvent } from '../../services/analyticsTracker';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'verify-phone' | 'forgot-password';
 
@@ -94,6 +95,13 @@ export const CustomerAuthPanel: React.FC = () => {
       setError(result.message || 'Unable to authenticate.');
       setIsSubmitting(false);
       return;
+    }
+
+    if (isSignUp) {
+      trackEvent('complete_registration', {
+        content_name: 'Customer Registration',
+        status: 'success',
+      });
     }
 
     if (result.needsEmailConfirmation) {

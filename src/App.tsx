@@ -96,7 +96,10 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0C0E] text-[#E8E8EC] font-sans relative">
+    <div
+      data-theme-root
+      className="min-h-screen flex flex-col bg-[#0B0C0E] text-[#E8E8EC] font-sans relative transition-colors duration-300"
+    >
       {/* Ambient gold atmosphere fills the blank areas behind the animation */}
       <AmbientBackground />
 

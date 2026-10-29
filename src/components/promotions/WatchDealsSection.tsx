@@ -89,8 +89,8 @@ export const WatchDealsSection: React.FC<WatchDealsSectionProps> = ({
   return (
     <section className={`py-12 sm:py-16 bg-transparent text-[#E8E8EC] ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
+        {/* Section Header with Dedicated Text Background */}
+        <div className="text-center max-w-3xl mx-auto mb-10 p-6 sm:p-8 rounded-3xl glass-panel shadow-xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-extrabold uppercase tracking-[0.25em] mb-3">
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
             <span>Curated Horology Deals</span>
@@ -98,7 +98,7 @@ export const WatchDealsSection: React.FC<WatchDealsSectionProps> = ({
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif-luxury font-bold text-[#F5F5F7] tracking-tight">
             Bundle Deals &amp; Duos
           </h2>
-          <p className="mt-3 text-sm sm:text-base text-[#CBD0DC] font-light leading-relaxed">
+          <p className="mt-3 text-sm sm:text-base text-[#CBD0DC] font-light leading-relaxed max-w-2xl mx-auto">
             Curate your luxury watch collection. Select 2 or 3 timepieces to unlock automatic VIP bundle discounts with nationwide express insured delivery.
           </p>
         </div>

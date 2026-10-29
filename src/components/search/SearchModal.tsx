@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, X, ArrowRight, Watch } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { trackEvent } from '../../services/analyticsTracker';
 
 export const SearchModal: React.FC = () => {
   const { isSearchOpen, closeSearch, products, navigate } = useStore();
@@ -29,6 +30,17 @@ export const SearchModal: React.FC = () => {
       return matchName || matchSku || matchCategory || matchBrand || matchTags || matchDesc;
     })
     : [];
+
+  useEffect(() => {
+    if (!cleanQuery || cleanQuery.length < 2) return;
+    const timer = setTimeout(() => {
+      trackEvent('search', {
+        search_string: cleanQuery,
+        content_ids: filtered.slice(0, 10).map((p) => p.id),
+      });
+    }, 750);
+    return () => clearTimeout(timer);
+  }, [cleanQuery]);
 
   const handleSelectProduct = (slug: string) => {
     closeSearch();

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { trackEvent } from '../services/analyticsTracker';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, BASE_SITE_URL } from '../lib/seoSchemas';
@@ -47,6 +48,14 @@ export const ContactView: React.FC = () => {
         phone: formData.phone,
         topic: formData.topic,
         message: formData.message,
+      });
+
+      trackEvent('contact', {
+        content_name: formData.topic,
+        contact_method: 'inquiry_form',
+      });
+      trackEvent('lead', {
+        content_name: formData.topic,
       });
 
       setIsSubmitted(true);
@@ -98,6 +107,7 @@ export const ContactView: React.FC = () => {
                       href={businessSettings.whatsappLink}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackEvent('contact', { content_name: 'WhatsApp Concierge', contact_method: 'whatsapp' })}
                       className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37]"
                     >
                       {businessSettings.phone}
@@ -113,6 +123,7 @@ export const ContactView: React.FC = () => {
                     <span className="text-[#8E929E] block">Electronic Correspondence</span>
                     <a
                       href={`mailto:${businessSettings.email}`}
+                      onClick={() => trackEvent('contact', { content_name: 'Email Correspondence', contact_method: 'email' })}
                       className="font-mono text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37] break-all"
                     >
                       {businessSettings.email}
@@ -130,13 +141,16 @@ export const ContactView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
+                <div
+                  className="flex items-start gap-3.5 cursor-pointer"
+                  onClick={() => trackEvent('find_location', { content_name: `${businessSettings.businessName} Atelier ${businessSettings.city}` })}
+                >
                   <div className="p-2.5 rounded-xl bg-[#181A1F] text-[#D4AF37] border border-[#262930]">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="text-[#8E929E] block">Store Location &amp; Fulfillment</span>
-                    <span className="text-[#CBD0DC]">
+                    <span className="text-[#CBD0DC] hover:text-[#D4AF37] transition-colors">
                       {businessSettings.address}, {businessSettings.city}, {businessSettings.province}
                     </span>
                   </div>

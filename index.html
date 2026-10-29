@@ -8,6 +8,24 @@
     <meta name="keywords" content="luxury watches pakistan, storium watches, buy watches online pakistan, automatic watches karachi, chronograph watches lahore, titanium accessories, mens luxury watches islamabad" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#0B0C0E" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('storium_theme_v1') || localStorage.getItem('storium_theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.setAttribute('data-theme', 'light');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#F8F9FA');
+          } else {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />

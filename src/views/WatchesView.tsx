@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Watch, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { SaleBanner } from '../components/promotions/SaleBanner';
@@ -96,25 +96,8 @@ export const WatchesView: React.FC = () => {
         schemas={schemas}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Banner */}
-        <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#181A1F]/90 border border-[#D4AF37]/40 text-[11px] uppercase tracking-widest text-[#E5C378] backdrop-blur-sm shadow-sm">
-              <Watch className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Curated Showroom</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-white gold-glow-heading">
-              Timepieces Collection
-            </h1>
-            <p className="text-sm sm:text-base text-[#D1D5E0] max-w-xl luxury-text-shadow">
-              Precision Japanese and Swiss mechanical movements encased in aerospace-grade titanium and 316L surgical steel with scratch-proof sapphire crystal.
-            </p>
-          </div>
-
-          <div className="text-sm text-[#CBD0DC] font-mono px-4 py-2 rounded-xl glass-panel-subtle">
-            Showing <span className="text-[#D4AF37] font-bold">{filteredWatches.length}</span> of {watchProducts.length} Timepieces
-          </div>
-        </div>
+        {/* Semantic h1 heading for SEO & Accessibility */}
+        <h1 className="sr-only">Timepieces Collection — STORIUM Luxury Mechanical & Automatic Watches</h1>
 
         {/* Promotional Sale Banner */}
         <div className="mb-8">

@@ -83,6 +83,13 @@ export const ProductDetailView: React.FC = () => {
 
   const handleSelectVariant = (name: string, option: string) => {
     setSelectedVariants((prev) => ({ ...prev, [name]: option }));
+    trackEvent('customize_product', {
+      content_name: product.name,
+      content_ids: [product.id],
+      custom_variant: `${name}: ${option}`,
+      value: product.salePrice || product.price,
+      currency: 'PKR',
+    });
   };
 
   const handleAddToCart = () => {

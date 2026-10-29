@@ -12,6 +12,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
 import { SaleBanner } from '../promotions/SaleBanner';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 export const Navbar: React.FC = () => {
   const {
@@ -112,8 +113,11 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* Right Actions: Search, Wishlist, Account, Cart */}
+        {/* Right Actions: Theme Toggle, Search, Wishlist, Account, Cart */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Light / Dark Mode Toggle */}
+          <ThemeToggle />
+
           {/* Quick Search */}
           <button
             type="button"
@@ -223,6 +227,13 @@ export const Navbar: React.FC = () => {
               </motion.button>
             ))}
 
+            {/* Theme Toggle in Mobile Menu */}
+            <div className="pt-3 mt-3 border-t border-[#262930] flex items-center justify-between px-3 py-1">
+              <span className="text-xs uppercase tracking-widest font-semibold text-[#8E929E]">
+                Appearance
+              </span>
+              <ThemeToggle variant="pill" />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

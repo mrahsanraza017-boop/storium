@@ -308,6 +308,13 @@ export const CheckoutView: React.FC = () => {
   const executeOrderPlacement = async () => {
     setIsSubmitting(true);
 
+    trackEvent('add_payment_info', {
+      value: cartTotal,
+      currency: 'PKR',
+      content_ids: cart.map((i) => i.product.id),
+      payment_type: paymentMethod,
+    });
+
     try {
       const orderItems = cart.map((item) => ({
         productId: item.product.id,

@@ -143,19 +143,144 @@ export function trackPageView(path: string, pageTitle?: string): AnalyticsEvent 
   // GA4 & Meta Pixel SPA PageView support
   try {
     if (typeof window !== 'undefined') {
-      if ((window as any).gtag) {
-        (window as any).gtag('event', 'page_view', {
+      if (window.gtag) {
+        window.gtag('event', 'page_view', {
           page_path: path,
           page_title: pageTitle || document.title,
         });
       }
-      if ((window as any).fbq) {
-        (window as any).fbq('track', 'PageView');
+      if (window.fbq) {
+        window.fbq('track', 'PageView');
       }
     }
   } catch {}
 
   return event;
+}
+
+// Map internal event names to Meta Pixel standard event names
+export const META_PIXEL_STANDARD_EVENTS_MAP: Record<string, string> = {
+  add_payment_info: 'AddPaymentInfo',
+  addpaymentinfo: 'AddPaymentInfo',
+  AddPaymentInfo: 'AddPaymentInfo',
+
+  add_to_cart: 'AddToCart',
+  addtocart: 'AddToCart',
+  AddToCart: 'AddToCart',
+
+  add_to_wishlist: 'AddToWishlist',
+  addtowishlist: 'AddToWishlist',
+  AddToWishlist: 'AddToWishlist',
+
+  complete_registration: 'CompleteRegistration',
+  completeregistration: 'CompleteRegistration',
+  CompleteRegistration: 'CompleteRegistration',
+
+  contact: 'Contact',
+  Contact: 'Contact',
+
+  customize_product: 'CustomizeProduct',
+  customizeproduct: 'CustomizeProduct',
+  CustomizeProduct: 'CustomizeProduct',
+
+  donate: 'Donate',
+  Donate: 'Donate',
+
+  find_location: 'FindLocation',
+  findlocation: 'FindLocation',
+  FindLocation: 'FindLocation',
+
+  initiate_checkout: 'InitiateCheckout',
+  initiatecheckout: 'InitiateCheckout',
+  checkout_start: 'InitiateCheckout',
+  InitiateCheckout: 'InitiateCheckout',
+
+  lead: 'Lead',
+  Lead: 'Lead',
+
+  purchase: 'Purchase',
+  Purchase: 'Purchase',
+
+  schedule: 'Schedule',
+  Schedule: 'Schedule',
+
+  search: 'Search',
+  Search: 'Search',
+
+  start_trial: 'StartTrial',
+  starttrial: 'StartTrial',
+  StartTrial: 'StartTrial',
+
+  submit_application: 'SubmitApplication',
+  submitapplication: 'SubmitApplication',
+  SubmitApplication: 'SubmitApplication',
+
+  subscribe: 'Subscribe',
+  Subscribe: 'Subscribe',
+
+  view_content: 'ViewContent',
+  viewcontent: 'ViewContent',
+  ViewContent: 'ViewContent',
+
+  page_view: 'PageView',
+  PageView: 'PageView',
+};
+
+/**
+ * Sanitize and standardize parameters for Meta Pixel event dispatch
+ */
+function sanitizeMetaPixelParams(metadata?: Record<string, any>): Record<string, any> {
+  if (!metadata) return {};
+  const params: Record<string, any> = { ...metadata };
+
+  // Ensure currency is provided if value is present
+  if (params.value !== undefined) {
+    const numVal = typeof params.value === 'string' ? parseFloat(params.value) : Number(params.value);
+    if (!isNaN(numVal)) {
+      params.value = numVal;
+      if (!params.currency) {
+        params.currency = 'PKR';
+      }
+    }
+  }
+
+  // Ensure content_ids is an array of strings if given
+  if (params.content_ids && !Array.isArray(params.content_ids)) {
+    params.content_ids = [String(params.content_ids)];
+  }
+
+  return params;
+}
+
+/**
+ * Direct call to Meta Pixel track
+ */
+export function trackMetaPixel(eventName: string, params?: Record<string, any>) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (window.fbq) {
+      const standardEventName = META_PIXEL_STANDARD_EVENTS_MAP[eventName] || eventName;
+      const cleanParams = sanitizeMetaPixelParams(params);
+      window.fbq('track', standardEventName, cleanParams);
+    }
+  } catch (err) {
+    console.warn('Meta Pixel dispatch error:', err);
+  }
+}
+
+/**
+ * Direct call to Meta Pixel trackCustom for custom business events
+ */
+export function trackMetaCustom(eventName: string, params?: Record<string, any>) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (window.fbq) {
+      const cleanParams = sanitizeMetaPixelParams(params);
+      window.fbq('trackCustom', eventName, cleanParams);
+    }
+  } catch (err) {
+    console.warn('Meta Pixel custom dispatch error:', err);
+  }
 }
 
 // Track custom user interactions (add to cart, checkout start, etc.)
@@ -179,28 +304,79 @@ export function trackEvent(eventType: AnalyticsEvent['eventType'], metadata?: Re
 
   try {
     if (typeof window !== 'undefined') {
-      if ((window as any).gtag) {
-        (window as any).gtag('event', eventType, metadata || {});
+      const cleanParams = sanitizeMetaPixelParams(metadata);
+
+      if (window.gtag) {
+        window.gtag('event', eventType, cleanParams);
       }
-      if ((window as any).fbq) {
-        const metaEventMap: Record<string, string> = {
-          add_to_cart: 'AddToCart',
-          initiate_checkout: 'InitiateCheckout',
-          purchase: 'Purchase',
-          view_content: 'ViewContent',
-          contact: 'Contact',
-          lead: 'Lead',
-        };
-        const standardEvent = metaEventMap[eventType];
+
+      if (window.fbq) {
+        const standardEvent = META_PIXEL_STANDARD_EVENTS_MAP[eventType];
         if (standardEvent) {
-          (window as any).fbq('track', standardEvent, metadata || {});
+          window.fbq('track', standardEvent, cleanParams);
         } else {
-          (window as any).fbq('trackCustom', eventType, metadata || {});
+          window.fbq('trackCustom', eventType, cleanParams);
         }
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Analytics event dispatch error:', err);
+  }
 }
+
+// Convenience helpers for all 17 Standard Meta Pixel Events
+export const metaPixel = {
+  addPaymentInfo: (params?: { value?: number; currency?: string; content_ids?: string[]; payment_type?: string; [key: string]: any }) =>
+    trackEvent('add_payment_info', { currency: 'PKR', ...params }),
+
+  addToCart: (params: { content_name?: string; content_ids?: string[]; content_type?: string; value?: number; currency?: string; [key: string]: any }) =>
+    trackEvent('add_to_cart', { content_type: 'product', currency: 'PKR', ...params }),
+
+  addToWishlist: (params: { content_name?: string; content_ids?: string[]; content_type?: string; value?: number; currency?: string; [key: string]: any }) =>
+    trackEvent('add_to_wishlist', { content_type: 'product', currency: 'PKR', ...params }),
+
+  completeRegistration: (params?: { content_name?: string; status?: string; [key: string]: any }) =>
+    trackEvent('complete_registration', { status: 'successful', ...params }),
+
+  contact: (params?: { content_name?: string; contact_method?: string; [key: string]: any }) =>
+    trackEvent('contact', params),
+
+  customizeProduct: (params?: { content_name?: string; content_ids?: string[]; custom_variant?: string; [key: string]: any }) =>
+    trackEvent('customize_product', { content_type: 'product', ...params }),
+
+  donate: (params?: { value?: number; currency?: string; [key: string]: any }) =>
+    trackEvent('donate', { currency: 'PKR', ...params }),
+
+  findLocation: (params?: { content_name?: string; [key: string]: any }) =>
+    trackEvent('find_location', params),
+
+  initiateCheckout: (params?: { value?: number; currency?: string; num_items?: number; content_ids?: string[]; [key: string]: any }) =>
+    trackEvent('initiate_checkout', { currency: 'PKR', ...params }),
+
+  lead: (params?: { content_name?: string; value?: number; currency?: string; [key: string]: any }) =>
+    trackEvent('lead', { currency: 'PKR', ...params }),
+
+  purchase: (params: { value: number; currency?: string; content_ids?: string[]; num_items?: number; order_id?: string; [key: string]: any }) =>
+    trackEvent('purchase', { content_type: 'product', currency: 'PKR', ...params }),
+
+  schedule: (params?: { content_name?: string; appointment_date?: string; [key: string]: any }) =>
+    trackEvent('schedule', params),
+
+  search: (params: { search_string: string; content_ids?: string[]; content_category?: string; [key: string]: any }) =>
+    trackEvent('search', params),
+
+  startTrial: (params?: { value?: number; currency?: string; predicted_ltv?: number; [key: string]: any }) =>
+    trackEvent('start_trial', { currency: 'PKR', ...params }),
+
+  submitApplication: (params?: { content_name?: string; [key: string]: any }) =>
+    trackEvent('submit_application', params),
+
+  subscribe: (params?: { value?: number; currency?: string; predicted_ltv?: number; [key: string]: any }) =>
+    trackEvent('subscribe', { value: 0, currency: 'PKR', predicted_ltv: 0, ...params }),
+
+  viewContent: (params: { content_name?: string; content_ids?: string[]; content_type?: string; value?: number; currency?: string; [key: string]: any }) =>
+    trackEvent('view_content', { content_type: 'product', currency: 'PKR', ...params }),
+};
 
 // Calculate active live visitors within the last 5 minutes
 export function getLiveVisitorsCount(): number {

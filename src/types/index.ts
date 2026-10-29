@@ -294,9 +294,51 @@ export interface Refund {
   supabaseSynced?: boolean;
 }
 
+export type MetaPixelStandardEvent =
+  | 'AddPaymentInfo'
+  | 'AddToCart'
+  | 'AddToWishlist'
+  | 'CompleteRegistration'
+  | 'Contact'
+  | 'CustomizeProduct'
+  | 'Donate'
+  | 'FindLocation'
+  | 'InitiateCheckout'
+  | 'Lead'
+  | 'Purchase'
+  | 'Schedule'
+  | 'Search'
+  | 'StartTrial'
+  | 'SubmitApplication'
+  | 'Subscribe'
+  | 'ViewContent'
+  | 'PageView';
+
 export interface AnalyticsEvent {
   id?: string;
-  eventType: 'page_view' | 'session_start' | 'add_to_cart' | 'checkout_start' | 'initiate_checkout' | 'purchase' | 'view_content' | string;
+  eventType:
+    | 'page_view'
+    | 'session_start'
+    | 'add_to_cart'
+    | 'add_to_wishlist'
+    | 'add_payment_info'
+    | 'checkout_start'
+    | 'initiate_checkout'
+    | 'purchase'
+    | 'view_content'
+    | 'search'
+    | 'contact'
+    | 'lead'
+    | 'complete_registration'
+    | 'customize_product'
+    | 'donate'
+    | 'find_location'
+    | 'schedule'
+    | 'start_trial'
+    | 'submit_application'
+    | 'subscribe'
+    | MetaPixelStandardEvent
+    | string;
   path: string;
   pageTitle?: string;
   referrer?: string;

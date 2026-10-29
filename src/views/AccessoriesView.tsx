@@ -106,10 +106,14 @@ export const AccessoriesView: React.FC = () => {
             {/* Ambient Breathing Radial Gold Aura */}
             <div className="coming-soon-glow-orb absolute w-[300px] sm:w-[560px] md:w-[750px] h-[300px] sm:h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.25)_0%,rgba(212,175,55,0.06)_50%,transparent_75%)] rounded-full blur-3xl pointer-events-none -z-10" />
 
-            {/* Luxury Tagline Display */}
-            <div className="max-w-4xl mx-auto px-4 py-8 z-10 text-center">
+            {/* Luxury Tagline Display with Dedicated High-Contrast Text Background */}
+            <div className="max-w-3xl mx-auto px-8 sm:px-12 py-10 sm:py-14 z-10 text-center glass-panel rounded-3xl shadow-2xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-extrabold uppercase tracking-[0.25em] mb-4">
+                <Tag className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Curated Accoutrements</span>
+              </div>
               <h1 className="leading-snug">
-                <span className="font-bold text-3xl sm:text-5xl md:text-6xl text-white font-serif-luxury tracking-wide block py-2 drop-shadow-lg">
+                <span className="font-bold text-3xl sm:text-5xl md:text-6xl text-white font-serif-luxury tracking-wide block py-2">
                   Complete Your Presence.
                 </span>
                 <span className="font-normal font-sans text-base sm:text-lg md:text-xl text-[#CBD0DC] tracking-wide block mt-3 sm:mt-4 opacity-90">
