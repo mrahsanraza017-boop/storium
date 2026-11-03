@@ -4,11 +4,13 @@ import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { SaleBanner } from '../components/promotions/SaleBanner';
 import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
 export const WatchesView: React.FC = () => {
-  const { products } = useStore();
+  const { products, pagesContent } = useStore();
+  const watchesContent = pagesContent.watches;
   const [selectedType, setSelectedType] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
 
@@ -96,8 +98,29 @@ export const WatchesView: React.FC = () => {
         schemas={schemas}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Semantic h1 heading for SEO & Accessibility */}
-        <h1 className="sr-only">Timepieces Collection — STORIUM Luxury Mechanical & Automatic Watches</h1>
+        {/* Page Header Banner */}
+        <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl relative overflow-hidden">
+          {watchesContent.bannerImage && (
+            <div className="absolute inset-0 opacity-15 pointer-events-none">
+              <img src={watchesContent.bannerImage} alt="Watches Banner" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="relative z-10">
+            <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-2">
+              {watchesContent.eyebrow || 'Precision Engineering'}
+            </span>
+            <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-white gold-glow-heading">
+              {watchesContent.heading || 'Curated Timepieces'}
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-[#D1D5E0] max-w-xl luxury-text-shadow">
+              {watchesContent.subtitle ||
+                'Explore precision Japanese & Swiss horology, aerospace titanium, 316L steel, and sapphire crystal timepieces with nationwide COD.'}
+            </p>
+          </div>
+          <div className="relative z-10 text-sm text-[#CBD0DC] font-mono px-4 py-2 rounded-xl glass-panel-subtle self-start md:self-auto">
+            <span className="text-[#D4AF37] font-bold">{filteredWatches.length}</span> Timepieces
+          </div>
+        </div>
 
         {/* Promotional Sale Banner */}
         <div className="mb-8">
@@ -180,6 +203,13 @@ export const WatchesView: React.FC = () => {
         <div className="mt-16 pt-12 border-t border-[#262930]">
           <WatchDealsSection />
         </div>
+
+        {/* Dynamic Custom Content Sections */}
+        {watchesContent.customSections && watchesContent.customSections.length > 0 && (
+          <div className="mt-16 pt-12 border-t border-[#262930]">
+            <CustomSectionsRenderer sections={watchesContent.customSections} />
+          </div>
+        )}
       </div>
     </div>
 

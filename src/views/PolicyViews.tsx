@@ -4,6 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema } from '../lib/seoSchemas';
 import { parsePolicyTextToSections, interpolatePolicyTokens } from '../lib/policyText';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 
 interface PolicyDocumentProps {
   eyebrow: string;
@@ -30,7 +31,7 @@ const PolicyDocument: React.FC<PolicyDocumentProps> = ({
   seoDescription,
   keywords,
 }) => {
-  const { businessSettings } = useStore();
+  const { businessSettings, pagesContent } = useStore();
 
   const tokens = {
     businessName: businessSettings.businessName,
@@ -88,18 +89,25 @@ const PolicyDocument: React.FC<PolicyDocumentProps> = ({
             </section>
           ))}
         </div>
+
+        {/* Dynamic Custom Content Sections */}
+        {pagesContent.policies.customSections && pagesContent.policies.customSections.length > 0 && (
+          <div className="pt-8 border-t border-[#262930]">
+            <CustomSectionsRenderer sections={pagesContent.policies.customSections} />
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export const ShippingPolicyView: React.FC = () => {
-  const { businessSettings } = useStore();
+  const { businessSettings, pagesContent } = useStore();
   return (
     <PolicyDocument
-      eyebrow="Showroom Logistics"
-      title="Shipping Policy"
-      subtitle="Nationwide Pakistan delivery"
+      eyebrow={pagesContent.policies.shippingEyebrow || 'Showroom Logistics'}
+      title={pagesContent.policies.shippingTitle || 'Shipping Policy'}
+      subtitle={pagesContent.policies.shippingSubtitle || 'Nationwide Pakistan delivery'}
       icon={<Truck className="w-4 h-4" />}
       lastUpdated="January 2026"
       canonicalPath="/shipping-policy"
@@ -112,12 +120,12 @@ export const ShippingPolicyView: React.FC = () => {
 };
 
 export const ReturnPolicyView: React.FC = () => {
-  const { businessSettings } = useStore();
+  const { businessSettings, pagesContent } = useStore();
   return (
     <PolicyDocument
-      eyebrow="Patron Assurance"
-      title="Refund Policy"
-      subtitle="Returns, exchanges and refunds"
+      eyebrow={pagesContent.policies.refundEyebrow || 'Patron Assurance'}
+      title={pagesContent.policies.refundTitle || 'Refund Policy'}
+      subtitle={pagesContent.policies.refundSubtitle || 'Returns, exchanges and refunds'}
       icon={<RefreshCcw className="w-4 h-4" />}
       lastUpdated="January 2026"
       canonicalPath="/return-policy"
@@ -130,12 +138,12 @@ export const ReturnPolicyView: React.FC = () => {
 };
 
 export const PrivacyPolicyView: React.FC = () => {
-  const { businessSettings } = useStore();
+  const { businessSettings, pagesContent } = useStore();
   return (
     <PolicyDocument
-      eyebrow="Your Privacy"
-      title="Privacy Policy"
-      subtitle="How we collect, use and protect your information"
+      eyebrow={pagesContent.policies.privacyEyebrow || 'Your Privacy'}
+      title={pagesContent.policies.privacyTitle || 'Privacy Policy'}
+      subtitle={pagesContent.policies.privacySubtitle || 'How we collect, use and protect your information'}
       icon={<LockKeyhole className="w-4 h-4" />}
       lastUpdated="January 2026"
       canonicalPath="/privacy-policy"
@@ -148,12 +156,12 @@ export const PrivacyPolicyView: React.FC = () => {
 };
 
 export const TermsView: React.FC = () => {
-  const { businessSettings } = useStore();
+  const { businessSettings, pagesContent } = useStore();
   return (
     <PolicyDocument
-      eyebrow="Legal & Terms"
-      title="Terms & Conditions"
-      subtitle="The terms that govern your use of our store"
+      eyebrow={pagesContent.policies.termsEyebrow || 'Legal & Terms'}
+      title={pagesContent.policies.termsTitle || 'Terms & Conditions'}
+      subtitle={pagesContent.policies.termsSubtitle || 'The terms that govern your use of our store'}
       icon={<FileText className="w-4 h-4" />}
       lastUpdated="January 2026"
       canonicalPath="/terms"

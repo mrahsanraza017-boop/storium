@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ShoppingBag,
   Sparkles,
+  Layout,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
@@ -41,6 +42,7 @@ import { AdminInquiriesTab } from '../components/admin/AdminInquiriesTab';
 import { compressImage } from '../utils/imageCompressor';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
 import { AdminBusinessSettingsTab } from '../components/admin/AdminBusinessSettingsTab';
+import { AdminPagesContentTab } from '../components/admin/AdminPagesContentTab';
 import { AdminEmailTab } from '../components/admin/AdminEmailTab';
 import { AdminOverviewTab } from '../components/admin/AdminOverviewTab';
 import { AdminPaymentsTab } from '../components/admin/AdminPaymentsTab';
@@ -100,6 +102,7 @@ export const AdminView: React.FC = () => {
     | 'emails'
     | 'supabase'
     | 'settings'
+    | 'pages'
   >('overview');
 
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
@@ -904,6 +907,19 @@ export const AdminView: React.FC = () => {
             >
               <Settings2 className="w-3.5 h-3.5" />
               <span>Settings</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('pages')}
+              className={`px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                activeTab === 'pages'
+                  ? 'bg-[#D4AF37] text-[#0B0C0E] border border-[#D4AF37] shadow-lg shadow-[#D4AF37]/20 font-bold'
+                  : 'bg-[#121316] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] hover:border-[#D4AF37]/40 hover:bg-[#181A1F]'
+              }`}
+            >
+              <Layout className="w-3.5 h-3.5" />
+              <span>Pages &amp; CMS</span>
             </button>
           </div>
 
@@ -1884,6 +1900,9 @@ export const AdminView: React.FC = () => {
           {/* TAB 12: BUSINESS SETTINGS */}
           {activeTab === 'settings' && <AdminBusinessSettingsTab />}
 
+          {/* TAB 13: PAGES & CMS CONTENT */}
+          {activeTab === 'pages' && <AdminPagesContentTab />}
+
           {/* Modal: Add/Edit Product */}
           {isAddModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -2709,10 +2728,21 @@ export const AdminView: React.FC = () => {
                         setActiveTab('settings');
                         setIsMobileMoreOpen(false);
                       }}
-                      className="col-span-2 p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
                     >
                       <Settings2 className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Business &amp; Policy Settings</span>
+                      <span>Business Settings</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('pages');
+                        setIsMobileMoreOpen(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center gap-2.5 text-[#E8E8EC] font-semibold text-left"
+                    >
+                      <Layout className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Pages &amp; CMS</span>
                     </button>
                   </div>
 

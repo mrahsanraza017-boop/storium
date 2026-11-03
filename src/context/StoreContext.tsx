@@ -15,9 +15,12 @@ import {
   Refund,
   AdminNotification,
   WatchBundleDeal,
+  PagesContentConfig,
+  CustomPageSection,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
 import { DEFAULT_BUSINESS_SETTINGS } from '../data/businessDefaults';
+import { DEFAULT_PAGES_CONTENT } from '../data/defaultPageContent';
 import { sendOrderNotificationToAdmin } from '../services/pushNotificationService';
 import {
   saveOrderToSupabase,
@@ -212,6 +215,15 @@ interface StoreContextType {
   resetBusinessSettings: () => void;
   setStorewideShippingFee: (flatFee: number, freeAbove?: number) => void;
 
+  // Page Content & Sections CMS
+  pagesContent: PagesContentConfig;
+  updatePageContent: <P extends keyof PagesContentConfig>(page: P, updates: Partial<PagesContentConfig[P]>) => void;
+  addCustomSection: (page: keyof PagesContentConfig, section: Omit<CustomPageSection, 'id'>) => void;
+  updateCustomSection: (page: keyof PagesContentConfig, sectionId: string, updates: Partial<CustomPageSection>) => void;
+  deleteCustomSection: (page: keyof PagesContentConfig, sectionId: string) => void;
+  reorderCustomSection: (page: keyof PagesContentConfig, sectionId: string, direction: 'up' | 'down') => void;
+  resetPagesContent: (page?: keyof PagesContentConfig) => void;
+
   // Theme (Dark / Light)
   theme: 'dark' | 'light';
   toggleTheme: () => void;
@@ -231,6 +243,7 @@ const STORAGE_KEYS = {
   REVIEWS: 'storium_reviews_v1',
   USER: 'storium_user_v1',
   SETTINGS: 'storium_settings_v1',
+  PAGES_CONTENT: 'storium_pages_content_v1',
   REFUNDS: 'storium_refunds_v1',
   NOTIFICATIONS: 'storium_notifications_v1',
 };
@@ -544,6 +557,80 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
     return DEFAULT_BUSINESS_SETTINGS;
   });
+
+  // Pages content (texts, headings, images, custom sections - persisted locally)
+  const [pagesContent, setPagesContent] = useState<PagesContentConfig>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PAGES_CONTENT);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<PagesContentConfig>;
+        return {
+          home: {
+            ...DEFAULT_PAGES_CONTENT.home,
+            ...(parsed.home || {}),
+            hero: { ...DEFAULT_PAGES_CONTENT.home.hero, ...(parsed.home?.hero || {}) },
+            featuredShowcase: { ...DEFAULT_PAGES_CONTENT.home.featuredShowcase, ...(parsed.home?.featuredShowcase || {}) },
+            productSpotlight: { ...DEFAULT_PAGES_CONTENT.home.productSpotlight, ...(parsed.home?.productSpotlight || {}) },
+            philosophy: { ...DEFAULT_PAGES_CONTENT.home.philosophy, ...(parsed.home?.philosophy || {}) },
+            trustBadges: {
+              badge1: { ...DEFAULT_PAGES_CONTENT.home.trustBadges.badge1, ...(parsed.home?.trustBadges?.badge1 || {}) },
+              badge2: { ...DEFAULT_PAGES_CONTENT.home.trustBadges.badge2, ...(parsed.home?.trustBadges?.badge2 || {}) },
+              badge3: { ...DEFAULT_PAGES_CONTENT.home.trustBadges.badge3, ...(parsed.home?.trustBadges?.badge3 || {}) },
+            },
+            conversionCta: { ...DEFAULT_PAGES_CONTENT.home.conversionCta, ...(parsed.home?.conversionCta || {}) },
+            customSections: Array.isArray(parsed.home?.customSections) ? parsed.home.customSections : [],
+          },
+          about: {
+            ...DEFAULT_PAGES_CONTENT.about,
+            ...(parsed.about || {}),
+            header: { ...DEFAULT_PAGES_CONTENT.about.header, ...(parsed.about?.header || {}) },
+            heroVisual: { ...DEFAULT_PAGES_CONTENT.about.heroVisual, ...(parsed.about?.heroVisual || {}) },
+            philosophy: { ...DEFAULT_PAGES_CONTENT.about.philosophy, ...(parsed.about?.philosophy || {}) },
+            customSections: Array.isArray(parsed.about?.customSections) ? parsed.about.customSections : [],
+          },
+          contact: {
+            ...DEFAULT_PAGES_CONTENT.contact,
+            ...(parsed.contact || {}),
+            header: { ...DEFAULT_PAGES_CONTENT.contact.header, ...(parsed.contact?.header || {}) },
+            details: { ...DEFAULT_PAGES_CONTENT.contact.details, ...(parsed.contact?.details || {}) },
+            customSections: Array.isArray(parsed.contact?.customSections) ? parsed.contact.customSections : [],
+          },
+          watches: {
+            ...DEFAULT_PAGES_CONTENT.watches,
+            ...(parsed.watches || {}),
+            customSections: Array.isArray(parsed.watches?.customSections) ? parsed.watches.customSections : [],
+          },
+          accessories: {
+            ...DEFAULT_PAGES_CONTENT.accessories,
+            ...(parsed.accessories || {}),
+            customSections: Array.isArray(parsed.accessories?.customSections) ? parsed.accessories.customSections : [],
+          },
+          shop: {
+            ...DEFAULT_PAGES_CONTENT.shop,
+            ...(parsed.shop || {}),
+            customSections: Array.isArray(parsed.shop?.customSections) ? parsed.shop.customSections : [],
+          },
+          policies: {
+            ...DEFAULT_PAGES_CONTENT.policies,
+            ...(parsed.policies || {}),
+            customSections: Array.isArray(parsed.policies?.customSections) ? parsed.policies.customSections : [],
+          },
+        };
+      }
+    } catch {
+      // fallback to defaults
+    }
+    return DEFAULT_PAGES_CONTENT;
+  });
+
+  // Sync pages content to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.PAGES_CONTENT, JSON.stringify(pagesContent));
+    } catch (e) {
+      console.warn('Pages content storage save failed', e);
+    }
+  }, [pagesContent]);
 
   // Sync to local storage
   useEffect(() => {
@@ -889,6 +976,89 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         ? 'Free Delivery has been activated for all products nationwide.'
         : `Flat shipping fee set to Rs. ${nextFlatFee.toLocaleString()} storewide across all products.`
     );
+  };
+
+  // Page Content CMS Handlers
+  const updatePageContent = <P extends keyof PagesContentConfig>(page: P, updates: Partial<PagesContentConfig[P]>) => {
+    setPagesContent((prev) => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        ...updates,
+      },
+    }));
+    addToast('success', 'Page Updated', `${page.toUpperCase()} page content has been saved successfully.`);
+  };
+
+  const addCustomSection = (page: keyof PagesContentConfig, section: Omit<CustomPageSection, 'id'>) => {
+    const newSection: CustomPageSection = {
+      ...section,
+      id: `sec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
+    setPagesContent((prev) => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        customSections: [...(prev[page].customSections || []), newSection],
+      },
+    }));
+    addToast('success', 'Section Added', `A new section was added to the ${page.toUpperCase()} page.`);
+  };
+
+  const updateCustomSection = (page: keyof PagesContentConfig, sectionId: string, updates: Partial<CustomPageSection>) => {
+    setPagesContent((prev) => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        customSections: (prev[page].customSections || []).map((s) =>
+          s.id === sectionId ? { ...s, ...updates } : s
+        ),
+      },
+    }));
+    addToast('success', 'Section Updated', 'The section details were saved.');
+  };
+
+  const deleteCustomSection = (page: keyof PagesContentConfig, sectionId: string) => {
+    setPagesContent((prev) => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        customSections: (prev[page].customSections || []).filter((s) => s.id !== sectionId),
+      },
+    }));
+    addToast('info', 'Section Removed', 'The section was removed from the page.');
+  };
+
+  const reorderCustomSection = (page: keyof PagesContentConfig, sectionId: string, direction: 'up' | 'down') => {
+    setPagesContent((prev) => {
+      const list = [...(prev[page].customSections || [])];
+      const index = list.findIndex((s) => s.id === sectionId);
+      if (index === -1) return prev;
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= list.length) return prev;
+      const [moved] = list.splice(index, 1);
+      list.splice(targetIndex, 0, moved);
+      return {
+        ...prev,
+        [page]: {
+          ...prev[page],
+          customSections: list,
+        },
+      };
+    });
+  };
+
+  const resetPagesContent = (page?: keyof PagesContentConfig) => {
+    if (page) {
+      setPagesContent((prev) => ({
+        ...prev,
+        [page]: DEFAULT_PAGES_CONTENT[page],
+      }));
+      addToast('info', 'Page Content Reset', `${page.toUpperCase()} content was restored to defaults.`);
+    } else {
+      setPagesContent(DEFAULT_PAGES_CONTENT);
+      addToast('info', 'All Pages Reset', 'All page texts, headings, and images were restored to defaults.');
+    }
   };
 
   // Helper to build canonical relative URL for routes
@@ -1940,6 +2110,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         updateBusinessSettings,
         resetBusinessSettings,
         setStorewideShippingFee,
+
+        pagesContent,
+        updatePageContent,
+        addCustomSection,
+        updateCustomSection,
+        deleteCustomSection,
+        reorderCustomSection,
+        resetPagesContent,
 
         theme,
         toggleTheme,

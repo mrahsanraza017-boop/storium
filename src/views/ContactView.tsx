@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { trackEvent } from '../services/analyticsTracker';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, BASE_SITE_URL } from '../lib/seoSchemas';
 
 export const ContactView: React.FC = () => {
-  const { submitContactInquiry, businessSettings } = useStore();
+  const { submitContactInquiry, businessSettings, pagesContent } = useStore();
+  const contactContent = pagesContent.contact;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -78,13 +80,14 @@ export const ContactView: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div className="text-center space-y-3">
           <span className="text-xs uppercase tracking-[0.28em] text-[#D4AF37] font-semibold">
-            {businessSettings.businessName} &bull; Client Concierge
+            {contactContent.header?.badge || `${businessSettings.businessName} • Client Concierge`}
           </span>
           <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-[#F5F5F7]">
-            Connect With the Showroom
+            {contactContent.header?.heading || 'Connect With the Showroom'}
           </h1>
           <p className="text-sm text-[#CBD0DC] max-w-xl mx-auto">
-            Whether you require horological consultation, custom sizing, or order inquiries, our dedicated concierge team is at your disposal.
+            {contactContent.header?.subtitle ||
+              'Whether you require horological consultation, custom sizing, or order inquiries, our dedicated concierge team is at your disposal.'}
           </p>
         </div>
 
@@ -315,6 +318,11 @@ export const ContactView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Dynamic Custom Content Sections */}
+        {contactContent.customSections && contactContent.customSections.length > 0 && (
+          <CustomSectionsRenderer sections={contactContent.customSections} />
+        )}
       </div>
     </div>
   );

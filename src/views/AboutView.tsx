@@ -1,12 +1,14 @@
 import React from 'react';
 import { Award, Shield, Watch, Lock } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import { getBreadcrumbSchema, BASE_SITE_URL } from '../lib/seoSchemas';
 
 export const AboutView: React.FC = () => {
-  const { navigate, businessSettings } = useStore();
+  const { navigate, businessSettings, pagesContent } = useStore();
+  const aboutContent = pagesContent.about;
 
   const businessModelParagraphs = businessSettings.businessModel
     .split(/\n{2,}/)
@@ -15,6 +17,11 @@ export const AboutView: React.FC = () => {
 
   const securePaymentSteps = businessSettings.securePaymentCopy
     .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const philosophyParagraphs = (aboutContent.philosophy?.content || '')
+    .split(/\n{2,}/)
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -52,7 +59,7 @@ export const AboutView: React.FC = () => {
         <div className="text-center space-y-6 glass-panel p-10 sm:p-12 rounded-3xl shadow-2xl flex flex-col items-center">
           <div className="w-32 h-32 sm:w-36 sm:h-36 p-2 bg-transparent flex items-center justify-center flex-shrink-0">
             <img
-              src="/logo.png"
+              src={aboutContent.header?.logoUrl || '/logo.png'}
               alt="Maison STORIUM Logo"
               width="144"
               height="144"
@@ -61,22 +68,22 @@ export const AboutView: React.FC = () => {
           </div>
           <div>
             <span className="text-xs uppercase tracking-[0.28em] text-[#D4AF37] font-semibold block mb-2">
-              Maison STORIUM
+              {aboutContent.header?.badge || 'Maison STORIUM'}
             </span>
             <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-white gold-glow-heading">
-              Wear Your Presence.
+              {aboutContent.header?.heading || 'Wear Your Presence.'}
             </h1>
           </div>
           <p className="text-base sm:text-lg text-[#D1D5E0] max-w-2xl mx-auto font-light leading-relaxed luxury-text-shadow">
-            The story behind Pakistan&apos;s pioneering online luxury showroom for futuristic timepieces and curated men&apos;s accoutrements.
+            {aboutContent.header?.subtitle}
           </p>
         </div>
 
         {/* Hero Visual */}
         <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[16/9] shadow-2xl">
           <img
-            src="/assets/exhibition-bench.webp"
-            alt="STORIUM Horology Craftsmanship & Atelier"
+            src={aboutContent.heroVisual?.imageUrl || '/assets/exhibition-bench.webp'}
+            alt={aboutContent.heroVisual?.altText || 'STORIUM Horology Craftsmanship & Atelier'}
             width={1376}
             height={768}
             className="w-full h-full object-cover"
@@ -89,14 +96,13 @@ export const AboutView: React.FC = () => {
         {/* Philosophy */}
         <div className="space-y-6 text-sm sm:text-base text-[#D1D5E0] leading-relaxed glass-panel p-8 sm:p-10 rounded-3xl shadow-2xl">
           <h2 className="text-2xl sm:text-3xl font-bold text-white font-serif-luxury gold-glow-subtle">
-            The Philosophy of Self-Definition
+            {aboutContent.philosophy?.heading || 'The Philosophy of Self-Definition'}
           </h2>
-          <p className="luxury-text-shadow">
-            At STORIUM, we reject the notion that luxury must be synonymous with exorbitant markups or antiquated heritage houses. We believe that what you wear and carry is not a passive accessory—it is an external proclamation of your presence, self-discipline, and vision.
-          </p>
-          <p className="luxury-text-shadow">
-            Founded in Pakistan, STORIUM is built to offer men who demand excellence an accessible gateway into haute horologie. Every timepiece in our catalog is rigorously engineered using materials previously reserved for aerospace and surgical applications: 316L stainless steel, Grade 5 titanium, anti-reflective double-domed sapphire crystals, and precision mechanical escapements.
-          </p>
+          {philosophyParagraphs.map((para, i) => (
+            <p key={i} className="luxury-text-shadow">
+              {para}
+            </p>
+          ))}
         </div>
 
         {/* 3 Pillars */}
@@ -191,6 +197,11 @@ export const AboutView: React.FC = () => {
             </p>
           )}
         </div>
+
+        {/* Dynamic Custom Content Sections */}
+        {aboutContent.customSections && aboutContent.customSections.length > 0 && (
+          <CustomSectionsRenderer sections={aboutContent.customSections} />
+        )}
 
         {/* Showroom CTA */}
         <div className="p-8 sm:p-12 rounded-3xl glass-panel text-center space-y-6 shadow-2xl">

@@ -11,6 +11,7 @@ import { MotionReveal } from '../components/animation/MotionReveal';
 import { StarRating } from '../components/reviews/StarRating';
 import { SaleBanner } from '../components/promotions/SaleBanner';
 import { WatchDealsSection } from '../components/promotions/WatchDealsSection';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 
 import { SEOHead } from '../components/seo/SEOHead';
 import {
@@ -20,7 +21,8 @@ import {
 } from '../lib/seoSchemas';
 
 export const HomeView: React.FC = () => {
-  const { products, navigate, getFeaturedHomeReviews, getProductById } = useStore();
+  const { products, navigate, getFeaturedHomeReviews, getProductById, pagesContent } = useStore();
+  const homeContent = pagesContent.home;
 
   const showroomWatches = products.filter((p) => p.category === 'watches');
   const featuredWatches = showroomWatches.filter((p) => p.featured);
@@ -78,19 +80,19 @@ export const HomeView: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#E5C378] to-[#D4AF37] border border-white/20 mb-8 shadow-[0_4px_25px_rgba(212,175,55,0.4)]">
             <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             <span className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-black font-extrabold">
-              Pakistan&apos;s Futuristic Luxury Showroom
+              {homeContent.hero.badge}
             </span>
           </div>
 
           {/* Main Statement */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white font-serif-luxury leading-[1.1] max-w-4xl gold-glow-heading drop-shadow-2xl">
-            Wear your presence.
+            {homeContent.hero.heading}
           </h1>
 
-          {/* Subtext */}
+          {/* Subtext (Banner Description) */}
           <div className="mt-6 px-6 py-3 rounded-2xl glass-panel-subtle max-w-2xl">
             <p className="text-base sm:text-lg md:text-xl text-[#D1D5E0] font-light leading-relaxed luxury-text-shadow">
-              Timepieces forged from aerospace titanium, surgical steel, and sapphire crystal. Designed for leaders who command authority without uttering a sound.
+              {homeContent.hero.description}
             </p>
           </div>
 
@@ -98,19 +100,19 @@ export const HomeView: React.FC = () => {
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => navigate('watches')}
+              onClick={() => navigate(homeContent.hero.primaryCtaTarget || 'watches')}
               className="w-full sm:w-auto py-4 px-8 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
-              <span>Explore Timepieces</span>
+              <span>{homeContent.hero.primaryCtaText || 'Explore Timepieces'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
               type="button"
-              onClick={() => navigate('shop')}
+              onClick={() => navigate(homeContent.hero.secondaryCtaTarget || 'shop')}
               className="w-full sm:w-auto py-4 px-8 rounded-xl bg-[#121316]/90 hover:bg-[#181A1F] text-[#F5F5F7] hover:text-white text-xs uppercase tracking-[0.2em] font-semibold border border-[#262930] hover:border-[#D4AF37]/60 backdrop-blur-md transition-all shadow-xl cursor-pointer"
             >
-              Showroom Catalog
+              {homeContent.hero.secondaryCtaText || 'Showroom Catalog'}
             </button>
           </div>
 
@@ -131,10 +133,10 @@ export const HomeView: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4 p-6 sm:p-8 rounded-2xl glass-panel">
             <div>
               <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-2">
-                Flagship Horology
+                {homeContent.featuredShowcase?.eyebrow || 'Flagship Horology'}
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold text-white font-serif-luxury gold-glow-subtle">
-                Curated Showroom Timepieces
+                {homeContent.featuredShowcase?.heading || 'Curated Showroom Timepieces'}
               </h2>
             </div>
 
@@ -143,7 +145,7 @@ export const HomeView: React.FC = () => {
               onClick={() => navigate('watches')}
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-[#D4AF37] hover:text-[#E5C378] transition-colors cursor-pointer"
             >
-              <span>View All</span>
+              <span>{homeContent.featuredShowcase?.viewAllText || 'View All'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -158,7 +160,7 @@ export const HomeView: React.FC = () => {
               onClick={() => navigate('watches')}
               className="py-3.5 px-8 sm:px-10 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs uppercase tracking-[0.2em] font-extrabold shadow-[0_6px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_10px_35px_rgba(212,175,55,0.5)] transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
             >
-              <span>View All</span>
+              <span>{homeContent.featuredShowcase?.viewAllText || 'View All'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
             </button>
           </div>
@@ -183,8 +185,8 @@ export const HomeView: React.FC = () => {
                   className="relative max-w-md w-full aspect-square rounded-2xl overflow-hidden bg-[#0B0C0E] border border-[#D4AF37]/30 cursor-pointer group shadow-2xl"
                 >
                   <img
-                    src={flagshipProduct.thumbnail}
-                    alt={flagshipProduct.name}
+                    src={homeContent.productSpotlight?.image || flagshipProduct.thumbnail}
+                    alt={homeContent.productSpotlight?.title || flagshipProduct.name}
                     width="448"
                     height="448"
                     loading="lazy"
@@ -205,13 +207,13 @@ export const HomeView: React.FC = () => {
               <div className="lg:col-span-6 space-y-6">
                 <div>
                   <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-2">
-                    Showroom Spotlight
+                    {homeContent.productSpotlight?.eyebrow || 'Showroom Spotlight'}
                   </span>
                   <h3 className="text-2xl sm:text-4xl font-bold text-white font-serif-luxury gold-glow-subtle">
-                    {flagshipProduct.name}
+                    {homeContent.productSpotlight?.title || flagshipProduct.name}
                   </h3>
                   <p className="mt-3 text-sm sm:text-base text-[#D1D5E0] leading-relaxed luxury-text-shadow">
-                    {flagshipProduct.description}
+                    {homeContent.productSpotlight?.description || flagshipProduct.description}
                   </p>
                 </div>
 
@@ -257,7 +259,7 @@ export const HomeView: React.FC = () => {
                 {/* Price and CTAs */}
                 <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
                   <div>
-                    <span className="text-xs text-[#CBD0DC] block">Accessible Luxury Price</span>
+                    <span className="text-xs text-[#CBD0DC] block">{homeContent.productSpotlight?.priceLabel || 'Accessible Luxury Price'}</span>
                     <span className="text-2xl sm:text-3xl font-bold text-white gold-glow-subtle">
                       Rs. {(flagshipProduct.salePrice || flagshipProduct.price).toLocaleString()}
                     </span>
@@ -269,7 +271,7 @@ export const HomeView: React.FC = () => {
                       onClick={() => navigate('product', { slug: flagshipProduct.slug })}
                       className="flex-1 sm:flex-initial py-3.5 px-6 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg"
                     >
-                      Inspect Timepiece
+                      {homeContent.productSpotlight?.ctaText || 'Inspect Timepiece'}
                     </button>
                     <button
                       type="button"
@@ -297,15 +299,15 @@ export const HomeView: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="p-8 sm:p-14 rounded-3xl glass-panel space-y-8">
             <span className="text-xs uppercase tracking-[0.28em] text-[#D4AF37] font-semibold block">
-              The Philosophy of Presence
+              {homeContent.philosophy?.eyebrow || 'The Philosophy of Presence'}
             </span>
 
             <blockquote className="text-2xl sm:text-4xl md:text-5xl font-serif-luxury font-medium text-white leading-tight gold-glow-heading">
-              &ldquo;Products you wear and carry should reflect your personality.&rdquo;
+              {homeContent.philosophy?.quote || '“Products you wear and carry should reflect your personality.”'}
             </blockquote>
 
             <p className="text-sm sm:text-base text-[#D1D5E0] leading-relaxed max-w-2xl mx-auto font-light luxury-text-shadow">
-              In an era of fleeting fast-fashion and generic digital displays, the mechanical timepiece remains a defiant statement of discipline, composure, and individuality. A STORIUM watch is not merely a tool to measure hours; it is a signature of who you are.
+              {homeContent.philosophy?.description}
             </p>
 
             <div className="pt-4 flex justify-center">
@@ -387,10 +389,10 @@ export const HomeView: React.FC = () => {
                 <Truck className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white gold-glow-subtle">
-                Pakistan Nationwide Courier
+                {homeContent.trustBadges?.badge1?.title || 'Pakistan Nationwide Courier'}
               </h3>
               <p className="text-xs sm:text-sm text-[#CBD0DC] leading-relaxed luxury-text-shadow">
-                We partner with premier express logistics to deliver insured parcels to Karachi, Lahore, Islamabad, Rawalpindi, Peshawar, Quetta, and every corner of Pakistan within 2 to 4 working days.
+                {homeContent.trustBadges?.badge1?.description}
               </p>
             </div>
 
@@ -399,10 +401,10 @@ export const HomeView: React.FC = () => {
                 <Shield className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white gold-glow-subtle">
-                Cash on Delivery &amp; Debit Cards
+                {homeContent.trustBadges?.badge2?.title || 'Cash on Delivery & Debit Cards'}
               </h3>
               <p className="text-xs sm:text-sm text-[#CBD0DC] leading-relaxed luxury-text-shadow">
-                Pay with complete peace of mind using Cash on Delivery (COD) upon inspection at your door, or complete instant checkout via Visa &amp; Mastercard debit cards.
+                {homeContent.trustBadges?.badge2?.description}
               </p>
             </div>
 
@@ -411,15 +413,24 @@ export const HomeView: React.FC = () => {
                 <Award className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-white gold-glow-subtle">
-                STORIUM Certificate of Authenticity
+                {homeContent.trustBadges?.badge3?.title || 'STORIUM Certificate of Authenticity'}
               </h3>
               <p className="text-xs sm:text-sm text-[#CBD0DC] leading-relaxed luxury-text-shadow">
-                Every timepiece is individually serialized with its laser-engraved caseback SKU and accompanied by our embossed Certificate of Authenticity and 1-Year International Warranty card.
+                {homeContent.trustBadges?.badge3?.description}
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Dynamic Custom Content Sections (Managed from Admin Panel CMS) */}
+      {homeContent.customSections && homeContent.customSections.length > 0 && (
+        <section data-section="custom-sections" className="py-16 bg-transparent border-b border-[#262930]/60">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <CustomSectionsRenderer sections={homeContent.customSections} />
+          </div>
+        </section>
+      )}
 
       {/* 8. FINAL CONVERSION SECTION
           data-section="conversion-cta"
@@ -430,36 +441,44 @@ export const HomeView: React.FC = () => {
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="p-10 sm:p-16 rounded-3xl glass-panel space-y-8 flex flex-col items-center">
             <div className="w-20 h-20 bg-transparent p-1 flex items-center justify-center">
-              <img src="/logo.png" alt="STORIUM Logo" width="80" height="80" loading="lazy" decoding="async" className="w-full h-full object-contain" />
+              <img
+                src={homeContent.conversionCta?.logoUrl || '/logo.png'}
+                alt="STORIUM Logo"
+                width="80"
+                height="80"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-contain"
+              />
             </div>
 
             <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block">
-              Step into the Showroom
+              {homeContent.conversionCta?.eyebrow || 'Step into the Showroom'}
             </span>
 
             <h2 className="text-3xl sm:text-5xl font-bold text-white font-serif-luxury leading-tight gold-glow-heading">
-              Your wrist speaks before you do.
+              {homeContent.conversionCta?.heading || 'Your wrist speaks before you do.'}
             </h2>
 
             <p className="text-sm sm:text-base text-[#D1D5E0] max-w-xl mx-auto luxury-text-shadow">
-              Discover timepieces built to transcend trends. Explore our full collection with complimentary insured delivery across Pakistan.
+              {homeContent.conversionCta?.description}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <button
                 type="button"
-                onClick={() => navigate('shop')}
+                onClick={() => navigate(homeContent.conversionCta?.primaryCtaTarget || 'shop')}
                 className="w-full sm:w-auto py-4 px-10 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs font-bold uppercase tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Explore All Products</span>
+                <span>{homeContent.conversionCta?.primaryCtaText || 'Explore All Products'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
                 type="button"
-                onClick={() => navigate('contact')}
+                onClick={() => navigate(homeContent.conversionCta?.secondaryCtaTarget || 'contact')}
                 className="w-full sm:w-auto py-4 px-8 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-white text-xs font-semibold uppercase tracking-[0.2em] border border-[#262930] hover:border-[#D4AF37]/50 transition-all cursor-pointer"
               >
-                Speak with Concierge
+                {homeContent.conversionCta?.secondaryCtaText || 'Speak with Concierge'}
               </button>
             </div>
           </div>

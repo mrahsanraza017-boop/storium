@@ -3,11 +3,13 @@ import { Search, X, Tag, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { ACCESSORY_SUBCATEGORIES } from '../types';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
 export const AccessoriesView: React.FC = () => {
-  const { products, activeSubcategoryFilter, setActiveSubcategoryFilter } = useStore();
+  const { products, activeSubcategoryFilter, setActiveSubcategoryFilter, pagesContent } = useStore();
+  const accessoriesContent = pagesContent.accessories;
 
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>(
     activeSubcategoryFilter || 'All'
@@ -126,20 +128,23 @@ export const AccessoriesView: React.FC = () => {
           /* When products are added: Automatically render full collection UI! */
           <div>
             {/* Header Banner */}
-            <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl">
-              <div className="space-y-3">
+            <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl relative overflow-hidden">
+              {accessoriesContent.bannerImage && (
+                <div className="absolute inset-0 opacity-15 pointer-events-none">
+                  <img src={accessoriesContent.bannerImage} alt="Accessories Banner" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="space-y-3 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#181A1F]/90 border border-[#D4AF37]/40 text-[11px] uppercase tracking-widest text-[#E5C378] backdrop-blur-sm shadow-sm">
                   <Tag className="w-3 h-3 text-[#D4AF37]" />
-                  <span>Curated Showroom Accoutrements</span>
+                  <span>{accessoriesContent.eyebrow || 'Curated Showroom Accoutrements'}</span>
                 </div>
                 <h1 className="font-serif-luxury text-white">
-                  <span className="font-bold text-2xl sm:text-4xl block sm:inline">Complete Your Presence.</span>{' '}
-                  <span className="font-normal font-sans text-base sm:text-lg text-[#CBD0DC] block sm:inline sm:ml-2 mt-1 sm:mt-0">
-                    Expanding our collection Soon.
-                  </span>
+                  <span className="font-bold text-2xl sm:text-4xl block sm:inline">{accessoriesContent.heading || 'Complete Your Presence.'}</span>
                 </h1>
                 <p className="text-sm sm:text-base text-[#D1D5E0] max-w-2xl leading-relaxed luxury-text-shadow">
-                  Precision-machined titanium essentials, vegetable-tanned Tuscan leather goods, and sartorial accents crafted to command presence and elevate your lifestyle.
+                  {accessoriesContent.subtitle ||
+                    'Precision-machined titanium essentials, vegetable-tanned Tuscan leather goods, and sartorial accents crafted to command presence and elevate your lifestyle.'}
                 </p>
               </div>
 
@@ -304,6 +309,13 @@ export const AccessoriesView: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Dynamic Custom Content Sections */}
+        {accessoriesContent.customSections && accessoriesContent.customSections.length > 0 && (
+          <div className="mt-16 pt-12 border-t border-[#262930]">
+            <CustomSectionsRenderer sections={accessoriesContent.customSections} />
           </div>
         )}
       </div>

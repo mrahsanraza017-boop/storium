@@ -371,3 +371,130 @@ export interface AdminNotification {
   linkTab?: string;
   data?: Record<string, any>;
 }
+
+export interface CustomPageSection {
+  id: string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  content: string;
+  image?: string;
+  imagePosition?: 'left' | 'right' | 'top' | 'background' | 'none';
+  ctaText?: string;
+  ctaTarget?: PageView | string;
+  layout?: 'card' | 'split' | 'centered' | 'banner';
+  enabled: boolean;
+}
+
+export interface HomePageContent {
+  hero: {
+    badge: string;
+    heading: string;
+    description: string;
+    primaryCtaText: string;
+    primaryCtaTarget: PageView;
+    secondaryCtaText: string;
+    secondaryCtaTarget: PageView;
+    bgImage?: string;
+  };
+  featuredShowcase: {
+    eyebrow: string;
+    heading: string;
+    viewAllText: string;
+  };
+  productSpotlight: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    image?: string;
+    priceLabel?: string;
+    ctaText?: string;
+  };
+  philosophy: {
+    eyebrow: string;
+    quote: string;
+    description: string;
+  };
+  trustBadges: {
+    badge1: { title: string; description: string; icon?: string };
+    badge2: { title: string; description: string; icon?: string };
+    badge3: { title: string; description: string; icon?: string };
+  };
+  conversionCta: {
+    eyebrow: string;
+    heading: string;
+    description: string;
+    logoUrl?: string;
+    primaryCtaText: string;
+    primaryCtaTarget: PageView;
+    secondaryCtaText: string;
+    secondaryCtaTarget: PageView;
+  };
+  customSections: CustomPageSection[];
+}
+
+export interface AboutPageContent {
+  header: {
+    badge: string;
+    heading: string;
+    subtitle: string;
+    logoUrl?: string;
+  };
+  heroVisual: {
+    imageUrl: string;
+    altText: string;
+  };
+  philosophy: {
+    heading: string;
+    content: string;
+  };
+  customSections: CustomPageSection[];
+}
+
+export interface ContactPageContent {
+  header: {
+    badge: string;
+    heading: string;
+    subtitle: string;
+  };
+  details: {
+    title: string;
+    description: string;
+  };
+  customSections: CustomPageSection[];
+}
+
+export interface CatalogPageContent {
+  eyebrow: string;
+  heading: string;
+  subtitle: string;
+  bannerImage?: string;
+  customSections: CustomPageSection[];
+}
+
+export interface PoliciesPageContent {
+  shippingEyebrow: string;
+  shippingTitle: string;
+  shippingSubtitle: string;
+  refundEyebrow: string;
+  refundTitle: string;
+  refundSubtitle: string;
+  privacyEyebrow: string;
+  privacyTitle: string;
+  privacySubtitle: string;
+  termsEyebrow: string;
+  termsTitle: string;
+  termsSubtitle: string;
+  customSections: CustomPageSection[];
+}
+
+export interface PagesContentConfig {
+  home: HomePageContent;
+  about: AboutPageContent;
+  contact: ContactPageContent;
+  watches: CatalogPageContent;
+  accessories: CatalogPageContent;
+  shop: CatalogPageContent;
+  policies: PoliciesPageContent;
+}
+

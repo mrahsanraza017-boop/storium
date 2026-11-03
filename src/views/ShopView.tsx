@@ -3,11 +3,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Search, X, RotateCcw } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
+import { CustomSectionsRenderer } from '../components/common/CustomSectionsRenderer';
 import { SEOHead } from '../components/seo/SEOHead';
 import { getItemListSchema, getBreadcrumbSchema } from '../lib/seoSchemas';
 
 export const ShopView: React.FC = () => {
-  const { products, categories, activeCategoryFilter } = useStore();
+  const { products, categories, activeCategoryFilter, pagesContent } = useStore();
+  const shopContent = pagesContent.shop;
 
   const [selectedCategory, setSelectedCategory] = useState<string>(
     activeCategoryFilter || 'all'
@@ -84,20 +86,26 @@ export const ShopView: React.FC = () => {
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
-        <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl">
-          <div>
+        <div className="glass-panel p-8 sm:p-10 rounded-3xl mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-2xl relative overflow-hidden">
+          {shopContent.bannerImage && (
+            <div className="absolute inset-0 opacity-15 pointer-events-none">
+              <img src={shopContent.bannerImage} alt="Catalog Banner" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="relative z-10">
             <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37] font-semibold block mb-2">
-              Full Inventory
+              {shopContent.eyebrow || 'Full Inventory'}
             </span>
             <h1 className="text-3xl sm:text-5xl font-bold font-serif-luxury text-white gold-glow-heading">
-              Showroom Catalog
+              {shopContent.heading || 'Showroom Catalog'}
             </h1>
             <p className="mt-2 text-sm sm:text-base text-[#D1D5E0] max-w-xl luxury-text-shadow">
-              Explore our complete portfolio of horological creations and precision men&apos;s accessories.
+              {shopContent.subtitle ||
+                'Explore our complete portfolio of horological creations and precision men’s accessories.'}
             </p>
           </div>
 
-          <div className="text-sm text-[#CBD0DC] font-mono px-4 py-2 rounded-xl glass-panel-subtle">
+          <div className="relative z-10 text-sm text-[#CBD0DC] font-mono px-4 py-2 rounded-xl glass-panel-subtle">
             Displaying <span className="text-[#D4AF37] font-bold">{filteredProducts.length}</span> Products
           </div>
         </div>
@@ -229,6 +237,13 @@ export const ShopView: React.FC = () => {
             />
           </motion.div>
         </AnimatePresence>
+
+        {/* Dynamic Custom Content Sections */}
+        {shopContent.customSections && shopContent.customSections.length > 0 && (
+          <div className="mt-16 pt-12 border-t border-[#262930]">
+            <CustomSectionsRenderer sections={shopContent.customSections} />
+          </div>
+        )}
       </div>
     </div>
   );
