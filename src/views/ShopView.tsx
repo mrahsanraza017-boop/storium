@@ -120,11 +120,10 @@ export const ShopView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('all')}
-                  className={`px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex-shrink-0 cursor-pointer ${
-                    selectedCategory === 'all'
-                      ? 'bg-[#D4AF37] text-[#0B0C0E]'
-                      : 'bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930]'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex-shrink-0 cursor-pointer ${selectedCategory === 'all'
+                    ? 'bg-[#D4AF37] text-[#0B0C0E]'
+                    : 'bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930]'
+                    }`}
                 >
                   All Showroom ({products.length})
                 </button>
@@ -136,11 +135,10 @@ export const ShopView: React.FC = () => {
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(cat.slug)}
-                      className={`px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex-shrink-0 cursor-pointer ${
-                        selectedCategory === cat.slug
-                          ? 'bg-[#D4AF37] text-[#0B0C0E]'
-                          : 'bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930]'
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-semibold transition-all flex-shrink-0 cursor-pointer ${selectedCategory === cat.slug
+                        ? 'bg-[#D4AF37] text-[#0B0C0E]'
+                        : 'bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930]'
+                        }`}
                     >
                       {cat.name} ({count})
                     </button>

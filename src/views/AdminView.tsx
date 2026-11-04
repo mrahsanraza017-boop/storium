@@ -51,6 +51,7 @@ import { AdminCustomersTab } from '../components/admin/AdminCustomersTab';
 import { AdminAnalyticsTab } from '../components/admin/AdminAnalyticsTab';
 import { AdminNotificationsTab } from '../components/admin/AdminNotificationsTab';
 import { AdminPromotionsTab } from '../components/admin/AdminPromotionsTab';
+import { ThemeToggle } from '../components/common/ThemeToggle';
 import { isPwaInstallable, promptPwaInstall, isPwaInstalled, onPwaInstallAvailable } from '../services/pwaService';
 import { getLiveVisitorsCount } from '../services/analyticsTracker';
 import { uploadProductMedia } from '../services/supabaseService';
@@ -644,6 +645,9 @@ export const AdminView: React.FC = () => {
                 <span className="font-mono text-xs font-bold text-emerald-400">{liveVisitors}</span>
                 <span className="text-[10px] text-[#8E929E] uppercase tracking-wider font-semibold">Online</span>
               </div>
+
+              {/* Light / Dark Mode Toggle */}
+              <ThemeToggle />
 
               {/* Notification Bell */}
               <button

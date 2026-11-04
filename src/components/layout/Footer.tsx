@@ -3,6 +3,7 @@ import { ShieldCheck, Truck, Clock, RefreshCw, ArrowRight, Check, Watch, Tag, Us
 import { useStore } from '../../context/StoreContext';
 import { PageView } from '../../types';
 import { PaymentBadges } from '../common/PaymentBadges';
+import { ThemeToggle } from '../common/ThemeToggle';
 import { trackEvent } from '../../services/analyticsTracker';
 
 export const Footer: React.FC = () => {
@@ -24,7 +25,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-black/85 backdrop-blur-xl border-t border-[#262930]/60 pb-12 text-[#9Ea2AF] opacity-85 hover:opacity-100 transition-opacity duration-300">
+    <footer className="w-full bg-black/85 backdrop-blur-xl border-t border-[#262930]/60 pb-12 text-[#9Ea2AF] transition-colors duration-300">
       {/* 4-Pillar Trust Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-b border-[#262930]/60">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -133,7 +134,7 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-2xl font-extrabold tracking-[0.22em] text-[#F5F5F7] font-montserrat uppercase group-hover:text-white transition-colors">
+                  <span className="text-2xl font-extrabold tracking-[0.22em] text-[#F5F5F7] font-montserrat uppercase group-hover:text-[#D4AF37] transition-colors">
                     {businessSettings.businessName}
                   </span>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
@@ -368,11 +369,15 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Copyright & Legal */}
+      {/* Bottom Copyright, Legal & Theme Toggle */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-[#262930]/40 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
-        <p className="text-[#8E929E]">
-          &copy; {new Date().getFullYear()} {businessSettings.legalBusinessName || businessSettings.businessName}, {businessSettings.country}. All rights reserved.
-        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <p className="text-[#8E929E]">
+            &copy; {new Date().getFullYear()} {businessSettings.legalBusinessName || businessSettings.businessName}, {businessSettings.country}. All rights reserved.
+          </p>
+          <div className="hidden sm:block w-px h-3 bg-[#262930]" />
+          <ThemeToggle variant="pill" />
+        </div>
         <div className="flex items-center gap-2 flex-wrap justify-center">
           {[
             { label: 'Refund Policy', page: 'return-policy' as PageView },

@@ -3,7 +3,7 @@ import { Lock } from 'lucide-react';
 
 export const PaymentBadges: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+    <div data-payment-badges="true" className={`flex flex-wrap items-center gap-2 ${className}`}>
       {/* Visa */}
       <div className="px-2.5 py-1 rounded-lg bg-[#0F172A] border border-blue-900/50 text-blue-400 font-extrabold text-[11px] tracking-wider italic">
         VISA

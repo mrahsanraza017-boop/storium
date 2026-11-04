@@ -582,8 +582,18 @@ html.light #hero-frame-container button.bg-\[\#121316\]\/90:hover {
 /* Hover text states in light mode */
 html.light .hover\:text-\[\#F5F5F7\]:hover,
 html.light .hover\:text-\[\#E8E8EC\]:hover,
-html.light .hover\:text-white:hover {
-  color: #000000 !important;
+html.light .hover\:text-white:hover,
+html.light .group:hover .group-hover\:text-white,
+html.light .group:hover .group-hover\:text-\[\#F5F5F7\],
+html.light .group:hover .group-hover\:text-\[\#E8E8EC\] {
+  color: #0F1117 !important;
+}
+
+/* Foreground gold text legibility on light mode */
+html.light .text-\[\#E5C378\]:not(.btn-solid-primary *):not([data-badge-gold] *),
+html.light p.text-\[\#D4AF37\],
+html.light span.text-\[\#D4AF37\]:not(.btn-solid-primary *):not([data-badge-gold] *):not(.bg-\[\#D4AF37\] *) {
+  color: #855800 !important;
 }
 
 /* ─── Surface & Background Inversion ────────────────────────────────────── */
@@ -600,15 +610,27 @@ html.light .bg-\[\#0B0C0E\]\/50 {
 }
 
 /* Cards, containers, modals, panels, and dropdowns */
+html.light .bg-\[\#0D0E10\],
+html.light .bg-\[\#0E0F12\],
+html.light .bg-\[\#0E0F12\]\/80,
+html.light .bg-\[\#0E0F12\]\/90,
+html.light .bg-\[\#090B12\],
+html.light .bg-\[\#0F1424\],
+html.light .bg-\[\#101216\],
 html.light .bg-\[\#121316\],
 html.light .bg-\[\#181A1F\],
 html.light .bg-\[\#1A1D24\],
 html.light .bg-\[\#1E2026\],
 html.light .bg-\[\#1E2127\],
+html.light .bg-\[\#20232A\],
+html.light .bg-\[\#22252C\],
+html.light .bg-\[\#121316\]\/50,
+html.light .bg-\[\#121316\]\/75,
+html.light .bg-\[\#121316\]\/80,
 html.light .bg-\[\#121316\]\/90,
-html.light .bg-\[\#181A1F\]\/90,
+html.light .bg-\[\#181A1F\]\/70,
 html.light .bg-\[\#181A1F\]\/80,
-html.light .bg-\[\#181A1F\]\/70 {
+html.light .bg-\[\#181A1F\]\/90 {
   background-color: #FFFFFF !important;
 }
 
@@ -625,7 +647,8 @@ html.light [data-product-card] .bg-\[\#181A1F\]\/90 {
 html.light .hover\:bg-\[\#181A1F\]:hover,
 html.light .hover\:bg-\[\#121316\]:hover,
 html.light .hover\:bg-\[\#20242B\]:hover,
-html.light .hover\:bg-\[\#20232A\]:hover {
+html.light .hover\:bg-\[\#20232A\]:hover,
+html.light .hover\:bg-\[\#22252C\]:hover {
   background-color: #F1F3F7 !important;
 }
 
@@ -641,13 +664,17 @@ html.light .bg-gradient-to-r.from-emerald-950\/40 {
 /* ─── Borders in Light Mode ─────────────────────────────────────────────── */
 html.light .border-\[\#262930\],
 html.light .border-\[\#1E2127\],
+html.light .border-\[\#1E2026\],
 html.light .border-\[\#2A2E37\],
 html.light .border-\[\#262930\]\/80,
 html.light .border-\[\#262930\]\/60,
-html.light .border-white\/10,
+html.light .border-\[\#262930\]\/40,
+html.light .border-\[\#262930\]\/30,
 html.light .border-white\/5,
+html.light .border-white\/10,
 html.light .border-white\/15,
-html.light .border-white\/20 {
+html.light .border-white\/20,
+html.light .border-white\/30 {
   border-color: #E5E7EB !important;
 }
 
@@ -769,7 +796,7 @@ html.light .btn-solid-nav {
 }
 html.light .btn-solid-nav:hover {
   background: #E5E7EB !important;
-  color: #D4AF37 !important;
+  color: #855800 !important;
 }
 
 html.light .btn-solid-stepper {
@@ -783,7 +810,7 @@ html.light .btn-solid-stepper:hover {
 
 html.light .btn-solid-utility {
   background: #FFFFFF !important;
-  color: #B8860B !important;
+  color: #855800 !important;
   border-color: rgba(212, 175, 55, 0.4) !important;
 }
 html.light .btn-solid-utility:hover {
@@ -791,7 +818,7 @@ html.light .btn-solid-utility:hover {
   border-color: #D4AF37 !important;
 }
 
-/* Keep primary gold buttons and badges with dark text */
+/* Keep primary solid gold buttons, active tabs, and badges with dark text */
 .btn-solid-primary,
 .btn-solid-tab-active,
 .btn-solid-pill-active,
@@ -804,25 +831,284 @@ html.light .btn-solid-utility:hover {
   color: #0B0C0E !important;
 }
 
-/* ─── Footer ────────────────────────────────────────────────────────────── */
-html.light footer {
-  background-color: #F8F9FA !important;
+/* =========================================================================
+   BADGES & PILLS THEME SYSTEM (Light & Dark Mode)
+   ========================================================================= */
+
+/* 1. Champagne Gold Badges & Accent Pills in Light Mode */
+html.light .bg-\[\#D4AF37\]\/10,
+html.light .bg-\[\#D4AF37\]\/15,
+html.light .bg-\[\#D4AF37\]\/20,
+html.light .bg-\[\#D4AF37\]\/25,
+html.light .bg-\[\#D4AF37\]\/30 {
+  background-color: #FEF9EE !important;
+  border-color: #F0DC9C !important;
+  color: #855800 !important;
+}
+
+html.light .bg-\[\#D4AF37\]\/10 svg,
+html.light .bg-\[\#D4AF37\]\/15 svg,
+html.light .bg-\[\#D4AF37\]\/20 svg,
+html.light .bg-\[\#D4AF37\]\/25 svg,
+html.light .bg-\[\#D4AF37\]\/30 svg,
+html.light .bg-\[\#D4AF37\]\/10 span,
+html.light .bg-\[\#D4AF37\]\/15 span,
+html.light .bg-\[\#D4AF37\]\/20 span,
+html.light .bg-\[\#D4AF37\]\/25 span,
+html.light .bg-\[\#D4AF37\]\/30 span {
+  color: #855800 !important;
+}
+
+/* Coupon code and voucher buttons in light mode */
+html.light button.border-dashed.border-\[\#D4AF37\]\/60 {
+  background-color: #FEF9EE !important;
+  border-color: #D4AF37 !important;
+  color: #855800 !important;
+}
+
+/* Trust Icons & Feature Crests in Light Mode */
+html.light .w-12.h-12.bg-\[\#181A1F\],
+html.light .w-10.h-10.bg-\[\#181A1F\],
+html.light [data-section="trust-badges"] .bg-\[\#181A1F\] {
+  background-color: #FEF9EE !important;
+  border-color: #F0DC9C !important;
+  color: #855800 !important;
+}
+html.light [data-section="trust-badges"] .bg-\[\#181A1F\] svg,
+html.light .w-12.h-12.bg-\[\#181A1F\] svg,
+html.light .w-10.h-10.bg-\[\#181A1F\] svg {
+  color: #855800 !important;
+}
+
+/* 2. Neutral Status Pills & Dark Badges in Light Mode */
+html.light .rounded-full.bg-\[\#181A1F\],
+html.light .rounded-full.bg-\[\#121316\],
+html.light .rounded-full.bg-\[\#1E2026\],
+html.light .rounded-md.bg-\[\#181A1F\],
+html.light .rounded.bg-\[\#181A1F\],
+html.light .rounded-xl.bg-\[\#181A1F\]:not(button):not(input) {
+  background-color: #F1F3F7 !important;
+  border-color: #E2E8F0 !important;
+  color: #1F2937 !important;
+}
+
+html.light .rounded-full.bg-\[\#0B0C0E\]\/20 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #111827 !important;
+}
+
+/* Special Offer badge on ProductCard */
+html.light [data-product-card] .bg-\[\#1E2026\] {
+  background-color: #FEF3C7 !important;
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  color: #92400E !important;
+}
+
+/* SKU Badge on Product Details */
+html.light .font-mono.bg-\[\#181A1F\] {
+  background-color: #F1F3F7 !important;
+  border-color: #E2E8F0 !important;
+  color: #374151 !important;
+}
+
+/* 3. Emerald / Success Badges in Light Mode */
+html.light .bg-emerald-950\/20,
+html.light .bg-emerald-950\/30,
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/60,
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-500\/20 {
+  background-color: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+  color: #065F46 !important;
+}
+
+html.light .text-emerald-300,
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .border-emerald-500\/30,
+html.light .border-emerald-500\/40 {
+  border-color: #A7F3D0 !important;
+}
+
+/* 4. Amber / Warning Badges in Light Mode */
+html.light .bg-amber-950\/20,
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/60,
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/20 {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #92400E !important;
+}
+
+html.light .text-amber-200,
+html.light .text-amber-300,
+html.light .text-amber-400 {
+  color: #B45309 !important;
+}
+
+html.light .border-amber-500\/30,
+html.light .border-amber-500\/40 {
+  border-color: #FDE68A !important;
+}
+
+/* 5. Rose / Error Badges in Light Mode */
+html.light .bg-rose-950\/20,
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950\/60,
+html.light .bg-rose-500\/15,
+html.light .bg-rose-500\/20 {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #991B1B !important;
+}
+
+html.light .text-rose-300,
+html.light .text-rose-400 {
+  color: #DC2626 !important;
+}
+
+html.light .border-rose-500\/30,
+html.light .border-rose-500\/40 {
+  border-color: #FECACA !important;
+}
+
+/* 6. Blue / Cyan Badges & Payment Badges in Light Mode */
+html.light .bg-blue-950,
+html.light .bg-\[\#0F172A\] {
+  background-color: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #1D4ED8 !important;
+}
+
+html.light .bg-\[\#062419\] {
+  background-color: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+  color: #047857 !important;
+}
+
+html.light .bg-\[\#0E1726\] {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+}
+
+html.light .border-blue-900\/50,
+html.light .border-blue-900\/60 {
+  border-color: #BFDBFE !important;
+}
+
+html.light .border-red-900\/40,
+html.light .border-red-900\/50 {
+  border-color: #FECACA !important;
+}
+
+html.light .border-emerald-800\/50,
+html.light .border-emerald-800\/60 {
+  border-color: #A7F3D0 !important;
+}
+
+html.light .border-\[\#00B4D8\]\/40 {
+  border-color: #7DD3FC !important;
+}
+
+html.light .bg-\[\#00C2FF\]\/15 {
+  background-color: #E0F2FE !important;
+  border-color: #7DD3FC !important;
+  color: #0369A1 !important;
+}
+
+html.light .text-\[\#00C2FF\] {
+  color: #0284C7 !important;
+}
+
+html.light [data-payment-badges] > div {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ─── Footer in Light Mode ───────────────────────────────────────────────── */
+html.light footer,
+html.light footer.bg-black\/85,
+html.light footer.bg-black\/80 {
+  background-color: #FFFFFF !important;
   border-top-color: #E5E7EB !important;
   color: #4B5563 !important;
   opacity: 1 !important;
 }
 
+/* Trust Pillar Cards in Footer */
 html.light footer .bg-black\/60,
 html.light footer .bg-black\/40,
 html.light footer .bg-black\/85 {
-  background-color: #FFFFFF !important;
+  background-color: #F8F9FA !important;
   border-color: #E5E7EB !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03) !important;
 }
 
+/* Trust Pillar Icon Box */
 html.light footer .bg-\[\#121316\] {
+  background-color: #FEF9EE !important;
+  border-color: #F0DC9C !important;
+  color: #855800 !important;
+}
+
+/* Concierge Info Box */
+html.light footer .bg-\[\#0D0E10\] {
+  background-color: #F8F9FA !important;
+  border-color: #E5E7EB !important;
+}
+
+/* Payment Methods & SSL Security Bar in Footer */
+html.light footer .bg-\[\#0E0F12\]\/80,
+html.light footer .bg-\[\#0E0F12\] {
+  background-color: #F8F9FA !important;
+  border-color: #E5E7EB !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light footer .bg-\[\#181A1F\] {
+  background-color: #FFFFFF !important;
+  border-color: #E5E7EB !important;
+  color: #855800 !important;
+}
+
+/* Newsletter Input in Footer */
+html.light footer input#footer-newsletter-email {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #D1D5DB !important;
+}
+html.light footer input#footer-newsletter-email::placeholder {
+  color: #9CA3AF !important;
+}
+
+/* Social Media Button Icons in Footer */
+html.light footer a.bg-\[\#121316\] {
   background-color: #F3F4F6 !important;
   border-color: #E5E7EB !important;
+  color: #4B5563 !important;
+}
+html.light footer a.bg-\[\#121316\]:hover {
+  background-color: #E5E7EB !important;
+  border-color: #F0DC9C !important;
+  color: #855800 !important;
+}
+
+/* Footer Section Dividers */
+html.light footer .border-\[\#262930\]\/60,
+html.light footer .border-\[\#262930\]\/40,
+html.light footer .border-\[\#262930\] {
+  border-color: #E5E7EB !important;
+}
+
+/* Concierge contact links */
+html.light footer a.text-\[\#CBD0DC\] {
+  color: #1F2937 !important;
+}
+html.light footer a.text-\[\#CBD0DC\]:hover {
+  color: #855800 !important;
 }
 
 /* ─── Text Shadows & Atmospheric Accents ─────────────────────────────────── */
