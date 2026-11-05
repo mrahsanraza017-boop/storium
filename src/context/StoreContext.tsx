@@ -1495,34 +1495,46 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setLastPlacedOrder(newOrder);
     clearCart();
 
-    trackEvent('purchase', {
-      value: newOrder.total,
-      currency: 'PKR',
-      content_type: 'product',
-      content_ids: newOrder.items.map((it) => it.product.id),
-      num_items: newOrder.items.reduce((acc, it) => acc + it.quantity, 0),
-      order_id: newOrder.orderNumber,
-    });
+    try {
+      trackEvent('purchase', {
+        value: newOrder.total,
+        currency: 'PKR',
+        content_type: 'product',
+        content_ids: (newOrder.items || []).map((it) => it.productId || (it as any).product?.id || '').filter(Boolean),
+        num_items: (newOrder.items || []).reduce((acc, it) => acc + (it.quantity || 1), 0),
+        order_id: newOrder.orderNumber,
+      });
+    } catch (trackErr) {
+      console.warn('Purchase event tracking error (non-fatal):', trackErr);
+    }
 
-    // Trigger instant real-time Web Push notification to admin phone/PWA
-    void sendOrderNotificationToAdmin(newOrder);
+    try {
+      // Trigger instant real-time Web Push notification to admin phone/PWA
+      void sendOrderNotificationToAdmin(newOrder);
 
-    addAdminNotification({
-      type: 'order',
-      title: 'New Customer Order',
-      message: `Order #${newOrder.orderNumber} for PKR ${newOrder.total.toLocaleString()} from ${newOrder.customer.fullName} (${newOrder.customer.city})`,
-      linkTab: 'orders',
-      data: { orderId: newOrder.id, orderNumber: newOrder.orderNumber },
-    });
+      addAdminNotification({
+        type: 'order',
+        title: 'New Customer Order',
+        message: `Order #${newOrder.orderNumber} for PKR ${newOrder.total.toLocaleString()} from ${newOrder.customer.fullName} (${newOrder.customer.city})`,
+        linkTab: 'orders',
+        data: { orderId: newOrder.id, orderNumber: newOrder.orderNumber },
+      });
+    } catch (adminNotifErr) {
+      console.warn('Admin notification error (non-fatal):', adminNotifErr);
+    }
 
-    // Automatically send luxury order confirmation email to customer
-    void sendOrderConfirmationEmail(newOrder).then((emailRes) => {
-      if (emailRes.success) {
-        console.info(`[Email Confirmation] Successfully dispatched to ${newOrder.customer.email}`);
-      } else {
-        console.warn(`[Email Confirmation] Notice: ${emailRes.error || 'Server email dispatch skipped'}`);
-      }
-    });
+    try {
+      // Automatically send luxury order confirmation email to customer
+      void sendOrderConfirmationEmail(newOrder).then((emailRes) => {
+        if (emailRes.success) {
+          console.info(`[Email Confirmation] Successfully dispatched to ${newOrder.customer.email}`);
+        } else {
+          console.warn(`[Email Confirmation] Notice: ${emailRes.error || 'Server email dispatch skipped'}`);
+        }
+      });
+    } catch (emailErr) {
+      console.warn('Customer order confirmation email error (non-fatal):', emailErr);
+    }
 
     return newOrder;
   };

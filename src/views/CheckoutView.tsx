@@ -135,12 +135,16 @@ export const CheckoutView: React.FC = () => {
 
   useEffect(() => {
     if (cart.length > 0) {
-      trackEvent('initiate_checkout', {
-        value: cartTotal,
-        currency: 'PKR',
-        num_items: cart.length,
-        content_ids: cart.map((i) => i.product.id),
-      });
+      try {
+        trackEvent('initiate_checkout', {
+          value: cartTotal,
+          currency: 'PKR',
+          num_items: cart.length,
+          content_ids: cart.map((i) => i?.product?.id).filter(Boolean),
+        });
+      } catch (err) {
+        console.warn('Initiate checkout tracking error:', err);
+      }
     }
   }, []);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -308,23 +312,29 @@ export const CheckoutView: React.FC = () => {
   const executeOrderPlacement = async () => {
     setIsSubmitting(true);
 
-    trackEvent('add_payment_info', {
-      value: cartTotal,
-      currency: 'PKR',
-      content_ids: cart.map((i) => i.product.id),
-      payment_type: paymentMethod,
-    });
+    try {
+      trackEvent('add_payment_info', {
+        value: cartTotal,
+        currency: 'PKR',
+        content_ids: cart.map((i) => i?.product?.id).filter(Boolean),
+        payment_type: paymentMethod,
+      });
+    } catch (trackErr) {
+      console.warn('Payment info tracking note:', trackErr);
+    }
 
     try {
-      const orderItems = cart.map((item) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        productThumbnail: item.product.thumbnail,
-        price: item.product.salePrice ?? item.product.price,
-        quantity: item.quantity,
-        selectedVariant: item.selectedVariant,
-        sku: item.product.sku,
-      }));
+      const orderItems = cart
+        .filter((item) => item && item.product)
+        .map((item) => ({
+          productId: item.product.id || '',
+          productName: item.product.name || 'Timepiece',
+          productThumbnail: item.product.thumbnail || (item.product.productImages && item.product.productImages[0]) || '',
+          price: item.product.salePrice ?? item.product.price ?? 0,
+          quantity: item.quantity || 1,
+          selectedVariant: item.selectedVariant,
+          sku: item.product.sku || '',
+        }));
 
       const newOrder = await createOrder({
         customer: formData,
