@@ -14,6 +14,17 @@ import {
   Clock,
   ShieldCheck,
   RefreshCw,
+  Ticket,
+  Copy,
+  Check,
+  UserCheck,
+  Gift,
+  Percent,
+  Calendar,
+  Users,
+  Edit3,
+  X,
+  Lock,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import {
@@ -22,6 +33,7 @@ import {
   WatchBundleDeal,
   CityDeliveryRule,
   DeliveryEstimateConfig,
+  Coupon,
 } from '../../types';
 import {
   isPushNotificationSupported,
@@ -34,7 +46,17 @@ import {
 import { isPwaInstalled } from '../../services/pwaService';
 
 export const AdminPromotionsTab: React.FC = () => {
-  const { businessSettings, updateBusinessSettings, addToast, products } = useStore();
+  const {
+    businessSettings,
+    updateBusinessSettings,
+    addToast,
+    products,
+    coupons,
+    addCoupon,
+    updateCoupon,
+    deleteCoupon,
+    toggleCouponActive,
+  } = useStore();
 
   const currentPromos = businessSettings.promotions;
 
@@ -69,6 +91,126 @@ export const AdminPromotionsTab: React.FC = () => {
     defaultMaxDays: currentPromos?.deliveryEstimates?.defaultMaxDays ?? 4,
     rules: currentPromos?.deliveryEstimates?.rules?.length ? currentPromos.deliveryEstimates.rules : [],
   }));
+
+  // VIP Custom Coupons state
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const initialCouponForm = {
+    code: '',
+    description: '',
+    discountType: 'percentage' as 'percentage' | 'fixed',
+    discountValue: 15,
+    minSpend: 0,
+    maxDiscount: 0,
+    usageLimit: 0,
+    assignedEmail: '',
+    assignedName: '',
+    startDate: '',
+    expiryDate: '',
+    isActive: true,
+  };
+
+  const [couponForm, setCouponForm] = useState(initialCouponForm);
+
+  const handleOpenCreateCoupon = () => {
+    setEditingCouponId(null);
+    setCouponForm(initialCouponForm);
+    setIsCouponModalOpen(true);
+  };
+
+  const handleOpenEditCoupon = (coupon: Coupon) => {
+    setEditingCouponId(coupon.id);
+    setCouponForm({
+      code: coupon.code,
+      description: coupon.description || '',
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      minSpend: coupon.minSpend || 0,
+      maxDiscount: coupon.maxDiscount || 0,
+      usageLimit: coupon.usageLimit || 0,
+      assignedEmail: coupon.assignedEmail || '',
+      assignedName: coupon.assignedName || '',
+      startDate: coupon.startDate || '',
+      expiryDate: coupon.expiryDate || '',
+      isActive: coupon.isActive,
+    });
+    setIsCouponModalOpen(true);
+  };
+
+  const handleGenerateCode = (prefix = 'VIP') => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = prefix + '-';
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCouponForm((prev) => ({ ...prev, code }));
+  };
+
+  const handleCopyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      addToast('success', 'Coupon Code Copied', `${code} copied to clipboard.`);
+      setTimeout(() => setCopiedCode(null), 2500);
+    } catch {
+      addToast('info', 'Copy Code', `Coupon code is ${code}`);
+    }
+  };
+
+  const handleSaveCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = couponForm.code.trim().toUpperCase().replace(/\s+/g, '-');
+    if (!cleanCode) {
+      addToast('error', 'Validation Error', 'Please enter a coupon code.');
+      return;
+    }
+    if (couponForm.discountValue <= 0) {
+      addToast('error', 'Validation Error', 'Discount value must be greater than zero.');
+      return;
+    }
+
+    if (editingCouponId) {
+      updateCoupon(editingCouponId, {
+        code: cleanCode,
+        description: couponForm.description.trim() || undefined,
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+        minSpend: couponForm.minSpend > 0 ? Number(couponForm.minSpend) : undefined,
+        maxDiscount: couponForm.maxDiscount > 0 ? Number(couponForm.maxDiscount) : undefined,
+        usageLimit: couponForm.usageLimit > 0 ? Number(couponForm.usageLimit) : undefined,
+        assignedEmail: couponForm.assignedEmail.trim() ? couponForm.assignedEmail.trim().toLowerCase() : undefined,
+        assignedName: couponForm.assignedName.trim() || undefined,
+        startDate: couponForm.startDate || undefined,
+        expiryDate: couponForm.expiryDate || undefined,
+        isActive: couponForm.isActive,
+      });
+    } else {
+      if (coupons.some((c) => c.code.toUpperCase() === cleanCode)) {
+        addToast('error', 'Duplicate Code', `A coupon with code "${cleanCode}" already exists.`);
+        return;
+      }
+
+      addCoupon({
+        code: cleanCode,
+        description: couponForm.description.trim() || undefined,
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+        minSpend: couponForm.minSpend > 0 ? Number(couponForm.minSpend) : undefined,
+        maxDiscount: couponForm.maxDiscount > 0 ? Number(couponForm.maxDiscount) : undefined,
+        usageLimit: couponForm.usageLimit > 0 ? Number(couponForm.usageLimit) : undefined,
+        assignedEmail: couponForm.assignedEmail.trim() ? couponForm.assignedEmail.trim().toLowerCase() : undefined,
+        assignedName: couponForm.assignedName.trim() || undefined,
+        startDate: couponForm.startDate || undefined,
+        expiryDate: couponForm.expiryDate || undefined,
+        isActive: couponForm.isActive,
+      });
+    }
+
+    setIsCouponModalOpen(false);
+    setEditingCouponId(null);
+  };
 
   // Push notifications state
   const [pushSupported, setPushSupported] = useState(false);
@@ -413,6 +555,470 @@ export const AdminPromotionsTab: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* MODULE: VIP Custom Coupons & Voucher Concierge */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-[#121316] border border-[#262930] space-y-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#262930]">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37]">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#F5F5F7]">VIP Custom Coupons &amp; Voucher Concierge</h2>
+                <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-bold">
+                  {coupons.length} Available
+                </span>
+              </div>
+              <p className="text-xs text-[#8E929E]">
+                Issue custom promo codes (% or PKR) and assign restricted codes exclusively to specific VIP customers by email.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenCreateCoupon}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-[#D4AF37]/20 cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Custom Coupon</span>
+          </button>
+        </div>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs">
+          <div className="p-4 rounded-2xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+            <span className="text-[10px] uppercase tracking-wider text-[#8E929E]">Total Coupons</span>
+            <div className="text-xl font-bold text-[#F5F5F7] font-mono">{coupons.length}</div>
+          </div>
+          <div className="p-4 rounded-2xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+            <span className="text-[10px] uppercase tracking-wider text-emerald-400">Active Coupons</span>
+            <div className="text-xl font-bold text-emerald-400 font-mono">
+              {coupons.filter((c) => c.isActive).length}
+            </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+            <span className="text-[10px] uppercase tracking-wider text-[#D4AF37]">VIP Person Restricted</span>
+            <div className="text-xl font-bold text-[#D4AF37] font-mono">
+              {coupons.filter((c) => !!c.assignedEmail).length}
+            </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+            <span className="text-[10px] uppercase tracking-wider text-purple-400">Total Redemptions</span>
+            <div className="text-xl font-bold text-purple-400 font-mono">
+              {coupons.reduce((sum, c) => sum + (c.usedCount || 0), 0)}
+            </div>
+          </div>
+        </div>
+
+        {/* Coupons List */}
+        {coupons.length === 0 ? (
+          <div className="p-8 text-center rounded-2xl bg-[#0B0C0E] border border-[#262930] space-y-3">
+            <Ticket className="w-10 h-10 text-[#8E929E] mx-auto opacity-50" />
+            <p className="text-sm text-[#8E929E]">No custom coupons created yet.</p>
+            <button
+              type="button"
+              onClick={handleOpenCreateCoupon}
+              className="px-4 py-2 rounded-xl bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Create Your First VIP Coupon
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {coupons.map((coupon) => {
+              const isAssigned = !!coupon.assignedEmail;
+              return (
+                <div
+                  key={coupon.id}
+                  className={`p-4 sm:p-5 rounded-2xl bg-[#0B0C0E] border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                    coupon.isActive
+                      ? 'border-[#262930] hover:border-[#D4AF37]/40'
+                      : 'border-[#262930]/50 opacity-60'
+                  }`}
+                >
+                  {/* Left: Code, Value, Description, Recipient */}
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      {/* Code Badge with 1-click copy */}
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(coupon.code)}
+                        title="Click to copy coupon code"
+                        className="px-3 py-1.5 rounded-xl bg-[#181A1F] hover:bg-[#20232A] border border-[#D4AF37]/40 text-[#D4AF37] font-mono text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-colors cursor-pointer group"
+                      >
+                        <span>{coupon.code}</span>
+                        {copiedCode === coupon.code ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 text-[#8E929E] group-hover:text-[#D4AF37]" />
+                        )}
+                      </button>
+
+                      {/* Discount Value Badge */}
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase">
+                        {coupon.discountType === 'percentage'
+                          ? `${coupon.discountValue}% OFF`
+                          : `Rs. ${coupon.discountValue.toLocaleString()} OFF`}
+                      </span>
+
+                      {/* Target Person Badge */}
+                      {isAssigned ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-medium flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-purple-400" />
+                          <span>
+                            VIP: {coupon.assignedName ? `${coupon.assignedName} (${coupon.assignedEmail})` : coupon.assignedEmail}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-[#262930] text-[#8E929E] text-xs font-medium flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>Universal (All Clients)</span>
+                        </span>
+                      )}
+
+                      {/* Usage counter */}
+                      <span className="text-[11px] text-[#8E929E] font-mono">
+                        Redeemed: <strong className="text-[#F5F5F7]">{coupon.usedCount}</strong>
+                        {coupon.usageLimit ? ` / ${coupon.usageLimit}` : ' (Unlimited)'}
+                      </span>
+                    </div>
+
+                    {/* Description & Rules text */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8E929E]">
+                      {coupon.description && (
+                        <span className="text-[#CBD0DC] font-medium">{coupon.description}</span>
+                      )}
+                      {coupon.minSpend ? (
+                        <span>Min spend: <strong className="text-[#F5F5F7]">Rs. {coupon.minSpend.toLocaleString()}</strong></span>
+                      ) : null}
+                      {coupon.maxDiscount && coupon.discountType === 'percentage' ? (
+                        <span>Max cap: <strong className="text-[#F5F5F7]">Rs. {coupon.maxDiscount.toLocaleString()}</strong></span>
+                      ) : null}
+                      {coupon.expiryDate ? (
+                        <span>Expires: <strong className="text-[#F5F5F7]">{coupon.expiryDate}</strong></span>
+                      ) : (
+                        <span>No expiration</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+                    {/* Active Toggle */}
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={coupon.isActive}
+                        onChange={() => toggleCouponActive(coupon.id)}
+                        className="w-4 h-4 rounded text-[#D4AF37] focus:ring-0 cursor-pointer accent-[#D4AF37]"
+                      />
+                      <span className={`text-xs font-bold uppercase tracking-wider ${coupon.isActive ? 'text-emerald-400' : 'text-[#8E929E]'}`}>
+                        {coupon.isActive ? 'Active' : 'Paused'}
+                      </span>
+                    </label>
+
+                    {/* Edit button */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditCoupon(coupon)}
+                      title="Edit coupon parameters"
+                      className="p-2 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-[#CBD0DC] hover:text-[#D4AF37] border border-[#262930] transition-colors cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Delete button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Delete coupon "${coupon.code}"? This action cannot be undone.`)) {
+                          deleteCoupon(coupon.id);
+                        }
+                      }}
+                      title="Delete coupon"
+                      className="p-2 rounded-xl bg-[#181A1F] hover:bg-rose-500/20 text-[#8E929E] hover:text-rose-400 border border-[#262930] hover:border-rose-500/30 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Modal for Creating / Editing Coupons */}
+        {isCouponModalOpen && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setIsCouponModalOpen(false)}
+          >
+            <div
+              className="bg-[#121316] border border-[#D4AF37]/30 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-[#262930]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37]">
+                    <Ticket className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#F5F5F7]">
+                      {editingCouponId ? 'Edit Custom Coupon' : 'Create New Custom Coupon'}
+                    </h3>
+                    <p className="text-xs text-[#8E929E]">
+                      Configure discount value, usage limits, and customer assignment.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCouponModalOpen(false)}
+                  className="p-2 rounded-full text-[#8E929E] hover:text-[#F5F5F7] hover:bg-[#181A1F] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCoupon} className="space-y-4 text-xs">
+                {/* Coupon Code & Generate Button */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[#8E929E] uppercase tracking-wider font-medium">
+                      Coupon Code <span className="text-rose-400">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateCode('VIP')}
+                      className="text-[#D4AF37] hover:underline text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Auto-Generate VIP Code</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={couponForm.code}
+                    onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                    placeholder="e.g. VIP-HAMZA-20"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] font-mono font-bold tracking-wider focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-[#8E929E] uppercase tracking-wider mb-1.5 font-medium">
+                    Description / Internal Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={couponForm.description}
+                    onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                    placeholder="e.g. Exclusive 15% VIP appreciation for Hamza Khan"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+
+                {/* Discount Type & Value */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1.5 font-medium">
+                      Discount Type
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCouponForm({ ...couponForm, discountType: 'percentage' })}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          couponForm.discountType === 'percentage'
+                            ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                            : 'bg-[#0B0C0E] text-[#8E929E] border-[#262930] hover:text-[#F5F5F7]'
+                        }`}
+                      >
+                        <Percent className="w-3.5 h-3.5" />
+                        <span>Percentage (%)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCouponForm({ ...couponForm, discountType: 'fixed' })}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          couponForm.discountType === 'fixed'
+                            ? 'bg-[#D4AF37] text-[#0B0C0E] border-[#D4AF37]'
+                            : 'bg-[#0B0C0E] text-[#8E929E] border-[#262930] hover:text-[#F5F5F7]'
+                        }`}
+                      >
+                        <Gift className="w-3.5 h-3.5" />
+                        <span>Fixed PKR (Rs.)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1.5 font-medium">
+                      {couponForm.discountType === 'percentage' ? 'Percentage Off (%)' : 'Fixed Discount (PKR)'} <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max={couponForm.discountType === 'percentage' ? 95 : 1000000}
+                      value={couponForm.discountValue || ''}
+                      onChange={(e) => setCouponForm({ ...couponForm, discountValue: Number(e.target.value) })}
+                      placeholder={couponForm.discountType === 'percentage' ? '15' : '2000'}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] font-bold focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* VIP Person Assignment Box */}
+                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-purple-400" />
+                    <span className="font-bold text-purple-300">Give To Specific Person (Client Restriction)</span>
+                  </div>
+                  <p className="text-[11px] text-[#CBD0DC]">
+                    If you enter an email address below, <strong>ONLY</strong> this specific customer can redeem this coupon at checkout. Other customers who attempt to enter this code will be rejected.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                        Customer Email Address (Restriction)
+                      </label>
+                      <input
+                        type="email"
+                        value={couponForm.assignedEmail}
+                        onChange={(e) => setCouponForm({ ...couponForm, assignedEmail: e.target.value })}
+                        placeholder="e.g. client@example.com (leave blank for everyone)"
+                        className="w-full px-3.5 py-2 rounded-xl bg-[#0B0C0E] border border-purple-500/30 text-[#F5F5F7] focus:border-purple-400 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                        Recipient Name (Display Only)
+                      </label>
+                      <input
+                        type="text"
+                        value={couponForm.assignedName}
+                        onChange={(e) => setCouponForm({ ...couponForm, assignedName: e.target.value })}
+                        placeholder="e.g. Hamza Khan"
+                        className="w-full px-3.5 py-2 rounded-xl bg-[#0B0C0E] border border-purple-500/30 text-[#F5F5F7] focus:border-purple-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spending Rules & Limits */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                      Min Order Spend (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={couponForm.minSpend || ''}
+                      onChange={(e) => setCouponForm({ ...couponForm, minSpend: Number(e.target.value) })}
+                      placeholder="0 (No minimum)"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+
+                  {couponForm.discountType === 'percentage' && (
+                    <div>
+                      <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                        Max Discount Cap (PKR)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={couponForm.maxDiscount || ''}
+                        onChange={(e) => setCouponForm({ ...couponForm, maxDiscount: Number(e.target.value) })}
+                        placeholder="Optional cap (e.g. 5000)"
+                        className="w-full px-3 py-2 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                      Usage Limit
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={couponForm.usageLimit || ''}
+                      onChange={(e) => setCouponForm({ ...couponForm, usageLimit: Number(e.target.value) })}
+                      placeholder="e.g. 1 (Single use)"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Validity Dates */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                      Valid From (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={couponForm.startDate}
+                      onChange={(e) => setCouponForm({ ...couponForm, startDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#8E929E] uppercase tracking-wider mb-1 font-medium">
+                      Expiry Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={couponForm.expiryDate}
+                      onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Status Toggle */}
+                <div className="pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={couponForm.isActive}
+                      onChange={(e) => setCouponForm({ ...couponForm, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#D4AF37] focus:ring-0 cursor-pointer accent-[#D4AF37]"
+                    />
+                    <span className="text-xs font-bold text-[#F5F5F7]">
+                      Enable Coupon Immediately (Active)
+                    </span>
+                  </label>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="pt-4 border-t border-[#262930] flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCouponModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-[#262930] bg-[#181A1F] hover:bg-[#20232A] text-xs font-semibold text-[#CBD0DC] hover:text-[#F5F5F7] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#E5C378] hover:to-[#D4AF37] text-[#0B0C0E] text-xs uppercase font-extrabold tracking-wider transition-all shadow-md shadow-[#D4AF37]/20 cursor-pointer"
+                  >
+                    {editingCouponId ? 'Save Changes' : 'Create & Activate Coupon'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODULE 3: "Buy 3, Get 15% Off" Offer */}

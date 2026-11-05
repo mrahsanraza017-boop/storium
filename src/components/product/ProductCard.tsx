@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Eye, ShoppingBag, Heart, Check } from 'lucide-react';
+import { Eye, ShoppingBag, Heart, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { ProductMediaFrame } from './ProductMediaFrame';
@@ -62,13 +62,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
     openQuickView(product);
   };
 
-  useEffect(() => {
-    if (media.length < 2 || prefersReducedMotion || isHovered) return;
-    const timer = window.setInterval(() => {
-      setMediaIndex((index) => (index + 1) % media.length);
-    }, 2600);
-    return () => window.clearInterval(timer);
-  }, [media.length, prefersReducedMotion, isHovered]);
+  // Manual image sliding controls (auto-slide removed per user request)
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (Math.abs(diff) > 35) {
+      if (diff > 0) {
+        // Customer swiped left -> show next image
+        setMediaIndex((index) => (index + 1) % media.length);
+      } else {
+        // Customer swiped right -> show prev image
+        setMediaIndex((index) => (index === 0 ? media.length - 1 : index - 1));
+      }
+    }
+    touchStartX.current = null;
+  };
+
+  const handlePrevMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMediaIndex((index) => (index === 0 ? media.length - 1 : index - 1));
+  };
+
+  const handleNextMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMediaIndex((index) => (index + 1) % media.length);
+  };
 
   return (
     <motion.div
@@ -122,10 +147,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
         </motion.div>
       </button>
 
-      {/* Image Container with Smooth Transition */}
-      <div className="relative aspect-square w-full bg-[#0B0C0E] overflow-hidden">
+      {/* Image Container with Smooth Transition & Manual Customer Sliding */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative aspect-square w-full bg-[#0B0C0E] overflow-hidden"
+      >
         <div
-          className="absolute inset-0 flex transition-transform duration-700 ease-out"
+          className="absolute inset-0 flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${mediaIndex * 100}%)` }}
         >
           {media.map((item) => (
@@ -143,6 +172,52 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
 
         {/* Ambient Dark/Gold Vignette */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#121316] via-transparent to-transparent opacity-60 pointer-events-none" />
+
+        {/* Manual Sliding Left/Right Chevrons (Customer slides himself) */}
+        {media.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={handlePrevMedia}
+              aria-label="Previous product image"
+              className={`absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${
+                isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNextMedia}
+              aria-label="Next product image"
+              className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${
+                isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
+              }`}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            {/* Clickable Pagination Dots */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 pointer-events-auto">
+              {media.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMediaIndex(idx);
+                  }}
+                  aria-label={`Jump to image ${idx + 1}`}
+                  className={`rounded-full transition-all cursor-pointer ${
+                    idx === mediaIndex
+                      ? 'w-3 h-1.5 bg-[#D4AF37]'
+                      : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/80'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Action Overlay Toolbar (Quick View & Quick Add) */}
         <div

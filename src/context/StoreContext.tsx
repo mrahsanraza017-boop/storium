@@ -17,6 +17,7 @@ import {
   WatchBundleDeal,
   PagesContentConfig,
   CustomPageSection,
+  Coupon,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
 import { DEFAULT_BUSINESS_SETTINGS } from '../data/businessDefaults';
@@ -228,7 +229,49 @@ interface StoreContextType {
   theme: 'dark' | 'light';
   toggleTheme: () => void;
   setTheme: (theme: 'dark' | 'light') => void;
+
+  // VIP Coupons & Vouchers
+  coupons: Coupon[];
+  appliedCoupon: Coupon | null;
+  couponDiscount: number;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'usedCount' | 'createdAt'>) => Coupon;
+  updateCoupon: (id: string, updates: Partial<Coupon>) => void;
+  deleteCoupon: (id: string) => void;
+  toggleCouponActive: (id: string) => void;
+  validateCoupon: (
+    code: string,
+    customerEmail?: string,
+    currentSubtotal?: number
+  ) => { valid: boolean; message: string; coupon?: Coupon; discountAmount?: number };
+  applyCoupon: (code: string, customerEmail?: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
+  incrementCouponUsage: (codeOrId: string) => void;
 }
+
+export const DEFAULT_COUPONS: Coupon[] = [
+  {
+    id: 'coupon-storiumvip',
+    code: 'STORIUMVIP',
+    description: 'Exclusive 10% VIP Horology Gala Discount',
+    discountType: 'percentage',
+    discountValue: 10,
+    minSpend: 20000,
+    usedCount: 0,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'coupon-welcome1500',
+    code: 'WELCOME1500',
+    description: 'Complimentary Rs. 1,500 Concierge Welcome Gift',
+    discountType: 'fixed',
+    discountValue: 1500,
+    minSpend: 15000,
+    usedCount: 0,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+];
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
@@ -246,6 +289,8 @@ const STORAGE_KEYS = {
   PAGES_CONTENT: 'storium_pages_content_v1',
   REFUNDS: 'storium_refunds_v1',
   NOTIFICATIONS: 'storium_notifications_v1',
+  COUPONS: 'storium_coupons_v1',
+  APPLIED_COUPON: 'storium_applied_coupon_v1',
 };
 
 
@@ -524,6 +569,27 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     ];
   });
 
+  // VIP Coupons & Vouchers state
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.COUPONS);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return DEFAULT_COUPONS;
+  });
+
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEYS.APPLIED_COUPON);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
   // UI state
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -688,6 +754,26 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn('Storage save failed', e);
     }
   }, [notifications]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(coupons));
+    } catch (e) {
+      console.warn('Coupons storage save failed', e);
+    }
+  }, [coupons]);
+
+  useEffect(() => {
+    try {
+      if (appliedCoupon) {
+        sessionStorage.setItem(STORAGE_KEYS.APPLIED_COUPON, JSON.stringify(appliedCoupon));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEYS.APPLIED_COUPON);
+      }
+    } catch (e) {
+      console.warn('Applied coupon storage sync failed', e);
+    }
+  }, [appliedCoupon]);
 
   useEffect(() => {
     try {
@@ -1181,7 +1267,22 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     cartDiscountDescription = bestDealDescription;
   }
 
-  const discountedSubtotal = Math.max(0, cartSubtotal - cartDiscount);
+  // VIP Custom Coupon Savings
+  let couponDiscount = 0;
+  if (appliedCoupon && appliedCoupon.isActive) {
+    const minRequired = Number(appliedCoupon.minSpend) || 0;
+    if (minRequired === 0 || cartSubtotal >= minRequired) {
+      if (appliedCoupon.discountType === 'percentage') {
+        const calculated = Math.round(cartSubtotal * (Number(appliedCoupon.discountValue) / 100));
+        couponDiscount = appliedCoupon.maxDiscount ? Math.min(calculated, Number(appliedCoupon.maxDiscount)) : calculated;
+      } else {
+        couponDiscount = Math.min(cartSubtotal, Number(appliedCoupon.discountValue));
+      }
+    }
+  }
+
+  const totalCartSavings = cartDiscount + couponDiscount;
+  const discountedSubtotal = Math.max(0, cartSubtotal - totalCartSavings);
 
   // Editable shipping rules (Admin -> Products / Business Settings):
   // Free delivery if order total qualifies for free shipping threshold, flat fee otherwise.
@@ -1464,6 +1565,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       orderStatus: 'Pending',
       trackingNumber: `TCS-${Math.floor(10000000 + Math.random() * 90000000)}-${orderData.customer.city.substring(0, 3).toUpperCase()}`,
       supabaseSynced: false,
+      couponCode: orderData.couponCode || appliedCoupon?.code,
+      couponDiscount: typeof orderData.couponDiscount === 'number' ? orderData.couponDiscount : couponDiscount,
     };
 
     // Attempt direct cloud sync with Supabase
@@ -1494,6 +1597,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setOrders((prev) => [newOrder, ...prev]);
     setLastPlacedOrder(newOrder);
     clearCart();
+
+    if (appliedCoupon) {
+      incrementCouponUsage(appliedCoupon.id);
+      setAppliedCoupon(null);
+    }
 
     try {
       trackEvent('purchase', {
@@ -1537,6 +1645,174 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     return newOrder;
+  };
+
+  // VIP Custom Coupon & Voucher Management
+  const addCoupon = (newCoupon: Omit<Coupon, 'id' | 'usedCount' | 'createdAt'>): Coupon => {
+    const formattedCode = newCoupon.code.trim().toUpperCase().replace(/\s+/g, '-');
+    const created: Coupon = {
+      ...newCoupon,
+      id: 'cpn-' + Date.now(),
+      code: formattedCode,
+      usedCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setCoupons((prev) => [created, ...prev]);
+    addToast('success', 'Coupon Created', `Coupon code "${created.code}" is now active.`);
+    return created;
+  };
+
+  const updateCoupon = (id: string, updates: Partial<Coupon>) => {
+    setCoupons((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              ...updates,
+              code: updates.code ? updates.code.trim().toUpperCase().replace(/\s+/g, '-') : c.code,
+            }
+          : c
+      )
+    );
+    if (appliedCoupon && appliedCoupon.id === id) {
+      setAppliedCoupon((prev) => (prev ? { ...prev, ...updates } : null));
+    }
+    addToast('info', 'Coupon Updated', 'Changes saved successfully.');
+  };
+
+  const deleteCoupon = (id: string) => {
+    setCoupons((prev) => prev.filter((c) => c.id !== id));
+    if (appliedCoupon && appliedCoupon.id === id) {
+      setAppliedCoupon(null);
+    }
+    addToast('info', 'Coupon Removed', 'Coupon voucher removed from system.');
+  };
+
+  const toggleCouponActive = (id: string) => {
+    setCoupons((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          const nextActive = !c.isActive;
+          if (!nextActive && appliedCoupon?.id === id) {
+            setAppliedCoupon(null);
+          }
+          return { ...c, isActive: nextActive };
+        }
+        return c;
+      })
+    );
+  };
+
+  const incrementCouponUsage = (codeOrId: string) => {
+    const target = codeOrId.trim().toUpperCase();
+    setCoupons((prev) =>
+      prev.map((c) =>
+        c.id === codeOrId || c.code.toUpperCase() === target
+          ? { ...c, usedCount: (c.usedCount || 0) + 1 }
+          : c
+      )
+    );
+  };
+
+  const validateCoupon = (
+    code: string,
+    customerEmail?: string,
+    currentSubtotal?: number
+  ): { valid: boolean; message: string; coupon?: Coupon; discountAmount?: number } => {
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!cleanCode) {
+      return { valid: false, message: 'Please enter a coupon code.' };
+    }
+
+    const matched = coupons.find((c) => c.code.toUpperCase() === cleanCode);
+    if (!matched) {
+      return { valid: false, message: 'Invalid coupon code. Please verify the code and try again.' };
+    }
+
+    if (!matched.isActive) {
+      return { valid: false, message: 'This coupon code is currently inactive.' };
+    }
+
+    const now = new Date();
+    if (matched.startDate && new Date(matched.startDate) > now) {
+      return { valid: false, message: `This coupon will be valid starting ${matched.startDate}.` };
+    }
+
+    if (matched.expiryDate) {
+      const expiry = new Date(matched.expiryDate);
+      expiry.setHours(23, 59, 59, 999);
+      if (now > expiry) {
+        return { valid: false, message: 'This coupon code has expired.' };
+      }
+    }
+
+    if (matched.usageLimit && matched.usedCount >= matched.usageLimit) {
+      return { valid: false, message: 'This coupon has reached its maximum redemption limit.' };
+    }
+
+    const subtotal = typeof currentSubtotal === 'number' ? currentSubtotal : cartSubtotal;
+    if (matched.minSpend && subtotal < matched.minSpend) {
+      return {
+        valid: false,
+        message: `Minimum order spend of Rs. ${matched.minSpend.toLocaleString()} required for this coupon. (Current subtotal: Rs. ${subtotal.toLocaleString()})`,
+      };
+    }
+
+    // Specific person restriction check
+    if (matched.assignedEmail && matched.assignedEmail.trim().length > 0) {
+      const assigned = matched.assignedEmail.trim().toLowerCase();
+      const entered = (customerEmail || '').trim().toLowerCase();
+      if (!entered) {
+        const recipientNotice = matched.assignedName
+          ? `${matched.assignedName} (${matched.assignedEmail})`
+          : matched.assignedEmail;
+        return {
+          valid: false,
+          message: `This VIP coupon is reserved exclusively for ${recipientNotice}. Please enter your email under Contact Information.`,
+        };
+      }
+      if (entered !== assigned) {
+        return {
+          valid: false,
+          message: `This coupon is exclusively reserved for ${matched.assignedEmail}. It cannot be applied with ${entered}.`,
+        };
+      }
+    }
+
+    let discountAmount = 0;
+    if (matched.discountType === 'percentage') {
+      const calc = Math.round(subtotal * (Number(matched.discountValue) / 100));
+      discountAmount = matched.maxDiscount ? Math.min(calc, Number(matched.maxDiscount)) : calc;
+    } else {
+      discountAmount = Math.min(subtotal, Number(matched.discountValue));
+    }
+
+    return {
+      valid: true,
+      message: 'Coupon code verified and applied!',
+      coupon: matched,
+      discountAmount,
+    };
+  };
+
+  const applyCoupon = (code: string, customerEmail?: string) => {
+    const res = validateCoupon(code, customerEmail);
+    if (!res.valid || !res.coupon) {
+      addToast('error', 'Coupon Validation Failed', res.message);
+      return { success: false, message: res.message };
+    }
+    setAppliedCoupon(res.coupon);
+    addToast(
+      'success',
+      'Coupon Applied!',
+      `${res.coupon.code}: Rs. ${res.discountAmount?.toLocaleString()} savings applied to your order.`
+    );
+    return { success: true, message: res.message };
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    addToast('info', 'Coupon Removed', 'Coupon discount has been removed from order.');
   };
 
   const updateOrderStatus = (orderId: string, status: Order['orderStatus']) => {
@@ -2134,6 +2410,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         theme,
         toggleTheme,
         setTheme,
+
+        // VIP Coupons & Vouchers
+        coupons,
+        appliedCoupon,
+        couponDiscount,
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        toggleCouponActive,
+        validateCoupon,
+        applyCoupon,
+        removeCoupon,
+        incrementCouponUsage,
       }}
     >
       {children}

@@ -90,6 +90,8 @@ export interface Order {
   subtotal: number;
   discount?: number;
   discountDescription?: string;
+  couponCode?: string;
+  couponDiscount?: number;
   shippingFee: number;
   total: number;
   paymentMethod: 'cod' | 'card';
@@ -103,6 +105,24 @@ export interface Order {
   paidAt?: string;
   paymentFailedAt?: string;
   supabaseSynced?: boolean;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minSpend?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usedCount: number;
+  assignedEmail?: string;
+  assignedName?: string;
+  startDate?: string;
+  expiryDate?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface SaleBannerConfig {

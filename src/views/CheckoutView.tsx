@@ -10,6 +10,11 @@ import {
   ShieldCheck,
   Mail,
   CheckCircle2,
+  Ticket,
+  Tag,
+  X,
+  Check,
+  Gift,
 } from 'lucide-react';
 import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
 import '@sfpy/atoms/styles';
@@ -43,7 +48,20 @@ export const CheckoutView: React.FC = () => {
     addToast,
     markOrderPaid,
     businessSettings,
+    coupons,
+    appliedCoupon,
+    couponDiscount,
+    applyCoupon,
+    removeCoupon,
+    validateCoupon,
   } = useStore();
+
+  const [couponInput, setCouponInput] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponFeedback, setCouponFeedback] = useState<{
+    type: 'success' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
 
   const securePaymentSteps = businessSettings.securePaymentCopy
     .split('\n')
@@ -92,6 +110,57 @@ export const CheckoutView: React.FC = () => {
       notes: '',
     };
   });
+
+  // Handle Coupon Application
+  const handleApplyCoupon = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!couponInput.trim()) {
+      setCouponFeedback({ type: 'error', message: 'Please enter a coupon code.' });
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponFeedback({ type: null, message: '' });
+
+    const validation = validateCoupon(couponInput.trim(), formData.email, cartSubtotal);
+    if (!validation.valid || !validation.coupon) {
+      setCouponFeedback({ type: 'error', message: validation.message });
+      setIsApplyingCoupon(false);
+      return;
+    }
+
+    const res = applyCoupon(couponInput.trim(), formData.email);
+    if (res.success) {
+      setCouponFeedback({
+        type: 'success',
+        message: `Coupon "${validation.coupon.code}" applied! You saved Rs. ${validation.discountAmount?.toLocaleString()}.`,
+      });
+      setCouponInput('');
+    } else {
+      setCouponFeedback({ type: 'error', message: res.message });
+    }
+    setIsApplyingCoupon(false);
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponFeedback({ type: null, message: '' });
+  };
+
+  // Re-verify email restriction if customer changes their email address in the form
+  useEffect(() => {
+    if (appliedCoupon && appliedCoupon.assignedEmail) {
+      const assigned = appliedCoupon.assignedEmail.trim().toLowerCase();
+      const current = (formData.email || '').trim().toLowerCase();
+      if (current && current !== assigned) {
+        removeCoupon();
+        setCouponFeedback({
+          type: 'error',
+          message: `Coupon "${appliedCoupon.code}" was removed because it is restricted to ${appliedCoupon.assignedEmail}.`,
+        });
+      }
+    }
+  }, [formData.email, appliedCoupon]);
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card'>(
     allowedPaymentMethods.includes('cod') ? 'cod' : allowedPaymentMethods[0] || 'cod'
@@ -340,8 +409,17 @@ export const CheckoutView: React.FC = () => {
         customer: formData,
         items: orderItems,
         subtotal: cartSubtotal,
-        discount: cartDiscount,
-        discountDescription: cartDiscountDescription,
+        discount: cartDiscount + couponDiscount,
+        discountDescription: [
+          cartDiscountDescription,
+          couponDiscount > 0 && appliedCoupon
+            ? `Coupon ${appliedCoupon.code} (-Rs. ${couponDiscount.toLocaleString()})`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' + ') || undefined,
+        couponCode: appliedCoupon?.code,
+        couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
         shippingFee: cartShippingFee,
         total: cartTotal,
         paymentMethod,
@@ -933,6 +1011,94 @@ export const CheckoutView: React.FC = () => {
                 })}
               </div>
 
+              {/* VIP Coupon & Voucher Input Box */}
+              <div className="pt-4 border-t border-[#262930] space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#8E929E] font-medium flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                    <Ticket className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Have a VIP Coupon or Voucher?</span>
+                  </span>
+                  {appliedCoupon && (
+                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+                      Applied
+                    </span>
+                  )}
+                </div>
+
+                {appliedCoupon ? (
+                  <div className="p-3 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/40 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-1.5 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37] shrink-0">
+                        <Tag className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-xs text-[#D4AF37] tracking-wider truncate">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold shrink-0">
+                            {appliedCoupon.discountType === 'percentage'
+                              ? `${appliedCoupon.discountValue}% OFF`
+                              : `Rs. ${appliedCoupon.discountValue.toLocaleString()} OFF`}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#CBD0DC] truncate">
+                          Savings: Rs. {couponDiscount.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      title="Remove coupon"
+                      className="p-1.5 rounded-lg text-[#8E929E] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCoupon} className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value.toUpperCase());
+                            if (couponFeedback.type) setCouponFeedback({ type: null, message: '' });
+                          }}
+                          placeholder="e.g. VIP-HAMZA-20"
+                          className="w-full px-3 py-2.5 rounded-xl bg-[#0B0C0E] border border-[#262930] text-[#F5F5F7] font-mono text-xs uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal placeholder:text-[#8E929E] focus:border-[#D4AF37] focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isApplyingCoupon || !couponInput.trim()}
+                        className="px-4 py-2.5 rounded-xl bg-[#181A1F] hover:bg-[#22252C] border border-[#D4AF37]/40 hover:border-[#D4AF37] text-[#D4AF37] text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                      >
+                        {isApplyingCoupon ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+
+                    {couponFeedback.message && (
+                      <p
+                        className={`text-[11px] font-medium leading-tight flex items-start gap-1 ${
+                          couponFeedback.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        <span>{couponFeedback.type === 'success' ? '✓' : '⚠️'}</span>
+                        <span>{couponFeedback.message}</span>
+                      </p>
+                    )}
+                  </form>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-[#262930] space-y-2 text-xs">
                 <div className="flex justify-between text-[#CBD0DC]">
                   <span>Subtotal</span>
@@ -955,6 +1121,15 @@ export const CheckoutView: React.FC = () => {
                       <span>{cartDiscountDescription || 'Special Promotion Savings'}</span>
                     </span>
                     <span>-Rs. {cartDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+                {couponDiscount > 0 && appliedCoupon && (
+                  <div className="flex justify-between text-emerald-400 font-semibold bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/30 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-[#D4AF37]" />
+                      <span>VIP Coupon ({appliedCoupon.code})</span>
+                    </span>
+                    <span>-Rs. {couponDiscount.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold text-[#F5F5F7] pt-2 border-t border-[#262930]">

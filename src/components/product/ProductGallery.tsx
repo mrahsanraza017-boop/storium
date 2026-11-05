@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Maximize2, X, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductMedia } from '../../types';
 import { ProductMediaFrame } from './ProductMediaFrame';
 
@@ -15,9 +15,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
   const [isZooming, setIsZooming] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const prefersReducedMotion = useReducedMotion();
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
 
   // Show every uploaded image/video (no cap). Order follows the admin-defined
   // media order, so index 0 is whatever the admin pinned to display first.
@@ -25,14 +25,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
     ? media
     : (images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=1200&auto=format&fit=crop']).map((url) => ({ url, type: 'image' as const }));
   const currentMedia = displayMedia[activeIdx] || displayMedia[0];
-
-  React.useEffect(() => {
-    if (!isAutoPlaying || displayMedia.length < 2 || prefersReducedMotion) return;
-    const timer = window.setInterval(() => {
-      setActiveIdx((prev) => (prev === displayMedia.length - 1 ? 0 : prev + 1));
-    }, 2800);
-    return () => window.clearInterval(timer);
-  }, [displayMedia.length, isAutoPlaying, prefersReducedMotion]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageContainerRef.current) return;
@@ -52,14 +44,36 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
     setActiveIdx((prev) => (prev === displayMedia.length - 1 ? 0 : prev + 1));
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (Math.abs(diff) > 35) {
+      if (diff > 0) {
+        // Customer swiped left -> show next image
+        setActiveIdx((prev) => (prev === displayMedia.length - 1 ? 0 : prev + 1));
+      } else {
+        // Customer swiped right -> show prev image
+        setActiveIdx((prev) => (prev === 0 ? displayMedia.length - 1 : prev - 1));
+      }
+    }
+    touchStartX.current = null;
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Main Image Frame with Zoom Effect */}
+      {/* Main Image Frame with Zoom Effect & Touch Swiping */}
       <div
         ref={imageContainerRef}
         onMouseEnter={() => setIsZooming(true)}
         onMouseLeave={() => setIsZooming(false)}
         onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onClick={() => setIsLightboxOpen(true)}
         className="relative aspect-square w-full rounded-2xl bg-[#121316] border border-[#262930] overflow-hidden group cursor-crosshair select-none"
       >
@@ -91,25 +105,20 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
           <Maximize2 className="w-4 h-4" />
         </button>
 
+        {/* Slide Counter badge for customer awareness */}
         {displayMedia.length > 1 && (
-          <button
-            type="button"
-            onClick={(event) => { event.stopPropagation(); setIsAutoPlaying((playing) => !playing); }}
-            className="absolute bottom-4 left-4 p-2.5 rounded-lg bg-[#0B0C0E]/80 text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md transition-all shadow-lg cursor-pointer"
-            title={isAutoPlaying ? 'Pause media animation' : 'Play media animation'}
-            aria-label={isAutoPlaying ? 'Pause media animation' : 'Play media animation'}
-          >
-            {isAutoPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </button>
+          <span className="absolute bottom-4 left-4 px-2.5 py-1 rounded-lg bg-[#0B0C0E]/80 text-[11px] font-mono text-[#D4AF37] border border-white/10 backdrop-blur-md transition-all shadow-lg pointer-events-none">
+            {activeIdx + 1} / {displayMedia.length}
+          </span>
         )}
 
-        {/* Prev / Next controls for quick browse */}
+        {/* Prev / Next controls for customer manual sliding */}
         {displayMedia.length > 1 && (
           <>
             <button
               type="button"
               onClick={handlePrev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-[#0B0C0E]/70 text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-[#0B0C0E]/80 text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 max-sm:opacity-85 transition-opacity cursor-pointer shadow-lg"
               aria-label="Previous image"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -117,7 +126,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, media, p
             <button
               type="button"
               onClick={handleNext}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-[#0B0C0E]/70 text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-[#0B0C0E]/80 text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 max-sm:opacity-85 transition-opacity cursor-pointer shadow-lg"
               aria-label="Next image"
             >
               <ChevronRight className="w-4 h-4" />
