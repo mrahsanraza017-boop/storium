@@ -69,9 +69,10 @@ export const CheckoutView: React.FC = () => {
     .filter(Boolean);
 
   const allowedPaymentMethods = useMemo(() => {
-    if (cart.length === 0) return ['cod', 'card'] as Array<'cod' | 'card'>;
-    return cart.reduce<Array<'cod' | 'card'>>((allowed, item) => {
-      const productMethods = getProductPaymentMethods(item.product.paymentMethods);
+    if (!cart || cart.length === 0) return ['cod', 'card'] as Array<'cod' | 'card'>;
+    return (cart || []).filter(Boolean).reduce<Array<'cod' | 'card'>>((allowed, item) => {
+      const product = item?.product || (item as any);
+      const productMethods = getProductPaymentMethods(product?.paymentMethods);
       return allowed.filter((method) => productMethods.includes(method));
     }, ['cod', 'card']);
   }, [cart]);
@@ -385,7 +386,7 @@ export const CheckoutView: React.FC = () => {
       trackEvent('add_payment_info', {
         value: cartTotal,
         currency: 'PKR',
-        content_ids: cart.map((i) => i?.product?.id).filter(Boolean),
+        content_ids: (cart || []).map((i) => i?.product?.id || (i as any)?.id).filter(Boolean),
         payment_type: paymentMethod,
       });
     } catch (trackErr) {
@@ -393,17 +394,23 @@ export const CheckoutView: React.FC = () => {
     }
 
     try {
-      const orderItems = cart
-        .filter((item) => item && item.product)
-        .map((item) => ({
-          productId: item.product.id || '',
-          productName: item.product.name || 'Timepiece',
-          productThumbnail: item.product.thumbnail || (item.product.productImages && item.product.productImages[0]) || '',
-          price: item.product.salePrice ?? item.product.price ?? 0,
-          quantity: item.quantity || 1,
-          selectedVariant: item.selectedVariant,
-          sku: item.product.sku || '',
-        }));
+      const orderItems = (cart || [])
+        .filter((item) => item && (item.product || (item as any).id || (item as any).productId))
+        .map((item) => {
+          const product = item.product || (item as any);
+          return {
+            productId: product?.id || (item as any)?.productId || 'stm-prod',
+            productName: product?.name || (item as any)?.productName || 'Timepiece',
+            productThumbnail:
+              product?.thumbnail ||
+              (Array.isArray(product?.productImages) ? product.productImages[0] : '') ||
+              '',
+            price: product?.salePrice ?? product?.price ?? 0,
+            quantity: item.quantity || 1,
+            selectedVariant: item.selectedVariant,
+            sku: product?.sku || '',
+          };
+        });
 
       const newOrder = await createOrder({
         customer: formData,
@@ -426,6 +433,10 @@ export const CheckoutView: React.FC = () => {
         paymentStatus: 'pending',
         orderStatus: 'Pending',
       });
+
+      if (!newOrder) {
+        throw new Error('Order could not be registered. Please try again.');
+      }
 
       if (paymentMethod === 'card') {
         try {
@@ -982,13 +993,17 @@ export const CheckoutView: React.FC = () => {
 
               {/* Items summary */}
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {cart.map((item, idx) => {
-                  const price = item.product.salePrice ?? item.product.price;
+                {(cart || []).filter(Boolean).map((item, idx) => {
+                  const product = item?.product || (item as any) || {};
+                  const price = product?.salePrice ?? product?.price ?? 0;
+                  const thumb = product?.thumbnail || (Array.isArray(product?.productImages) ? product.productImages[0] : '') || '/logo.png';
+                  const name = product?.name || (item as any)?.productName || 'Timepiece';
+                  const qty = item?.quantity || 1;
                   return (
                     <div key={idx} className="flex items-center gap-3 text-xs">
                       <img
-                        src={item.product.thumbnail}
-                        alt={item.product.name}
+                        src={thumb}
+                        alt={name}
                         width="48"
                         height="48"
                         loading="lazy"
@@ -997,14 +1012,14 @@ export const CheckoutView: React.FC = () => {
                       />
                       <div className="flex-1">
                         <span className="font-semibold text-[#F5F5F7] block line-clamp-1">
-                          {item.product.name}
+                          {name}
                         </span>
                         <span className="text-[#CBD0DC] text-[11px]">
-                          Qty: {item.quantity} &bull; Rs. {price.toLocaleString()} each
+                          Qty: {qty} &bull; Rs. {price.toLocaleString()} each
                         </span>
                       </div>
                       <span className="font-bold text-[#F5F5F7]">
-                        Rs. {(price * item.quantity).toLocaleString()}
+                        Rs. {(price * qty).toLocaleString()}
                       </span>
                     </div>
                   );

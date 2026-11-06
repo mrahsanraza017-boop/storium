@@ -56,7 +56,7 @@ export async function checkRunCourierStatus(): Promise<CourierGatewayStatus> {
         client_code: data.client_code || '1000003434',
         auth_key_configured: Boolean(data.auth_key_configured),
         auth_key_masked: data.auth_key_masked || 'cf78••••••••••••4e',
-        origin: data.origin || 'Lahore',
+        origin: data.origin || 'Renala Khurd',
         service_type: data.service_type || 'Overnight',
         latency_ms: data.latency_ms,
         city_count: data.city_count,
@@ -75,7 +75,7 @@ export async function checkRunCourierStatus(): Promise<CourierGatewayStatus> {
     client_code: '1000003434',
     auth_key_configured: true,
     auth_key_masked: 'cf78••••••••••••4e',
-    origin: 'Lahore',
+    origin: 'Renala Khurd',
     service_type: 'Overnight',
     message: 'Could not connect to /api/courier-status.php. Upload api/ folder to Hostinger public_html to enable live courier calls.',
     tested_at: new Date().toLocaleTimeString(),
@@ -93,6 +93,7 @@ export async function bookWithRunCouriers(
     pieces?: number;
     specialInstruction?: string;
     collectionAmount?: string;
+    origin?: string;
   }
 ): Promise<CourierBookingResult> {
   const collectionAmount = options?.collectionAmount !== undefined
@@ -113,6 +114,7 @@ export async function bookWithRunCouriers(
     customerEmail: order.customer.email,
     shippingAddress: `${order.customer.address}, ${order.customer.city}`,
     destinationCity: order.customer.city,
+    origin: options?.origin || 'Renala Khurd',
     collectionAmount,
     productDescription,
     weight: options?.weight || 0.5,

@@ -481,7 +481,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CART);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is CartItem => Boolean(item && (item.product || (item as any).id)));
+        }
+      }
     } catch {
       // fallback
     }
@@ -501,7 +506,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((o): o is Order => Boolean(o && typeof o === 'object' && (o.id || o.orderNumber)));
+        }
+      }
     } catch {
       // fallback
     }
@@ -573,7 +583,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.COUPONS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c): c is Coupon => Boolean(c && typeof c === 'object' && c.id && c.code));
+        }
+      }
     } catch {
       // fallback
     }
@@ -583,7 +598,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEYS.APPLIED_COUPON);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && (parsed.id || parsed.code)) {
+          return parsed;
+        }
+      }
     } catch {
       // fallback
     }
@@ -968,16 +988,18 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       unsubscribe = subscribeToOrdersRealtime(
         (incomingOrder) => {
+          if (!incomingOrder) return;
           setOrders((prev) => {
-            if (prev.some((o) => o.orderNumber === incomingOrder.orderNumber || o.id === incomingOrder.id)) {
-              return prev;
+            const safePrev = (prev || []).filter(Boolean);
+            if (safePrev.some((o) => (o && o.orderNumber === incomingOrder.orderNumber) || (o && incomingOrder.id && o.id === incomingOrder.id))) {
+              return safePrev;
             }
-            return [incomingOrder, ...prev];
+            return [incomingOrder, ...safePrev];
           });
           addAdminNotification({
             type: 'order',
             title: 'New Live Order',
-            message: `Order #${incomingOrder.orderNumber} for PKR ${incomingOrder.total?.toLocaleString()} from ${incomingOrder.customer.fullName}`,
+            message: `Order #${incomingOrder.orderNumber} for PKR ${incomingOrder.total?.toLocaleString()} from ${incomingOrder.customer?.fullName || 'Customer'}`,
             linkTab: 'orders',
             data: { orderId: incomingOrder.id, orderNumber: incomingOrder.orderNumber },
           });
@@ -985,16 +1007,21 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           addToast('success', 'Realtime Order Received!', `Order #${incomingOrder.orderNumber} just placed.`);
         },
         (updatedOrder) => {
+          if (!updatedOrder) return;
           setOrders((prev) =>
-            prev.map((o) => (o.orderNumber === updatedOrder.orderNumber || o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
+            (prev || [])
+              .filter(Boolean)
+              .map((o) => ((o && o.orderNumber === updatedOrder.orderNumber) || (o && updatedOrder.id && o.id === updatedOrder.id) ? { ...o, ...updatedOrder } : o))
           );
         },
         (deletedIdentifier) => {
           if (!deletedIdentifier) return;
           setOrders((prev) => {
-            const filtered = prev.filter(
-              (o) => o.id !== deletedIdentifier && o.orderNumber !== deletedIdentifier
-            );
+            const filtered = (prev || [])
+              .filter(Boolean)
+              .filter(
+                (o) => o && o.id !== deletedIdentifier && o.orderNumber !== deletedIdentifier
+              );
             try {
               localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
             } catch (e) {
@@ -1209,18 +1236,20 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Cart Calculations
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = cart.reduce((sum, item) => sum + (item?.quantity || 1), 0);
   const cartSubtotal = cart.reduce((sum, item) => {
-    const effectivePrice = item.product.salePrice ?? item.product.price;
-    return sum + effectivePrice * item.quantity;
+    const product = item?.product || (item as any);
+    const effectivePrice = product?.salePrice ?? product?.price ?? 0;
+    return sum + effectivePrice * (item?.quantity || 1);
   }, 0);
 
   // Watch count & "Buy 3, Get 15% Off" promotion calculation
-  const watchItems = cart.filter((item) => item.product.category === 'watches');
-  const watchCount = watchItems.reduce((sum, item) => sum + item.quantity, 0);
+  const watchItems = cart.filter((item) => (item?.product?.category || (item as any)?.category) === 'watches');
+  const watchCount = watchItems.reduce((sum, item) => sum + (item?.quantity || 1), 0);
   const watchSubtotal = watchItems.reduce((sum, item) => {
-    const price = item.product.salePrice ?? item.product.price;
-    return sum + price * item.quantity;
+    const product = item?.product || (item as any);
+    const price = product?.salePrice ?? product?.price ?? 0;
+    return sum + price * (item?.quantity || 1);
   }, 0);
 
   const buyThreeConfig = businessSettings.promotions?.buyThreePromo;
@@ -1294,22 +1323,24 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Cart Actions
   const addToCart = (product: Product, quantity = 1, variant?: Record<string, string>) => {
+    if (!product || !product.id) return;
     setCart((prev) => {
-      const existingIndex = prev.findIndex(
+      const safePrev = (prev || []).filter(Boolean);
+      const existingIndex = safePrev.findIndex(
         (item) =>
-          item.product.id === product.id &&
-          JSON.stringify(item.selectedVariant || {}) === JSON.stringify(variant || {})
+          (item?.product?.id || (item as any)?.id) === product.id &&
+          JSON.stringify(item?.selectedVariant || {}) === JSON.stringify(variant || {})
       );
 
       if (existingIndex > -1) {
-        const next = [...prev];
+        const next = [...safePrev];
         next[existingIndex] = {
           ...next[existingIndex],
-          quantity: next[existingIndex].quantity + quantity,
+          quantity: (next[existingIndex]?.quantity || 1) + quantity,
         };
         return next;
       } else {
-        return [...prev, { product, quantity, selectedVariant: variant }];
+        return [...safePrev, { product, quantity, selectedVariant: variant }];
       }
     });
 
@@ -1331,18 +1362,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     variants?: Record<string, Record<string, string>>
   ) => {
     setCart((prev) => {
-      let nextCart = [...prev];
+      let nextCart = [...(prev || []).filter(Boolean)];
       for (const prod of productsToAdd) {
+        if (!prod || !prod.id) continue;
         const prodVariant = variants?.[prod.id];
         const existingIndex = nextCart.findIndex(
           (item) =>
-            item.product.id === prod.id &&
-            JSON.stringify(item.selectedVariant || {}) === JSON.stringify(prodVariant || {})
+            (item?.product?.id || (item as any)?.id) === prod.id &&
+            JSON.stringify(item?.selectedVariant || {}) === JSON.stringify(prodVariant || {})
         );
         if (existingIndex > -1) {
           nextCart[existingIndex] = {
             ...nextCart[existingIndex],
-            quantity: nextCart[existingIndex].quantity + 1,
+            quantity: (nextCart[existingIndex]?.quantity || 1) + 1,
           };
         } else {
           nextCart.push({ product: prod, quantity: 1, selectedVariant: prodVariant });
@@ -1370,11 +1402,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   const removeFromCart = (productId: string, variantKey?: string) => {
     setCart((prev) =>
-      prev.filter((item) => {
-        if (item.product.id !== productId) return true;
-        if (!variantKey) return false;
-        return JSON.stringify(item.selectedVariant || {}) !== variantKey;
-      })
+      (prev || [])
+        .filter(Boolean)
+        .filter((item) => {
+          const itemProdId = item?.product?.id || (item as any)?.id;
+          if (itemProdId !== productId) return true;
+          if (!variantKey) return false;
+          return JSON.stringify(item?.selectedVariant || {}) !== variantKey;
+        })
     );
     addToast('info', 'Item Removed', 'Product removed from your shopping bag');
   };
@@ -1385,15 +1420,18 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     setCart((prev) =>
-      prev.map((item) => {
-        const matchesProduct = item.product.id === productId;
-        const matchesVariant =
-          !variantKey || JSON.stringify(item.selectedVariant || {}) === variantKey;
-        if (matchesProduct && matchesVariant) {
-          return { ...item, quantity };
-        }
-        return item;
-      })
+      (prev || [])
+        .filter(Boolean)
+        .map((item) => {
+          const itemProdId = item?.product?.id || (item as any)?.id;
+          const matchesProduct = itemProdId === productId;
+          const matchesVariant =
+            !variantKey || JSON.stringify(item?.selectedVariant || {}) === variantKey;
+          if (matchesProduct && matchesVariant) {
+            return { ...item, quantity };
+          }
+          return item;
+        })
     );
   };
 
@@ -1557,13 +1595,20 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     orderData: Omit<Order, 'id' | 'orderNumber' | 'date'>
   ): Promise<Order> => {
     const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const cityCode = (orderData?.customer?.city || 'PKR')
+      .replace(/[^a-zA-Z]/g, '')
+      .padEnd(3, 'X')
+      .substring(0, 3)
+      .toUpperCase();
+
     const newOrder: Order = {
       ...orderData,
       id: 'ord-' + Date.now(),
       orderNumber: `STM-PK-${randomNum}`,
       date: new Date().toISOString(),
       orderStatus: 'Pending',
-      trackingNumber: `TCS-${Math.floor(10000000 + Math.random() * 90000000)}-${orderData.customer.city.substring(0, 3).toUpperCase()}`,
+      courierName: 'RUN Couriers',
+      trackingNumber: `RUN-${Math.floor(10000000 + Math.random() * 90000000)}-${cityCode}`,
       supabaseSynced: false,
       couponCode: orderData.couponCode || appliedCoupon?.code,
       couponDiscount: typeof orderData.couponDiscount === 'number' ? orderData.couponDiscount : couponDiscount,
@@ -1594,13 +1639,22 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       );
     }
 
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => [newOrder, ...(prev || []).filter(Boolean)]);
     setLastPlacedOrder(newOrder);
     clearCart();
 
     if (appliedCoupon) {
-      incrementCouponUsage(appliedCoupon.id);
-      setAppliedCoupon(null);
+      try {
+        const identifier = appliedCoupon.id || appliedCoupon.code;
+        if (identifier) {
+          incrementCouponUsage(identifier);
+        }
+      } catch (couponErr) {
+        console.warn('Coupon usage tracking note (non-fatal):', couponErr);
+      }
+      try {
+        setAppliedCoupon(null);
+      } catch {}
     }
 
     try {
@@ -1657,22 +1711,25 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       usedCount: 0,
       createdAt: new Date().toISOString(),
     };
-    setCoupons((prev) => [created, ...prev]);
+    setCoupons((prev) => [created, ...(prev || []).filter(Boolean)]);
     addToast('success', 'Coupon Created', `Coupon code "${created.code}" is now active.`);
     return created;
   };
 
   const updateCoupon = (id: string, updates: Partial<Coupon>) => {
+    if (!id) return;
     setCoupons((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              ...updates,
-              code: updates.code ? updates.code.trim().toUpperCase().replace(/\s+/g, '-') : c.code,
-            }
-          : c
-      )
+      (prev || [])
+        .filter((c): c is Coupon => Boolean(c && typeof c === 'object'))
+        .map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                ...updates,
+                code: updates.code ? updates.code.trim().toUpperCase().replace(/\s+/g, '-') : c.code,
+              }
+            : c
+        )
     );
     if (appliedCoupon && appliedCoupon.id === id) {
       setAppliedCoupon((prev) => (prev ? { ...prev, ...updates } : null));
@@ -1681,7 +1738,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const deleteCoupon = (id: string) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== id));
+    if (!id) return;
+    setCoupons((prev) => (prev || []).filter((c) => c && c.id !== id));
     if (appliedCoupon && appliedCoupon.id === id) {
       setAppliedCoupon(null);
     }
@@ -1689,28 +1747,37 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const toggleCouponActive = (id: string) => {
+    if (!id) return;
     setCoupons((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const nextActive = !c.isActive;
-          if (!nextActive && appliedCoupon?.id === id) {
-            setAppliedCoupon(null);
+      (prev || [])
+        .filter((c): c is Coupon => Boolean(c && typeof c === 'object'))
+        .map((c) => {
+          if (c.id === id) {
+            const nextActive = !c.isActive;
+            if (!nextActive && appliedCoupon?.id === id) {
+              setAppliedCoupon(null);
+            }
+            return { ...c, isActive: nextActive };
           }
-          return { ...c, isActive: nextActive };
-        }
-        return c;
-      })
+          return c;
+        })
     );
   };
 
-  const incrementCouponUsage = (codeOrId: string) => {
+  const incrementCouponUsage = (codeOrId?: string) => {
+    if (!codeOrId || typeof codeOrId !== 'string') return;
     const target = codeOrId.trim().toUpperCase();
+    if (!target) return;
     setCoupons((prev) =>
-      prev.map((c) =>
-        c.id === codeOrId || c.code.toUpperCase() === target
-          ? { ...c, usedCount: (c.usedCount || 0) + 1 }
-          : c
-      )
+      (prev || [])
+        .filter((c): c is Coupon => Boolean(c && typeof c === 'object'))
+        .map((c) => {
+          const matchesId = c.id && c.id === codeOrId;
+          const matchesCode = c.code && c.code.toUpperCase() === target;
+          return matchesId || matchesCode
+            ? { ...c, usedCount: (c.usedCount || 0) + 1 }
+            : c;
+        })
     );
   };
 
@@ -1724,7 +1791,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       return { valid: false, message: 'Please enter a coupon code.' };
     }
 
-    const matched = coupons.find((c) => c.code.toUpperCase() === cleanCode);
+    const matched = (coupons || [])
+      .filter((c): c is Coupon => Boolean(c && typeof c === 'object' && c.code))
+      .find((c) => c.code.toUpperCase() === cleanCode);
     if (!matched) {
       return { valid: false, message: 'Invalid coupon code. Please verify the code and try again.' };
     }
@@ -1816,8 +1885,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const updateOrderStatus = (orderId: string, status: Order['orderStatus']) => {
+    if (!orderId) return;
     setOrders((prev) =>
-      prev.map((ord) => (ord.id === orderId ? { ...ord, orderStatus: status } : ord))
+      (prev || [])
+        .filter(Boolean)
+        .map((ord) => (ord && ord.id === orderId ? { ...ord, orderStatus: status } : ord))
     );
     void updateOrderStatusInSupabase(orderId, status).then((result) => {
       if (!result.success) addToast('error', 'Order Save Failed', result.error || 'Order status was not saved to the cloud.');
@@ -1835,19 +1907,22 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       orderStatus?: Order['orderStatus'];
     }
   ) => {
+    if (!orderId) return;
     setOrders((prev) =>
-      prev.map((ord) =>
-        ord.id === orderId
-          ? {
-              ...ord,
-              trackingNumber: courierData.trackingNumber,
-              courierName: courierData.courierName,
-              courierInvoiceUrl: courierData.courierInvoiceUrl,
-              courierBookingId: courierData.courierBookingId,
-              orderStatus: courierData.orderStatus || 'Shipped',
-            }
-          : ord
-      )
+      (prev || [])
+        .filter(Boolean)
+        .map((ord) =>
+          ord && ord.id === orderId
+            ? {
+                ...ord,
+                trackingNumber: courierData.trackingNumber,
+                courierName: courierData.courierName,
+                courierInvoiceUrl: courierData.courierInvoiceUrl,
+                courierBookingId: courierData.courierBookingId,
+                orderStatus: courierData.orderStatus || 'Shipped',
+              }
+            : ord
+        )
     );
     if (courierData.orderStatus) {
       void updateOrderStatusInSupabase(orderId, courierData.orderStatus);
@@ -1859,13 +1934,16 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   // Marks an order as paid locally. The cloud copy is updated server-side
   // so it stays authoritative for admins.
   const markOrderPaid = (orderNumber: string) => {
+    if (!orderNumber) return;
     setOrders((prev) => {
-      const updated = prev.map((ord) =>
-        ord.orderNumber === orderNumber
-          ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
-          : ord
-      );
-      const paidOrder = updated.find((o) => o.orderNumber === orderNumber);
+      const updated = (prev || [])
+        .filter(Boolean)
+        .map((ord) =>
+          ord && ord.orderNumber === orderNumber
+            ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
+            : ord
+        );
+      const paidOrder = updated.find((o) => o && o.orderNumber === orderNumber);
       if (paidOrder) {
         void sendPaymentReceiptEmail(paidOrder);
       }
@@ -1875,12 +1953,13 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Delete one order from local state (public + admin) and Supabase.
   const deleteOrder = async (orderNumber: string) => {
+    if (!orderNumber) return;
     setOrders((prev) => {
-      const filtered = prev.filter((o) => o.orderNumber !== orderNumber);
+      const filtered = (prev || []).filter((o) => o && o.orderNumber !== orderNumber);
       try {
         localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
       } catch (e) {
-        console.warn('LocalStorage save failed', e);
+        console.warn('Failed to update localStorage on order delete', e);
       }
       return filtered;
     });

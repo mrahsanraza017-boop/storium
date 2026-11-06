@@ -192,7 +192,7 @@ For questions about these Terms and Conditions, contact us at {email} or {phone}
         { city: 'Sialkot', minDays: 2, maxDays: 3, courier: 'TCS Express', codAvailable: true },
         { city: 'Gujranwala', minDays: 2, maxDays: 3, courier: 'TCS Express', codAvailable: true },
         { city: 'Hyderabad', minDays: 2, maxDays: 3, courier: 'TCS Express', codAvailable: true },
-        { city: 'Renala Khurd', minDays: 1, maxDays: 1, courier: 'Local Showroom Hub / Express', codAvailable: true },
+        { city: 'Renala Khurd', minDays: 1, maxDays: 1, courier: 'RUN Couriers / Local Showroom Hub', codAvailable: true },
         { city: 'Okara', minDays: 1, maxDays: 2, courier: 'Express Courier', codAvailable: true },
         { city: 'Abbottabad', minDays: 2, maxDays: 4, courier: 'TCS Express', codAvailable: true },
       ],

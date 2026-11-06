@@ -159,6 +159,7 @@ export const AdminView: React.FC = () => {
   const [bookingWeight, setBookingWeight] = useState<number>(0.5);
   const [bookingPieces, setBookingPieces] = useState<number>(1);
   const [bookingCollectionAmount, setBookingCollectionAmount] = useState<number>(0);
+  const [bookingOrigin, setBookingOrigin] = useState<string>('Renala Khurd');
   const [bookingSpecialInstruction, setBookingSpecialInstruction] = useState<string>('Fragile Luxury Timepiece - Handle with Care');
   const [isBookingCourier, setIsBookingCourier] = useState<boolean>(false);
   const [quickTrackingInput, setQuickTrackingInput] = useState<string>('');
@@ -203,6 +204,7 @@ export const AdminView: React.FC = () => {
     setBookingCourierOrder(order);
     setBookingWeight(0.5);
     setBookingPieces(order.items.reduce((acc, it) => acc + (it.quantity || 1), 0) || 1);
+    setBookingOrigin('Renala Khurd');
     setBookingSpecialInstruction('Fragile Luxury Timepiece - Handle with Care');
     setBookingCollectionAmount(order.paymentMethod === 'cod' ? (order.total || 0) : 0);
   };
@@ -216,6 +218,7 @@ export const AdminView: React.FC = () => {
         pieces: bookingPieces,
         specialInstruction: bookingSpecialInstruction,
         collectionAmount: String(bookingCollectionAmount),
+        origin: bookingOrigin || 'Renala Khurd',
       });
 
       if (res.success) {
@@ -1225,7 +1228,7 @@ export const AdminView: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-[11px] text-[#8E929E] mt-0.5">
-                      Client Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong> &bull; Auth: <strong className="text-emerald-400 font-mono">cf78••••4e</strong> &bull; Portal: <span className="text-[#F5F5F7]">portal.runcourier.com</span>
+                      Client Code: <strong className="text-[#D4AF37] font-mono">1000003434</strong> &bull; Auth: <strong className="text-emerald-400 font-mono">cf78••••4e</strong> &bull; Origin Hub: <strong className="text-emerald-400 font-mono">{courierGatewayStatus?.origin || 'Renala Khurd'}</strong> &bull; Portal: <span className="text-[#F5F5F7]">portal.runcourier.com</span>
                     </p>
                   </div>
                 </div>
@@ -1515,12 +1518,16 @@ export const AdminView: React.FC = () => {
                               <p className="font-semibold text-white">RUN Couriers (Overnight)</p>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-[#8E929E] pt-1 border-t border-[#262930]">
+                          <div className="grid grid-cols-3 gap-2 text-[#8E929E] pt-1 border-t border-[#262930]">
                             <div>
                               <span>COD Collection:</span>
                               <p className="font-bold text-[#D4AF37]">
                                 {selectedOrderDetails.paymentMethod === 'cod' ? `Rs. ${selectedOrderDetails.total.toLocaleString()}` : 'Rs. 0 (Prepaid Card)'}
                               </p>
+                            </div>
+                            <div>
+                              <span>Origin Hub:</span>
+                              <p className="text-emerald-400 font-semibold">Renala Khurd</p>
                             </div>
                             <div>
                               <span>Destination:</span>
@@ -1652,11 +1659,31 @@ export const AdminView: React.FC = () => {
                         <span className="text-white font-bold">{bookingCourierOrder.customer.city}</span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-[#8E929E]">Dispatch Origin City:</span>
+                        <span className="text-emerald-400 font-bold">{bookingOrigin || 'Renala Khurd'}</span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-[#8E929E]">Payment Mode:</span>
                         <span className="font-semibold text-white uppercase text-[10px]">
                           {bookingCourierOrder.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Prepaid (Card / Gateway)'}
                         </span>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-[#CBD0DC] font-semibold mb-1">
+                        Shipping Origin City (RUN Couriers) *
+                      </label>
+                      <input
+                        type="text"
+                        value={bookingOrigin}
+                        onChange={(e) => setBookingOrigin(e.target.value)}
+                        placeholder="Renala Khurd"
+                        className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs font-semibold text-[#D4AF37] focus:outline-none focus:border-[#D4AF37]"
+                      />
+                      <span className="text-[10px] text-[#8E929E] mt-1 block">
+                        Origin city for RUN Couriers parcel booking (Default: Renala Khurd).
+                      </span>
                     </div>
 
                     <div>

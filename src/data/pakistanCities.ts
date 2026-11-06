@@ -71,7 +71,7 @@ export const PAKISTAN_CITIES_DATA: PakistanCityInfo[] = [
   { name: 'Rojhan', province: 'Punjab' },
   { name: 'Taunsa', province: 'Punjab' },
   { name: 'Hasan Abdal', province: 'Punjab' },
-  { name: 'Renala Khurd', province: 'Punjab' },
+  { name: 'Renala Khurd', province: 'Punjab', isMajor: true },
   { name: 'Ahmedpur East', province: 'Punjab' },
   { name: 'Shujabad', province: 'Punjab' },
   { name: 'Kabirwala', province: 'Punjab' },
