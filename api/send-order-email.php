@@ -33,8 +33,8 @@ function get_email_config(): array {
         'method'           => 'mail',
         'from_email'       => 'orders@storium.online',
         'from_name'        => 'STORIUM Pakistan',
-        'reply_to'         => 'support@storium.online',
-        'admin_email'      => '',
+        'reply_to'         => 'Storium.store@gmail.com',
+        'admin_email'      => 'Storium.store@gmail.com',
         'notify_admin'     => true,
         'smtp_host'        => '',
         'smtp_port'        => 587,
@@ -45,8 +45,8 @@ function get_email_config(): array {
         'resend_api_key'   => '',
         'store_name'       => 'STORIUM Pakistan',
         'store_url'        => 'https://storium.online',
-        'support_phone'    => '+92 300 0000000',
-        'support_whatsapp' => 'https://wa.me/923000000000',
+        'support_email'    => 'Storium.store@gmail.com',
+        'showroom_address' => 'Anwar Shahid Colony Renala Khurd, Okara, Punjab',
     );
 
     $configFile = __DIR__ . '/email-config.php';
@@ -95,13 +95,16 @@ if (!is_array($payload)) {
 
 $type = (string) ($payload['type'] ?? 'order_confirmation');
 $order = is_array($payload['order'] ?? null) ? $payload['order'] : array();
-$customRecipient = trim((string) ($payload['to'] ?? ''));
+$customRecipient = trim((string) ($payload['to'] ?? $payload['email'] ?? ''));
+$password = trim((string) ($payload['password'] ?? ''));
 
 $config = get_email_config();
 
 // If preview only requested, return the generated HTML without sending
 if (!empty($payload['preview_only'])) {
-    $html = render_order_email_html($order, $config, $type);
+    $html = ($type === 'account_welcome' || $type === 'welcome')
+        ? render_welcome_email_html((string) ($payload['name'] ?? 'VIP Client'), $customRecipient ?: 'client@example.com', $password ?: 'Stm@Pass2026', $config)
+        : render_order_email_html($order, $config, $type);
     echo json_encode(array('success' => true, 'html' => $html));
     exit;
 }
@@ -112,7 +115,7 @@ $recipientName = 'Valued Customer';
 
 if ($customRecipient !== '') {
     $recipientEmail = $customRecipient;
-    $recipientName = (string) ($payload['name'] ?? 'STORIUM Client');
+    $recipientName = (string) ($payload['name'] ?? $payload['fullName'] ?? 'STORIUM Client');
 } elseif (!empty($order['customer']['email'])) {
     $recipientEmail = trim((string) $order['customer']['email']);
     $recipientName = trim((string) ($order['customer']['fullName'] ?? 'Valued Customer'));
@@ -128,13 +131,17 @@ if ($recipientEmail === '' || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL
 $orderNum = (string) ($order['orderNumber'] ?? 'Pending');
 if ($type === 'test') {
     $subject = 'STORIUM Pakistan — Email Service Test & Verification';
+} elseif ($type === 'account_welcome' || $type === 'welcome') {
+    $subject = 'Welcome to STORIUM — Your Exclusive Client Account & Login Credentials';
 } elseif ($type === 'payment_receipt') {
     $subject = 'Payment Confirmed — Order #' . $orderNum . ' — STORIUM Pakistan';
 } else {
     $subject = 'Order Confirmation — Order #' . $orderNum . ' — STORIUM Pakistan';
 }
 
-$htmlContent = render_order_email_html($order, $config, $type);
+$htmlContent = ($type === 'account_welcome' || $type === 'welcome')
+    ? render_welcome_email_html($recipientName, $recipientEmail, $password, $config)
+    : render_order_email_html($order, $config, $type);
 $textContent = strip_tags(str_replace(array('<br>', '<br/>', '</p>', '</tr>'), "\n", $htmlContent));
 
 // Send the email
@@ -629,17 +636,183 @@ function render_order_email_html(array $order, array $config, string $type): str
                         </td>
                     </tr>
 
-                    <!-- Concierge & Support Box -->
+                    <!-- Showroom & Dispatch Origin Address -->
+                    <tr>
+                        <td style="padding: 0 32px 28px 32px;">
+                            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #D4AF37; margin-bottom: 12px;">Showroom & Dispatch Origin</div>
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0B0C0E; border: 1px solid #232730; border-radius: 12px; padding: 18px 20px;">
+                                <tr>
+                                    <td>
+                                        <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">STORIUM Showroom</div>
+                                        <div style="font-size: 13px; color: #A0A5B5; margin-top: 4px; line-height: 1.5;">
+                                            Anwar Shahid Colony Renala Khurd, Okara, Punjab
+                                        </div>
+                                        <div style="font-size: 12px; color: #8F95A5; margin-top: 6px;">
+                                            Official Inquiries: <strong style="color: #D4AF37;">' . htmlspecialchars($config['support_email'] ?? 'Storium.store@gmail.com') . '</strong>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Concierge & Support Box (Email Only, No WhatsApp) -->
                     <tr>
                         <td style="padding: 0 32px 32px 32px; text-align: center;">
-                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; padding: 20px;">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; padding: 22px;">
                                 <tr>
                                     <td align="center">
                                         <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">Need Assistance With Your Order?</div>
-                                        <div style="font-size: 12px; color: #A0A5B5; margin-top: 6px; line-height: 1.5;">Our luxury concierge is available 7 days a week for inquiries, delivery updates, and sizing adjustments.</div>
-                                        <div style="margin-top: 14px;">
-                                            <a href="' . htmlspecialchars($config['support_whatsapp']) . '" style="display: inline-block; padding: 10px 20px; background-color: #D4AF37; color: #0B0C0E; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 8px; margin: 4px;">WhatsApp Concierge</a>
-                                            <a href="' . htmlspecialchars($config['store_url']) . '/account" style="display: inline-block; padding: 10px 20px; background-color: #1F232B; border: 1px solid #323744; color: #FFFFFF; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 8px; margin: 4px;">View in Account</a>
+                                        <div style="font-size: 12px; color: #A0A5B5; margin-top: 6px; line-height: 1.5;">Our concierge desk is at your service. For order inquiries, delivery updates, or bespoke requests, reach us directly via business email.</div>
+                                        <div style="margin-top: 16px;">
+                                            <a href="mailto:' . htmlspecialchars($config['support_email'] ?? 'Storium.store@gmail.com') . '" style="display: inline-block; padding: 11px 24px; background-color: #D4AF37; color: #0B0C0E; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 8px; margin: 4px;">Email Concierge</a>
+                                            <a href="' . htmlspecialchars($config['store_url']) . '/account" style="display: inline-block; padding: 11px 24px; background-color: #1F232B; border: 1px solid #323744; color: #FFFFFF; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 8px; margin: 4px;">View in Client Portal</a>
+                                        </div>
+                                        <div style="font-size: 12px; color: #D4AF37; margin-top: 10px; font-weight: 600;">' . htmlspecialchars($config['support_email'] ?? 'Storium.store@gmail.com') . '</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 32px 32px 32px; background-color: #08090A; border-top: 1px solid #1F232B; text-align: center;">
+                            <div style="font-size: 11px; color: #626673; line-height: 1.6;">
+                                &copy; ' . date('Y') . ' STORIUM Pakistan. All rights reserved.<br />
+                                Showroom: Anwar Shahid Colony Renala Khurd, Okara, Punjab<br />
+                                Official Concierge: ' . htmlspecialchars($config['support_email'] ?? 'Storium.store@gmail.com') . '<br />
+                                High-End Luxury Timepieces & Curated Gentlemen\'s Accessories.
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+                <!-- End Main Container -->
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
+}
+
+/**
+ * Luxury HTML Email Template for Customer Account Creation
+ * Mirrors the exact aesthetic of the Order Confirmation receipt
+ */
+function render_welcome_email_html(string $name, string $email, string $password, array $config): string {
+    $safeName = htmlspecialchars($name ?: 'Valued Patron');
+    $safeEmail = htmlspecialchars($email);
+    $safePassword = htmlspecialchars($password);
+    $storeUrl = htmlspecialchars(rtrim($config['store_url'] ?? 'https://storium.online', '/'));
+    $supportEmail = htmlspecialchars($config['support_email'] ?? 'Storium.store@gmail.com');
+    $showroomAddress = htmlspecialchars($config['showroom_address'] ?? 'Anwar Shahid Colony Renala Khurd, Okara, Punjab');
+
+    return '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to STORIUM Pakistan — Client Portal Activation</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #0B0C0E; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #E8E8EC; -webkit-font-smoothing: antialiased; }
+        table { border-collapse: collapse; }
+        a { color: #D4AF37; text-decoration: none; }
+    </style>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #0B0C0E;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #121418; border: 1px solid #262933; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+                    
+                    <!-- Top Gold Accent Bar -->
+                    <tr>
+                        <td height="4" style="background: linear-gradient(90deg, #D4AF37, #FFF2A8, #D4AF37); font-size: 1px; line-height: 1px;">&nbsp;</td>
+                    </tr>
+
+                    <!-- Header Brand Banner -->
+                    <tr>
+                        <td style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #1F232B;">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td align="center">
+                                        <div style="font-family: Georgia, serif; font-size: 24px; font-weight: 700; letter-spacing: 0.3em; color: #F5F5F7; text-transform: uppercase;">STORIUM</div>
+                                        <div style="font-size: 10px; letter-spacing: 0.4em; color: #D4AF37; text-transform: uppercase; margin-top: 4px; font-weight: 600;">Haute Horlogerie & Concierge</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Hero Confirmation Section -->
+                    <tr>
+                        <td style="padding: 32px 32px 20px 32px; text-align: center;">
+                            <div style="display: inline-block; padding: 6px 14px; background-color: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 30px; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D4AF37; text-transform: uppercase;">
+                                CONCIERGE MEMBERSHIP ACTIVE
+                            </div>
+                            <h1 style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: #FFFFFF; margin: 16px 0 10px 0; line-height: 1.3;">Welcome to STORIUM, ' . $safeName . '</h1>
+                            <p style="font-size: 14px; color: #A0A5B5; line-height: 1.6; margin: 0 auto; max-width: 480px;">Your private client account has been registered. You can now track your orders with live delivery updates, view dispatch milestones, and browse exclusive horology offerings.</p>
+                        </td>
+                    </tr>
+
+                    <!-- Account Credentials Card -->
+                    <tr>
+                        <td style="padding: 0 32px 24px 32px;">
+                            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #D4AF37; margin-bottom: 12px;">Client Credentials</div>
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0B0C0E; border: 1px solid #232730; border-radius: 12px; padding: 20px 22px;">
+                                <tr>
+                                    <td style="padding: 6px 0; border-bottom: 1px solid #1F232B;">
+                                        <div style="font-size: 11px; color: #787D8E; text-transform: uppercase; letter-spacing: 0.05em;">Registered Client</div>
+                                        <div style="font-size: 14px; font-weight: 600; color: #F5F5F7; margin-top: 3px;">' . $safeName . '</div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 0; border-bottom: 1px solid #1F232B;">
+                                        <div style="font-size: 11px; color: #787D8E; text-transform: uppercase; letter-spacing: 0.05em;">Sign-in Email</div>
+                                        <div style="font-size: 14px; font-weight: 700; color: #D4AF37; font-family: monospace; margin-top: 3px;">' . $safeEmail . '</div>
+                                    </td>
+                                </tr>
+                                ' . ($safePassword !== '' ? '
+                                <tr>
+                                    <td style="padding: 12px 0 6px 0;">
+                                        <div style="font-size: 11px; color: #787D8E; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Password</div>
+                                        <div style="font-size: 16px; font-weight: 800; color: #FFF2A8; font-family: monospace; letter-spacing: 0.08em; margin-top: 4px; padding: 8px 12px; background-color: #171920; border: 1px solid #2E3340; border-radius: 8px; display: inline-block;">' . $safePassword . '</div>
+                                        <div style="font-size: 11px; color: #8F95A5; margin-top: 6px;">You can change your password anytime under your Account settings.</div>
+                                    </td>
+                                </tr>' : '') . '
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Showroom & Dispatch Address Card -->
+                    <tr>
+                        <td style="padding: 0 32px 24px 32px;">
+                            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #D4AF37; margin-bottom: 12px;">Showroom Location</div>
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0B0C0E; border: 1px solid #232730; border-radius: 12px; padding: 18px 20px;">
+                                <tr>
+                                    <td>
+                                        <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">STORIUM Haute Horlogerie</div>
+                                        <div style="font-size: 13px; color: #CBD0DC; margin-top: 4px; line-height: 1.5;">' . $showroomAddress . '</div>
+                                        <div style="font-size: 12px; color: #8F95A5; margin-top: 6px;">Official Concierge Email: <strong style="color: #D4AF37;">' . $supportEmail . '</strong></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Client Access Action Box (Email only, no WhatsApp) -->
+                    <tr>
+                        <td style="padding: 0 32px 32px 32px; text-align: center;">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; padding: 22px;">
+                                <tr>
+                                    <td align="center">
+                                        <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">Access Your Client Portal</div>
+                                        <div style="font-size: 12px; color: #A0A5B5; margin-top: 6px; line-height: 1.5;">Sign in to view real-time delivery timelines, private shortlist collections, and profile preferences.</div>
+                                        <div style="margin-top: 16px;">
+                                            <a href="' . $storeUrl . '/account" style="display: inline-block; padding: 12px 28px; background-color: #D4AF37; color: #0B0C0E; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; border-radius: 8px; margin: 4px;">Sign In to Account</a>
+                                            <a href="mailto:' . $supportEmail . '" style="display: inline-block; padding: 12px 24px; background-color: #1F232B; border: 1px solid #323744; color: #FFFFFF; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 8px; margin: 4px;">Email Concierge</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -652,8 +825,9 @@ function render_order_email_html(array $order, array $config, string $type): str
                         <td style="padding: 24px 32px 32px 32px; background-color: #08090A; border-top: 1px solid #1F232B; text-align: center;">
                             <div style="font-size: 11px; color: #626673; line-height: 1.6;">
                                 &copy; ' . date('Y') . ' STORIUM Pakistan. All rights reserved.<br />
-                                High-End Luxury Timepieces & Curated Gentlemen\'s Accessories.<br />
-                                This is an automated order confirmation and official purchase receipt.
+                                Showroom: ' . $showroomAddress . '<br />
+                                Official Concierge: ' . $supportEmail . '<br />
+                                High-End Luxury Timepieces & Curated Gentlemen\'s Accessories.
                             </div>
                         </td>
                     </tr>
