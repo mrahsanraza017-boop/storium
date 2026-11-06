@@ -180,9 +180,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
               type="button"
               onClick={handlePrevMedia}
               aria-label="Previous product image"
-              className={`absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${
-                isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
-              }`}
+              className={`absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
+                }`}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -190,9 +189,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
               type="button"
               onClick={handleNextMedia}
               aria-label="Next product image"
-              className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${
-                isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
-              }`}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#0B0C0E]/80 hover:bg-[#0B0C0E] text-[#E8E8EC] hover:text-[#D4AF37] border border-white/10 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 sm:opacity-0 max-sm:opacity-75 scale-95'
+                }`}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -208,11 +206,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
                     setMediaIndex(idx);
                   }}
                   aria-label={`Jump to image ${idx + 1}`}
-                  className={`rounded-full transition-all cursor-pointer ${
-                    idx === mediaIndex
+                  className={`rounded-full transition-all cursor-pointer ${idx === mediaIndex
                       ? 'w-3 h-1.5 bg-[#D4AF37]'
                       : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/80'
-                  }`}
+                    }`}
                 />
               ))}
             </div>
