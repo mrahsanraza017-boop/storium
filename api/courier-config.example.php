@@ -9,7 +9,7 @@
  *   - auth_key: API authorization key
  *   - client_code: Your unique merchant client code
  *   - profile_id: Booking profile ID (from Products & Services API)
- *   - origin: Default shipper city (e.g. Lahore / Karachi / Islamabad)
+ *   - origin: Default shipper city (e.g. Renala Khurd / Lahore / Karachi)
  */
 
 return array(
@@ -17,7 +17,7 @@ return array(
     'auth_key'                  => 'YOUR_RUN_COURIER_AUTH_KEY',
     'client_code'               => 'YOUR_CLIENT_CODE',
     'profile_id'                => 'YOUR_PROFILE_ID',
-    'origin'                    => 'Lahore',
+    'origin'                    => 'Renala Khurd',
     'service_type'              => 'Overnight',
     'product'                   => 'Overnight',
     'api_vendor'                => 'auto',

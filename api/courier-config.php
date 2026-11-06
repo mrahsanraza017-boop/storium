@@ -10,7 +10,7 @@ return array(
     'auth_key'                  => 'cf7882d2-d196-4be5-bf2e-4d9d4f38b24e',
     'client_code'               => '1000003434',
     'profile_id'                => '2002',
-    'origin'                    => 'Lahore',
+    'origin'                    => 'Renala Khurd',
     'service_type'              => 'Overnight',
     'product'                   => 'Overnight',
     'api_vendor'                => 'auto',

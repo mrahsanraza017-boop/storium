@@ -29,8 +29,9 @@ if (!is_array($body)) {
     courier_json_response(array('success' => false, 'error' => 'Invalid JSON body in booking request'), 400);
 }
 
-// Destination city mapping & cleanup
+// Destination & origin city mapping & cleanup
 $destination = trim((string) ($body['destinationCity'] ?? $body['destination'] ?? 'Karachi'));
+$origin = trim((string) ($body['origin'] ?? 'Renala Khurd'));
 $receiverName = trim((string) ($body['customerName'] ?? $body['receiver_name'] ?? 'Valued Customer'));
 $receiverPhone = trim((string) ($body['customerPhone'] ?? $body['receiver_phone'] ?? ''));
 $receiverEmail = trim((string) ($body['customerEmail'] ?? $body['receiver_email'] ?? ''));
@@ -52,6 +53,7 @@ if ($receiverPhone === '') {
 
 // Build parameters for RUN Couriers
 $params = array(
+    'origin'              => $origin !== '' ? $origin : 'Renala Khurd',
     'destination'         => $destination,
     'receiver_name'       => $receiverName,
     'receiver_phone'      => $receiverPhone,
