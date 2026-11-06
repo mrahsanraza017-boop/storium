@@ -144,6 +144,7 @@ export interface WatchBundleDeal {
   requiredCount: 2 | 3;
   discountPercentage?: number;
   fixedBundlePrice?: number;
+  bundlePrice?: number;
   watchIds?: string[];
   featured: boolean;
   active: boolean;

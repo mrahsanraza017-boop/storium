@@ -1390,11 +1390,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     );
     setIsCartDrawerOpen(true);
 
+    const totalBundleValue =
+      deal.fixedBundlePrice ??
+      productsToAdd.reduce((sum, p) => sum + (p.salePrice || p.price), 0);
+
     trackEvent('add_to_cart', {
       content_name: deal.title,
       content_ids: productsToAdd.map((p) => p.id),
       content_type: 'product',
-      value: deal.bundlePrice,
+      value: totalBundleValue,
       currency: 'PKR',
       num_items: productsToAdd.length,
     });
