@@ -96,6 +96,62 @@ export async function sendPaymentReceiptEmail(order: Order): Promise<EmailDispat
 }
 
 /**
+ * Dispatches luxury customer account creation & welcome email with login credentials.
+ * Matches the exact design of the order confirmation receipt.
+ */
+export async function sendAccountWelcomeEmail(params: {
+  fullName: string;
+  email: string;
+  password?: string;
+}): Promise<EmailDispatchResult> {
+  const { fullName, email, password } = params;
+  if (!email) {
+    return {
+      success: false,
+      error: 'Cannot send welcome email: Missing customer email address.',
+    };
+  }
+
+  try {
+    const response = await fetch('/api/send-order-email.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'account_welcome',
+        to: email,
+        name: fullName,
+        password: password || '',
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (response.ok && data?.success) {
+      console.info(`[STORIUM Email] Welcome email dispatched to ${email}`);
+      return {
+        success: true,
+        message: data.message || `Welcome email sent to ${email}`,
+        method: data.method,
+      };
+    } else {
+      console.warn('[STORIUM Email] Server could not dispatch welcome email:', data?.error || response.statusText);
+      return {
+        success: false,
+        error: data?.error || 'Failed to dispatch welcome email.',
+      };
+    }
+  } catch (err: any) {
+    console.warn('[STORIUM Email] Network error calling welcome email endpoint:', err);
+    return {
+      success: false,
+      error: err?.message || 'Network error while attempting to send welcome email.',
+    };
+  }
+}
+
+/**
  * Dispatches a live test email to any designated address (used by admin to verify email delivery).
  */
 export async function sendTestConfirmationEmail(toEmail: string): Promise<EmailDispatchResult> {

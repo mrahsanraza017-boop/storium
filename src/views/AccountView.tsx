@@ -8,9 +8,17 @@ import {
   Truck,
   Edit2,
   Save,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  Building2,
+  Loader2,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CustomerAuthPanel } from '../components/account/CustomerAuthPanel';
+import { trackRunCourier, CourierTrackingResult } from '../services/courierService';
 
 export const AccountView: React.FC = () => {
   const {
@@ -47,6 +55,42 @@ export const AccountView: React.FC = () => {
       city: currentUser.city,
     });
   }, [currentUser]);
+
+  // Live Delivery Tracking state (100% white-labeled as STORIUM Express Logistics)
+  const [expandedTracking, setExpandedTracking] = useState<Record<string, boolean>>({});
+  const [trackingData, setTrackingData] = useState<Record<string, CourierTrackingResult>>({});
+  const [loadingTracking, setLoadingTracking] = useState<Record<string, boolean>>({});
+
+  const handleToggleTracking = async (orderId: string, trackingNumber?: string) => {
+    const isCurrentlyOpen = !!expandedTracking[orderId];
+    setExpandedTracking((prev) => ({ ...prev, [orderId]: !isCurrentlyOpen }));
+
+    if (!isCurrentlyOpen && trackingNumber && !trackingData[orderId]) {
+      setLoadingTracking((prev) => ({ ...prev, [orderId]: true }));
+      try {
+        const result = await trackRunCourier(trackingNumber);
+        setTrackingData((prev) => ({ ...prev, [orderId]: result }));
+      } catch (err) {
+        console.warn('Courier tracking lookup notice:', err);
+      } finally {
+        setLoadingTracking((prev) => ({ ...prev, [orderId]: false }));
+      }
+    }
+  };
+
+  const handleRefreshTracking = async (orderId: string, trackingNumber?: string) => {
+    if (!trackingNumber) return;
+    setLoadingTracking((prev) => ({ ...prev, [orderId]: true }));
+    try {
+      const result = await trackRunCourier(trackingNumber);
+      setTrackingData((prev) => ({ ...prev, [orderId]: result }));
+      addToast('info', 'Tracking Updated', 'Latest delivery status refreshed.');
+    } catch {
+      addToast('error', 'Update Failed', 'Could not refresh tracking at this time.');
+    } finally {
+      setLoadingTracking((prev) => ({ ...prev, [orderId]: false }));
+    }
+  };
 
   if (!currentUser) return <CustomerAuthPanel />;
 
@@ -247,23 +291,223 @@ export const AccountView: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Order Tracking & Pakistan Courier Footer */}
-                    <div className="pt-3 border-t border-[#262930] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#8E929E]">
-                      <div className="flex items-center gap-2">
-                        <Truck className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Tracking:</span>
-                        <span className="font-mono text-[#F5F5F7] font-semibold">
-                          {order.trackingNumber}
-                        </span>
-                        <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-[#181A1F] text-[#8E929E]">
-                          TCS Express Pakistan
-                        </span>
-                      </div>
+                    {/* Order Tracking & White-Labeled Pakistan Delivery Section */}
+                    {(() => {
+                      const isExpanded = Boolean(expandedTracking[order.id]);
+                      const isLoading = Boolean(loadingTracking[order.id]);
+                      const tracking = trackingData[order.id];
+                      const currentStatusText = tracking?.current_status || order.orderStatus || 'Dispatched';
+                      const isDelivered = order.orderStatus === 'Delivered' || /delivered/i.test(currentStatusText);
+                      const isOutForDelivery = /out for delivery|with courier/i.test(currentStatusText);
+                      const isInTransit = /transit|departed|hub|arrived/i.test(currentStatusText) || order.orderStatus === 'Shipped';
 
-                      <div className="text-xs text-[#8E929E]">
-                        Delivering to: <span className="text-[#F5F5F7]">{order.customer.city}, Pakistan</span>
-                      </div>
-                    </div>
+                      return (
+                        <div className="pt-3 border-t border-[#262930] space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#8E929E]">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Truck className="w-4 h-4 text-[#D4AF37]" />
+                              <span>Tracking:</span>
+                              <span className="font-mono text-[#F5F5F7] font-semibold select-all">
+                                {order.trackingNumber}
+                              </span>
+                              <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#E5C378] border border-[#D4AF37]/30 font-medium tracking-wide">
+                                STORIUM Express Logistics
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-[#181A1F] text-[#CBD0DC] border border-[#262930]">
+                                Hub: Renala Khurd
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                              <span className="text-xs text-[#8E929E] hidden md:inline">
+                                To: <strong className="text-[#F5F5F7]">{order.customer.city}, Pakistan</strong>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleTracking(order.id, order.trackingNumber)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-[11px] font-bold cursor-pointer transition-colors shadow-sm"
+                              >
+                                <span>{isExpanded ? 'Hide Live Delivery' : 'Live Delivery Status'}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded Live Tracking Drawer */}
+                          {isExpanded && (
+                            <div className="p-4 sm:p-5 rounded-xl bg-[#090B10] border border-[#D4AF37]/30 space-y-5 animate-in fade-in duration-200">
+                              {/* Route and Carrier Header */}
+                              <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-[#262930]">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="relative flex h-2.5 w-2.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </span>
+                                    <span className="text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
+                                      STORIUM Express Logistics
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-semibold text-[#F5F5F7]">
+                                    Current Status: <span className="text-[#E5C378]">{currentStatusText}</span>
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[#8E929E] pt-1">
+                                    <span className="flex items-center gap-1">
+                                      <Building2 className="w-3 h-3 text-[#D4AF37]" />
+                                      Origin: <strong className="text-[#CBD0DC]">Anwar Shahid Colony Renala Khurd, Okara, Punjab</strong>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-3 h-3 text-emerald-400" />
+                                      Destination: <strong className="text-[#CBD0DC]">{order.customer.city}, Pakistan</strong>
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRefreshTracking(order.id, order.trackingNumber)}
+                                  disabled={isLoading}
+                                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#181A1F] hover:bg-[#22252C] text-[#CBD0DC] hover:text-[#F5F5F7] border border-[#262930] text-[11px] cursor-pointer transition-colors"
+                                  title="Refresh tracking status"
+                                >
+                                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#D4AF37]' : ''}`} />
+                                  <span>{isLoading ? 'Updating...' : 'Refresh'}</span>
+                                </button>
+                              </div>
+
+                              {/* 4-Step Milestone Progress Bar */}
+                              <div className="py-2">
+                                <div className="grid grid-cols-4 gap-2 text-center relative">
+                                  {/* Progress connecting lines */}
+                                  <div className="absolute top-3.5 left-[12%] right-[12%] h-0.5 bg-[#1F232B] -z-0">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-[#D4AF37] to-emerald-400 transition-all duration-500"
+                                      style={{
+                                        width: isDelivered
+                                          ? '100%'
+                                          : isOutForDelivery
+                                          ? '75%'
+                                          : isInTransit
+                                          ? '50%'
+                                          : '25%',
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Step 1: Confirmed */}
+                                  <div className="flex flex-col items-center space-y-1.5 relative z-10">
+                                    <div className="w-7 h-7 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-lg">
+                                      <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#F5F5F7] uppercase tracking-wider">
+                                      Confirmed
+                                    </span>
+                                    <span className="text-[9px] text-[#8E929E]">Renala Khurd</span>
+                                  </div>
+
+                                  {/* Step 2: Dispatched */}
+                                  <div className="flex flex-col items-center space-y-1.5 relative z-10">
+                                    <div
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                                        isInTransit || isOutForDelivery || isDelivered
+                                          ? 'bg-[#D4AF37] text-black font-bold'
+                                          : 'bg-[#181A1F] border border-[#3A3E48] text-[#8E929E]'
+                                      }`}
+                                    >
+                                      <Truck className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#F5F5F7] uppercase tracking-wider">
+                                      Dispatched
+                                    </span>
+                                    <span className="text-[9px] text-[#8E929E]">Showroom Hub</span>
+                                  </div>
+
+                                  {/* Step 3: In Transit */}
+                                  <div className="flex flex-col items-center space-y-1.5 relative z-10">
+                                    <div
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                                        isOutForDelivery || isDelivered
+                                          ? 'bg-emerald-500 text-black'
+                                          : isInTransit
+                                          ? 'bg-[#D4AF37] text-black font-bold animate-pulse'
+                                          : 'bg-[#181A1F] border border-[#3A3E48] text-[#8E929E]'
+                                      }`}
+                                    >
+                                      <Clock className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#F5F5F7] uppercase tracking-wider">
+                                      In Transit
+                                    </span>
+                                    <span className="text-[9px] text-[#8E929E]">Regional Line</span>
+                                  </div>
+
+                                  {/* Step 4: Delivered */}
+                                  <div className="flex flex-col items-center space-y-1.5 relative z-10">
+                                    <div
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                                        isDelivered
+                                          ? 'bg-emerald-500 text-black'
+                                          : 'bg-[#181A1F] border border-[#3A3E48] text-[#8E929E]'
+                                      }`}
+                                    >
+                                      <ShieldCheck className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#F5F5F7] uppercase tracking-wider">
+                                      Delivered
+                                    </span>
+                                    <span className="text-[9px] text-[#8E929E]">{order.customer.city}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Live Milestone Events Timeline */}
+                              <div className="space-y-2 pt-2 border-t border-[#262930]">
+                                <span className="text-[10px] uppercase tracking-widest text-[#8E929E] font-bold block">
+                                  Delivery Log & Events
+                                </span>
+
+                                {isLoading && !tracking ? (
+                                  <div className="py-6 flex items-center justify-center gap-2 text-xs text-[#CBD0DC]">
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                                    <span>Retrieving real-time dispatch log...</span>
+                                  </div>
+                                ) : tracking?.history && tracking.history.length > 0 ? (
+                                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {tracking.history.map((event, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="p-2.5 rounded-lg bg-[#121316] border border-[#262930] flex items-start justify-between gap-3 text-xs"
+                                      >
+                                        <div className="flex items-start gap-2.5">
+                                          <div className="w-2 h-2 rounded-full bg-[#D4AF37] mt-1.5 flex-shrink-0" />
+                                          <div>
+                                            <span className="font-medium text-[#F5F5F7] block">
+                                              {event.status}
+                                            </span>
+                                            {event.location && (
+                                              <span className="text-[11px] text-[#8E929E]">
+                                                Location: {event.location}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <span className="text-[10px] text-[#8E929E] font-mono whitespace-nowrap">
+                                          {event.created}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-3 rounded-lg bg-[#121316] border border-[#262930] text-xs text-[#CBD0DC] flex items-center justify-between">
+                                    <span>Consignment registered at Anwar Shahid Colony Renala Khurd fulfillment center. Tracking updates will stream as the courier scans each station.</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })

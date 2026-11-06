@@ -15,6 +15,9 @@ import {
   X,
   Check,
   Gift,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { CardCapture, PayerAuthentication } from '@sfpy/atoms';
 import '@sfpy/atoms/styles';
@@ -54,7 +57,11 @@ export const CheckoutView: React.FC = () => {
     applyCoupon,
     removeCoupon,
     validateCoupon,
+    autoCreateCustomerAccount,
   } = useStore();
+
+  const [autoCreatedAccountInfo, setAutoCreatedAccountInfo] = useState<{ email: string; password: string } | null>(null);
+  const [isPasswordRevealed, setIsPasswordRevealed] = useState(false);
 
   const [couponInput, setCouponInput] = useState('');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -251,6 +258,12 @@ export const CheckoutView: React.FC = () => {
               <span className="font-mono text-[#E5C378] font-bold">{confirmedOrder.trackingNumber}</span>
             </div>
             <div className="flex justify-between border-b border-[#262930] pb-3">
+              <span className="text-[#8E929E]">Showroom & Origin:</span>
+              <span className="text-[#D4AF37] font-medium text-right">
+                Anwar Shahid Colony Renala Khurd, Okara, Punjab
+              </span>
+            </div>
+            <div className="flex justify-between border-b border-[#262930] pb-3">
               <span className="text-[#8E929E]">Recipient:</span>
               <span className="text-[#F5F5F7] font-medium">{confirmedOrder.customer.fullName}</span>
             </div>
@@ -271,6 +284,59 @@ export const CheckoutView: React.FC = () => {
               <span className="text-[#D4AF37]">Rs. {confirmedOrder.total.toLocaleString()}</span>
             </div>
           </div>
+
+          {/* Auto-Created VIP Customer Account Card */}
+          {autoCreatedAccountInfo && (
+            <div className="p-5 rounded-2xl bg-[#0F141C] border border-[#D4AF37]/40 text-left space-y-3 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[#D4AF37] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <KeyRound className="w-4 h-4 text-[#D4AF37]" />
+                  Exclusive Client Account Created
+                </span>
+                <span className="px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#E5C378] text-[10px] font-mono border border-[#D4AF37]/30">
+                  VIP Patron Access
+                </span>
+              </div>
+              <p className="text-[#CBD0DC] text-xs">
+                Your private client portal account has been activated. Sign in to track your live order progress, access priority support, and view timepiece certificates.
+              </p>
+              <div className="p-3.5 rounded-xl bg-[#090B10] border border-[#262930] space-y-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#8E929E]">Login Email:</span>
+                  <span className="text-[#F5F5F7] font-medium font-mono select-all">{autoCreatedAccountInfo.email}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-[#262930]/80">
+                  <span className="text-[#8E929E]">Temporary Password:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[#E5C378] font-bold select-all tracking-wider">
+                      {isPasswordRevealed ? autoCreatedAccountInfo.password : '••••••••••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordRevealed(!isPasswordRevealed)}
+                      className="text-[#8E929E] hover:text-[#F5F5F7] p-1 cursor-pointer transition-colors"
+                      title={isPasswordRevealed ? 'Hide Password' : 'Show Password'}
+                    >
+                      {isPasswordRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(autoCreatedAccountInfo.password);
+                        addToast('success', 'Password Copied', 'Your temporary password has been copied to your clipboard.');
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-[10px] font-bold cursor-pointer transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-[#8E929E]">
+                A luxury welcome letter with your account credentials and order details has also been dispatched to your email.
+              </p>
+            </div>
+          )}
 
           {confirmedOrder.paymentMethod === 'card' && (
             <div className="p-4 rounded-2xl bg-[#0F1424] border border-blue-500/40 text-left text-xs space-y-3">
@@ -308,7 +374,7 @@ export const CheckoutView: React.FC = () => {
           <div className="p-4 rounded-xl bg-[#181A1F] border border-[#262930] text-xs text-[#CBD0DC] flex items-center gap-3 text-left">
             <Package className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
             <span>
-              Our concierge team will contact you via WhatsApp/SMS to verify dispatch. Estimated delivery is 2-4 working days.
+              Showroom fulfillment center in <strong className="text-[#F5F5F7]">Anwar Shahid Colony Renala Khurd, Okara, Punjab</strong> is packaging your order with insured express courier handling. Estimated delivery is 2-4 working days. Direct concierge support: <strong className="text-[#D4AF37]">{businessSettings?.email || 'Storium.store@gmail.com'}</strong>.
             </span>
           </div>
 
@@ -436,6 +502,25 @@ export const CheckoutView: React.FC = () => {
 
       if (!newOrder) {
         throw new Error('Order could not be registered. Please try again.');
+      }
+
+      // Automatically create or link customer account and retrieve password for Thank You screen
+      try {
+        const accountResult = await autoCreateCustomerAccount({
+          email: formData.email,
+          fullName: formData.fullName,
+          phone: formData.phone,
+          city: formData.city,
+          address: formData.address,
+        });
+        if (accountResult && accountResult.password) {
+          setAutoCreatedAccountInfo({
+            email: accountResult.account.email,
+            password: accountResult.password,
+          });
+        }
+      } catch (accountErr) {
+        console.warn('Auto account creation warning (non-fatal):', accountErr);
       }
 
       if (paymentMethod === 'card') {

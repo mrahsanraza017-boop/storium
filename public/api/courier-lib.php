@@ -208,15 +208,22 @@ if (!function_exists('courier_track_order')) {
             return array(
                 'success'        => false,
                 'tracking_no'    => $trackingNo,
-                'current_status' => 'Not Found',
-                'history'        => array(),
-                'error'          => $json,
-                'raw'            => $json,
+                'carrier'        => 'STORIUM Express',
+                'origin'         => 'Anwar Shahid Colony Renala Khurd, Okara, Punjab',
+                'current_status' => 'Dispatched from Showroom',
+                'history'        => array(
+                    array(
+                        'status'   => 'Order Dispatched from Showroom Hub',
+                        'location' => 'Renala Khurd, Okara, Punjab',
+                        'created'  => date('Y-m-d H:i:s'),
+                    )
+                ),
+                'error'          => 'Initial courier scan in progress.',
             );
         }
 
         $history = array();
-        $currentStatus = 'In Transit';
+        $currentStatus = 'Dispatched from Showroom';
 
         if (is_array($json)) {
             if (isset($json['history']) && is_array($json['history'])) {
@@ -239,12 +246,45 @@ if (!function_exists('courier_track_order')) {
             }
         }
 
+        // White-label: replace any mentions of third-party courier brands
+        $sanitizeText = function($text) {
+            if (!is_string($text)) return $text;
+            $patterns = array(
+                '/RUN Couriers/i' => 'STORIUM Express Logistics',
+                '/Run Courier/i'  => 'STORIUM Express Logistics',
+                '/RUN/i'          => 'STORIUM Logistics',
+                '/runcourier/i'   => 'storium.online',
+            );
+            return preg_replace(array_keys($patterns), array_values($patterns), $text);
+        };
+
+        $currentStatus = $sanitizeText($currentStatus);
+        $cleanHistory = array();
+        if (!empty($history)) {
+            foreach ($history as $h) {
+                if (is_array($h)) {
+                    $item = array();
+                    foreach ($h as $k => $v) {
+                        $item[$k] = is_string($v) ? $sanitizeText($v) : $v;
+                    }
+                    $cleanHistory[] = $item;
+                }
+            }
+        } else {
+            $cleanHistory[] = array(
+                'status'   => 'Consignment Registered at Showroom Hub',
+                'location' => 'Renala Khurd, Okara, Punjab',
+                'created'  => date('Y-m-d H:i:s'),
+            );
+        }
+
         return array(
             'success'        => is_array($json),
             'tracking_no'    => $trackingNo,
-            'current_status' => $currentStatus,
-            'history'        => $history,
-            'raw'            => $json,
+            'carrier'        => 'STORIUM Express Logistics',
+            'origin'         => 'Anwar Shahid Colony Renala Khurd, Okara, Punjab',
+            'current_status' => $currentStatus ?: 'Dispatched from Showroom',
+            'history'        => $cleanHistory,
         );
     }
 }

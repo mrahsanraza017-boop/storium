@@ -133,33 +133,41 @@ export const CartView: React.FC = () => {
               </div>
             </div>
 
-            {cart.map((item, idx) => {
-              const price = item.product.salePrice ?? item.product.price;
+            {(cart || []).filter(Boolean).map((item, idx) => {
+              const product = item?.product || (item as any) || {};
+              const prodId = product?.id || (item as any)?.productId || `item-${idx}`;
+              const price = product?.salePrice ?? product?.price ?? 0;
+              const thumb = product?.thumbnail || (Array.isArray(product?.productImages) ? product.productImages[0] : '') || '/logo.png';
+              const name = product?.name || (item as any)?.productName || 'Timepiece';
+              const brand = product?.brand || 'STORIUM';
+              const sku = product?.sku || 'STM';
+              const slug = product?.slug || '';
+              const qty = item?.quantity || 1;
               const variantKey = item.selectedVariant
                 ? JSON.stringify(item.selectedVariant)
                 : undefined;
 
               return (
                 <div
-                  key={`${item.product.id}-${idx}`}
+                  key={`${prodId}-${idx}`}
                   className="p-5 rounded-2xl bg-[#121316] border border-[#262930] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
                 >
                   <div className="flex items-center gap-5">
                     <img
-                      src={item.product.thumbnail}
-                      alt={item.product.name}
-                      onClick={() => navigate('product', { slug: item.product.slug })}
+                      src={thumb}
+                      alt={name}
+                      onClick={() => slug && navigate('product', { slug })}
                       className="w-24 h-24 rounded-xl object-cover bg-[#0B0C0E] border border-white/5 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
                     />
                     <div>
                       <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-mono block">
-                        {item.product.brand} &bull; {item.product.sku}
+                        {brand} &bull; {sku}
                       </span>
                       <h2
-                        onClick={() => navigate('product', { slug: item.product.slug })}
+                        onClick={() => slug && navigate('product', { slug })}
                         className="text-base font-bold text-[#F5F5F7] hover:text-[#D4AF37] cursor-pointer transition-colors"
                       >
-                        {item.product.name}
+                        {name}
                       </h2>
 
                       {item.selectedVariant && (
@@ -182,22 +190,22 @@ export const CartView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          updateCartQuantity(item.product.id, item.quantity - 1, variantKey)
+                          updateCartQuantity(prodId, qty - 1, variantKey)
                         }
-                        aria-label={`Decrease quantity of ${item.product.name}`}
+                        aria-label={`Decrease quantity of ${name}`}
                         className="px-3 py-1.5 text-sm text-[#8E929E] hover:text-[#F5F5F7]"
                       >
                         -
                       </button>
                       <span className="px-3 text-sm font-semibold text-[#F5F5F7] min-w-[2rem] text-center">
-                        {item.quantity}
+                        {qty}
                       </span>
                       <button
                         type="button"
                         onClick={() =>
-                          updateCartQuantity(item.product.id, item.quantity + 1, variantKey)
+                          updateCartQuantity(prodId, qty + 1, variantKey)
                         }
-                        aria-label={`Increase quantity of ${item.product.name}`}
+                        aria-label={`Increase quantity of ${name}`}
                         className="px-3 py-1.5 text-sm text-[#8E929E] hover:text-[#F5F5F7]"
                       >
                         +
@@ -205,13 +213,13 @@ export const CartView: React.FC = () => {
                     </div>
 
                     <span className="text-base font-bold text-[#F5F5F7] min-w-[6rem] text-right">
-                      Rs. {(price * item.quantity).toLocaleString()}
+                      Rs. {(price * qty).toLocaleString()}
                     </span>
 
                     <button
                       type="button"
-                      onClick={() => removeFromCart(item.product.id, variantKey)}
-                      aria-label={`Remove ${item.product.name} from bag`}
+                      onClick={() => removeFromCart(prodId, variantKey)}
+                      aria-label={`Remove ${name} from bag`}
                       className="p-2 text-[#626673] hover:text-rose-400 transition-colors"
                       title="Remove"
                     >

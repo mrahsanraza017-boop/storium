@@ -16,7 +16,7 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   email: 'Storium.store@gmail.com',
   phone: '+92 321 5993022',
   whatsappLink: 'https://wa.me/923215993022',
-  address: 'ANWAR SHAHID COLONY RENALA',
+  address: 'Anwar Shahid Colony Renala Khurd, Okara, Punjab',
   city: 'Renala Khurd',
   province: 'Punjab',
   country: 'Pakistan',

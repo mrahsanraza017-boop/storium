@@ -152,15 +152,20 @@ export const CartDrawer: React.FC = () => {
                   </div>
                 ) : (
                   <AnimatePresence initial={false} mode="popLayout">
-                    {cart.map((item, idx) => {
-                      const price = item.product.salePrice ?? item.product.price;
+                    {(cart || []).filter(Boolean).map((item, idx) => {
+                      const product = item?.product || (item as any) || {};
+                      const prodId = product?.id || (item as any)?.productId || `item-${idx}`;
+                      const price = product?.salePrice ?? product?.price ?? 0;
+                      const thumb = product?.thumbnail || (Array.isArray(product?.productImages) ? product.productImages[0] : '') || '/logo.png';
+                      const name = product?.name || (item as any)?.productName || 'Timepiece';
+                      const slug = product?.slug || '';
                       const variantKey = item.selectedVariant
                         ? JSON.stringify(item.selectedVariant)
                         : undefined;
 
                       return (
                         <motion.div
-                          key={`${item.product.id}-${idx}`}
+                          key={`${prodId}-${idx}`}
                           layout
                           initial={{ opacity: 0, x: 18 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -170,8 +175,8 @@ export const CartDrawer: React.FC = () => {
                         >
                           {/* Thumbnail */}
                           <img
-                            src={item.product.thumbnail}
-                            alt={item.product.name}
+                            src={thumb}
+                            alt={name}
                             width="80"
                             height="80"
                             loading="lazy"
@@ -186,17 +191,17 @@ export const CartDrawer: React.FC = () => {
                                 <h5
                                   onClick={() => {
                                     closeCartDrawer();
-                                    navigate('product', { slug: item.product.slug });
+                                    if (slug) navigate('product', { slug });
                                   }}
                                   className="text-xs sm:text-sm font-semibold text-[#F5F5F7] hover:text-[#D4AF37] cursor-pointer line-clamp-1 transition-colors"
                                 >
-                                  {item.product.name}
+                                  {name}
                                 </h5>
                                 <button
                                   type="button"
-                                  onClick={() => removeFromCart(item.product.id, variantKey)}
+                                  onClick={() => removeFromCart(prodId, variantKey)}
                                   className="text-[#8E929E] hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                                  aria-label={`Remove ${item.product.name} from shopping bag`}
+                                  aria-label={`Remove ${name} from shopping bag`}
                                   title="Remove Item"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -223,22 +228,22 @@ export const CartDrawer: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    updateCartQuantity(item.product.id, item.quantity - 1, variantKey)
+                                    updateCartQuantity(prodId, (item.quantity || 1) - 1, variantKey)
                                   }
-                                  aria-label={`Decrease quantity of ${item.product.name}`}
+                                  aria-label={`Decrease quantity of ${name}`}
                                   className="px-2 py-0.5 text-xs text-[#CBD0DC] hover:text-[#F5F5F7] cursor-pointer"
                                 >
                                   -
                                 </button>
                                 <span className="px-2 text-xs font-medium text-[#F5F5F7]">
-                                  {item.quantity}
+                                  {item.quantity || 1}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    updateCartQuantity(item.product.id, item.quantity + 1, variantKey)
+                                    updateCartQuantity(prodId, (item.quantity || 1) + 1, variantKey)
                                   }
-                                  aria-label={`Increase quantity of ${item.product.name}`}
+                                  aria-label={`Increase quantity of ${name}`}
                                   className="px-2 py-0.5 text-xs text-[#CBD0DC] hover:text-[#F5F5F7] cursor-pointer"
                                 >
                                   +
@@ -246,7 +251,7 @@ export const CartDrawer: React.FC = () => {
                               </div>
 
                               <span className="text-xs font-medium text-[#E8E8EC]">
-                                Rs. {(price * item.quantity).toLocaleString()}
+                                Rs. {(price * (item.quantity || 1)).toLocaleString()}
                               </span>
                             </div>
                           </div>

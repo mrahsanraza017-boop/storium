@@ -63,6 +63,7 @@ import {
   sendPaymentReceiptEmail,
   sendTestConfirmationEmail,
   getOrderReceiptHtmlPreview,
+  sendAccountWelcomeEmail,
 } from '../services/emailService';
 
 interface ToastNotification {
@@ -176,6 +177,14 @@ interface StoreContextType {
   ) => Promise<{ success: boolean; message?: string; needsEmailConfirmation?: boolean; needsPhoneVerification?: boolean }>;
   logoutUser: () => void;
   updateUserProfile: (updates: Partial<CustomerUser>) => void;
+  autoCreateCustomerAccount: (customerData: {
+    email: string;
+    fullName: string;
+    phone: string;
+    city: string;
+    address: string;
+    password?: string;
+  }) => Promise<{ account: CustomerUser; password: string; created: boolean }>;
   sendPhoneVerificationCode: (phone: string) => Promise<{ success: boolean; code?: string; message?: string; isAlreadyVerified?: boolean }>;
   verifyPhoneCode: (phone: string, code: string) => Promise<{ success: boolean; message?: string }>;
   requestPasswordReset: (identifier: string) => Promise<{ success: boolean; targetType?: 'email' | 'phone'; targetValue?: string; code?: string; message?: string }>;
@@ -2273,6 +2282,98 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     addToast('success', 'Profile Updated', 'Your details have been refreshed.');
   };
 
+  /**
+   * Automatically creates a customer account during checkout if none exists.
+   * Generates a temporary password and sends luxury confirmation email.
+   */
+  const autoCreateCustomerAccount = async (customerData: {
+    email: string;
+    fullName: string;
+    phone: string;
+    city: string;
+    address: string;
+    password?: string;
+  }): Promise<{ account: CustomerUser; password: string; created: boolean }> => {
+    const cleanEmail = (customerData.email || '').trim().toLowerCase();
+    const cleanName = (customerData.fullName || '').trim() || 'Valued Patron';
+    const cleanPhone = normalizePhoneNumber(customerData.phone || '');
+    const existing = findClientAccount(cleanEmail);
+
+    if (existing) {
+      const existingUser: CustomerUser = {
+        id: existing.id,
+        fullName: existing.fullName || cleanName,
+        email: existing.email,
+        phone: existing.phone || cleanPhone,
+        city: existing.city || customerData.city,
+        address: existing.address || customerData.address,
+        createdAt: existing.createdAt || new Date().toISOString(),
+        phoneVerified: Boolean(existing.phoneVerified),
+      };
+      if (!currentUser) {
+        setCurrentUser(existingUser);
+      }
+      return { account: existingUser, password: '', created: false };
+    }
+
+    const generatedPassword =
+      customerData.password || `Stm@${Math.floor(1000 + Math.random() * 9000)}!`;
+    const newId = 'usr_' + Date.now();
+
+    const newProfile: CustomerUser = {
+      id: newId,
+      fullName: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      city: (customerData.city || '').trim(),
+      address: (customerData.address || '').trim(),
+      createdAt: new Date().toISOString(),
+      phoneVerified: true,
+    };
+
+    // Save client account locally
+    saveClientAccount({
+      id: newProfile.id,
+      email: newProfile.email,
+      phone: newProfile.phone,
+      fullName: newProfile.fullName,
+      passwordHash: generatedPassword,
+      phoneVerified: true,
+      city: newProfile.city,
+      address: newProfile.address,
+      createdAt: newProfile.createdAt,
+    });
+
+    setCurrentUser(newProfile);
+
+    // Sync to Supabase in background if available
+    void getSupabase().then(async (supabase) => {
+      try {
+        await supabase.auth.signUp({
+          email: newProfile.email,
+          password: generatedPassword,
+          options: { data: { full_name: newProfile.fullName, phone: newProfile.phone } },
+        });
+        await upsertCustomerProfile(newProfile);
+      } catch (err) {
+        console.warn('Supabase auto account signup note:', err);
+      }
+    });
+
+    // Send luxury welcome confirmation email with credentials
+    try {
+      void sendAccountWelcomeEmail({
+        fullName: newProfile.fullName,
+        email: newProfile.email,
+        password: generatedPassword,
+      });
+    } catch (emailErr) {
+      console.warn('Welcome email dispatch note:', emailErr);
+    }
+
+    return { account: newProfile, password: generatedPassword, created: true };
+  };
+
   const sendPhoneVerificationCode = async (phone: string) => {
     const res = await sendPhoneVerificationOTP(phone);
     if (res.success) {
@@ -2457,6 +2558,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         loginUser,
         logoutUser,
         updateUserProfile,
+        autoCreateCustomerAccount,
         sendPhoneVerificationCode,
         verifyPhoneCode,
         requestPasswordReset,
