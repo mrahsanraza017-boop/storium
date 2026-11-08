@@ -32,6 +32,7 @@ import {
   ShoppingBag,
   Sparkles,
   Layout,
+  Check,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, ACCESSORY_SUBCATEGORIES } from '../types';
@@ -62,6 +63,8 @@ import {
   checkRunCourierStatus,
   TrackingHistoryItem,
   CourierGatewayStatus,
+  RUN_COURIER_VENDORS,
+  RunCourierVendor,
 } from '../services/courierService';
 
 export const AdminView: React.FC = () => {
@@ -156,6 +159,7 @@ export const AdminView: React.FC = () => {
 
   // RUN Couriers Integration States
   const [bookingCourierOrder, setBookingCourierOrder] = useState<Order | null>(null);
+  const [bookingVendor, setBookingVendor] = useState<string>('auto');
   const [bookingWeight, setBookingWeight] = useState<number>(0.5);
   const [bookingPieces, setBookingPieces] = useState<number>(1);
   const [bookingCollectionAmount, setBookingCollectionAmount] = useState<number>(0);
@@ -202,6 +206,7 @@ export const AdminView: React.FC = () => {
 
   const handleOpenBookingModal = (order: Order) => {
     setBookingCourierOrder(order);
+    setBookingVendor('auto');
     setBookingWeight(0.5);
     setBookingPieces(order.items.reduce((acc, it) => acc + (it.quantity || 1), 0) || 1);
     setBookingOrigin('Renala Khurd');
@@ -212,6 +217,12 @@ export const AdminView: React.FC = () => {
   const handleConfirmRunCourierBooking = async () => {
     if (!bookingCourierOrder) return;
     setIsBookingCourier(true);
+
+    const vendorObj = RUN_COURIER_VENDORS.find((v) => v.id === bookingVendor) || RUN_COURIER_VENDORS[0];
+    const targetCourierName = vendorObj.id === 'auto'
+      ? 'RUN Couriers (Smart Route)'
+      : `${vendorObj.name} (via RUN Couriers)`;
+
     try {
       const res = await bookWithRunCouriers(bookingCourierOrder, {
         weight: bookingWeight,
@@ -219,12 +230,15 @@ export const AdminView: React.FC = () => {
         specialInstruction: bookingSpecialInstruction,
         collectionAmount: String(bookingCollectionAmount),
         origin: bookingOrigin || 'Renala Khurd',
+        apiVendor: bookingVendor,
+        courierName: targetCourierName,
       });
 
       if (res.success) {
+        const finalizedCourierName = res.courier || targetCourierName;
         updateOrderCourierBooking(bookingCourierOrder.id, {
           trackingNumber: res.tracking_no,
-          courierName: 'RUN Couriers',
+          courierName: finalizedCourierName,
           courierInvoiceUrl: res.invoice_link,
           courierBookingId: res.booking_id,
           orderStatus: 'Shipped',
@@ -235,7 +249,7 @@ export const AdminView: React.FC = () => {
           setSelectedOrderDetails({
             ...selectedOrderDetails,
             trackingNumber: res.tracking_no,
-            courierName: 'RUN Couriers',
+            courierName: finalizedCourierName,
             courierInvoiceUrl: res.invoice_link,
             courierBookingId: res.booking_id,
             orderStatus: 'Shipped',
@@ -243,12 +257,12 @@ export const AdminView: React.FC = () => {
         }
 
         setBookingCourierOrder(null);
-        addToast('success', 'Consignment Booked', `RUN Couriers tracking #${res.tracking_no} generated successfully.`);
+        addToast('success', 'Consignment Booked', `${finalizedCourierName} tracking #${res.tracking_no} generated successfully.`);
       } else {
-        addToast('error', 'Booking Failed', res.error || 'Could not complete RUN Couriers booking');
+        addToast('error', 'Booking Failed', res.error || 'Could not complete courier booking');
       }
     } catch (err: any) {
-      addToast('error', 'Booking Error', err?.message || 'Error communicating with RUN Couriers');
+      addToast('error', 'Booking Error', err?.message || 'Error communicating with courier gateway');
     } finally {
       setIsBookingCourier(false);
     }
@@ -1295,13 +1309,13 @@ export const AdminView: React.FC = () => {
                             <div className="flex flex-col gap-1 mt-1.5">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 w-fit">
-                                  <Truck className="w-2.5 h-2.5" /> RUN #{o.trackingNumber}
+                                  <Truck className="w-2.5 h-2.5" /> {o.courierName ? `${o.courierName.replace(/\s*\(via RUN Couriers\)/i, '')} #${o.trackingNumber}` : `RUN #${o.trackingNumber}`}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTrackingModal(o.orderNumber, o.trackingNumber!)}
                                   className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#181A1F] hover:bg-[#D4AF37] hover:text-[#0B0C0E] text-[#D4AF37] border border-[#D4AF37]/30 flex items-center gap-1 transition-all cursor-pointer"
-                                  title="Live Track RUN Courier Consignment"
+                                  title="Live Track Consignment"
                                 >
                                   <Navigation className="w-2.5 h-2.5" /> Track
                                 </button>
@@ -1312,7 +1326,7 @@ export const AdminView: React.FC = () => {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-[10px] text-[#CBD0DC] hover:text-[#D4AF37] underline flex items-center gap-0.5 w-fit"
-                                  title="Open RUN Couriers Airway Bill / Invoice"
+                                  title="Open Airway Bill / Shipping Invoice"
                                 >
                                   <Printer className="w-2.5 h-2.5" /> Airway Bill
                                 </a>
@@ -1324,10 +1338,10 @@ export const AdminView: React.FC = () => {
                                 type="button"
                                 onClick={() => handleOpenBookingModal(o)}
                                 className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#D4AF37]/15 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B0C0E] border border-[#D4AF37]/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm"
-                                title="Book consignment with RUN Couriers"
+                                title="Book consignment with Trax, PostEx, Leopard, TCS or RUN"
                               >
                                 <Truck className="w-3 h-3" />
-                                <span>Book RUN Courier</span>
+                                <span>Book Courier (Trax / PostEx / RUN)</span>
                               </button>
                             </div>
                           )}
@@ -1515,7 +1529,7 @@ export const AdminView: React.FC = () => {
                             </div>
                             <div>
                               <span>Courier Service:</span>
-                              <p className="font-semibold text-white">RUN Couriers (Overnight)</p>
+                              <p className="font-semibold text-white">{selectedOrderDetails.courierName || 'RUN Couriers (Overnight)'}</p>
                             </div>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-[#8E929E] pt-1 border-t border-[#262930]">
@@ -1618,14 +1632,17 @@ export const AdminView: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="w-full max-w-md bg-[#121316] border border-[#262930] rounded-2xl p-6 space-y-5 shadow-2xl"
+                  className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-[#121316] border border-[#262930] rounded-2xl p-6 space-y-5 shadow-2xl"
                 >
                   <div className="flex items-center justify-between border-b border-[#262930] pb-3">
                     <div className="flex items-center gap-2 text-[#D4AF37]">
                       <Truck className="w-5 h-5" />
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-                        Dispatch via RUN Couriers
-                      </h3>
+                      <div>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                          Dispatch via RUN Couriers Platform
+                        </h3>
+                        <p className="text-[10px] text-[#8E929E]">Multi-Carrier Routing &bull; Client Code: 1000003434</p>
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -1636,33 +1653,33 @@ export const AdminView: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="space-y-3 text-xs">
+                  <div className="space-y-3.5 text-xs">
                     <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#0B0C0E] border border-emerald-500/30 text-[11px]">
                       <span className="text-[#8E929E]">RUN Gateway Account:</span>
                       <span className="text-emerald-400 font-mono font-bold flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Client Code: 1000003434
+                        Client Code: 1000003434 &bull; Hub: {bookingOrigin || 'Renala Khurd'}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-1">
+                    <div className="p-3.5 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-1.5">
                       <div className="flex justify-between">
                         <span className="text-[#8E929E]">Order Number:</span>
                         <span className="font-mono font-bold text-[#D4AF37]">{bookingCourierOrder.orderNumber}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#8E929E]">Recipient:</span>
-                        <span className="text-white font-semibold">{bookingCourierOrder.customer.fullName}</span>
+                        <span className="text-white font-semibold">{bookingCourierOrder.customer.fullName} ({bookingCourierOrder.customer.phone})</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#8E929E]">Destination City:</span>
                         <span className="text-white font-bold">{bookingCourierOrder.customer.city}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#8E929E]">Dispatch Origin City:</span>
-                        <span className="text-emerald-400 font-bold">{bookingOrigin || 'Renala Khurd'}</span>
+                        <span className="text-[#8E929E]">Shipping Address:</span>
+                        <span className="text-[#CBD0DC] text-right max-w-xs truncate">{bookingCourierOrder.customer.address}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between pt-1 border-t border-[#262930]">
                         <span className="text-[#8E929E]">Payment Mode:</span>
                         <span className="font-semibold text-white uppercase text-[10px]">
                           {bookingCourierOrder.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Prepaid (Card / Gateway)'}
@@ -1670,9 +1687,63 @@ export const AdminView: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Multi-Courier Selection Grid (Trax, PostEx, Leopards, TCS, etc.) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[11px] uppercase tracking-wider text-[#CBD0DC] font-semibold flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          Select Courier Partner (RUN Platform) *
+                        </label>
+                        <span className="text-[10px] text-[#D4AF37] font-semibold font-mono">
+                          {RUN_COURIER_VENDORS.find((v) => v.id === bookingVendor)?.name || 'Auto Smart Route'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 mb-2">
+                        {RUN_COURIER_VENDORS.map((vendor) => {
+                          const isSelected = bookingVendor === vendor.id;
+                          return (
+                            <button
+                              key={vendor.id}
+                              type="button"
+                              onClick={() => setBookingVendor(vendor.id)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                isSelected
+                                  ? 'bg-[#181A1F] border-[#D4AF37] shadow-md shadow-[#D4AF37]/15 ring-1 ring-[#D4AF37]/50'
+                                  : 'bg-[#0B0C0E] border-[#262930] hover:border-[#3A3E48] hover:bg-[#121316]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className={`text-[11px] font-bold truncate ${isSelected ? 'text-[#D4AF37]' : 'text-white'}`}>
+                                  {vendor.name}
+                                </span>
+                                {isSelected && <Check className="w-3 h-3 text-[#D4AF37] flex-shrink-0" />}
+                              </div>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium w-fit ${
+                                  isSelected
+                                    ? 'bg-[#D4AF37]/20 text-[#E5C378]'
+                                    : 'bg-[#181A1F] text-[#8E929E]'
+                                }`}
+                              >
+                                {vendor.tag}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-[#090B10] border border-[#262930] text-[11px] text-[#CBD0DC] flex items-center justify-between">
+                        <span>
+                          Routing via: <strong className="text-[#D4AF37]">{RUN_COURIER_VENDORS.find((v) => v.id === bookingVendor)?.name}</strong> on RUN Couriers platform
+                        </span>
+                        <span className="text-[10px] text-[#8E929E] font-mono">vendor: {bookingVendor}</span>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-[11px] uppercase tracking-wider text-[#CBD0DC] font-semibold mb-1">
-                        Shipping Origin City (RUN Couriers) *
+                        Shipping Origin City *
                       </label>
                       <input
                         type="text"
@@ -1682,7 +1753,7 @@ export const AdminView: React.FC = () => {
                         className="w-full py-2 px-3 rounded-lg bg-[#0B0C0E] border border-[#262930] text-xs font-semibold text-[#D4AF37] focus:outline-none focus:border-[#D4AF37]"
                       />
                       <span className="text-[10px] text-[#8E929E] mt-1 block">
-                        Origin city for RUN Couriers parcel booking (Default: Renala Khurd).
+                        Origin city for consignment booking (Default: Renala Khurd).
                       </span>
                     </div>
 
@@ -1700,7 +1771,7 @@ export const AdminView: React.FC = () => {
                       <span className="text-[10px] text-[#8E929E] mt-1 block">
                         {bookingCourierOrder.paymentMethod === 'cod'
                           ? 'Cash to be collected from recipient upon delivery.'
-                          : 'Order paid online. Note: If your RUN Couriers account is COD-only, RUN requires a collection amount > 0.'}
+                          : 'Order paid online. Note: If your RUN account partner is COD-only, a non-zero collection amount may be required.'}
                       </span>
                     </div>
 
@@ -1752,7 +1823,7 @@ export const AdminView: React.FC = () => {
                       type="button"
                       onClick={() => setBookingCourierOrder(null)}
                       disabled={isBookingCourier}
-                      className="px-4 py-2 rounded-xl bg-[#181A1F] text-[#8E929E] hover:text-white text-xs font-semibold"
+                      className="px-4 py-2 rounded-xl bg-[#181A1F] text-[#8E929E] hover:text-white text-xs font-semibold cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -1763,7 +1834,11 @@ export const AdminView: React.FC = () => {
                       className="px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-[#D4AF37]/20 disabled:opacity-50 cursor-pointer"
                     >
                       <Truck className="w-3.5 h-3.5" />
-                      <span>{isBookingCourier ? 'Booking Consignment...' : 'Confirm & Generate Airway Bill'}</span>
+                      <span>
+                        {isBookingCourier
+                          ? 'Booking Consignment...'
+                          : `Confirm & Dispatch via ${RUN_COURIER_VENDORS.find((v) => v.id === bookingVendor)?.name || 'Courier'}`}
+                      </span>
                     </button>
                   </div>
                 </motion.div>

@@ -1937,8 +1937,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
             : ord
         )
     );
-    if (courierData.orderStatus) {
-      void updateOrderStatusInSupabase(orderId, courierData.orderStatus);
+    if (courierData.orderStatus || courierData.trackingNumber) {
+      void getSupabase().then(async (supabase) => {
+        try {
+          await supabase.from('orders').update({
+            order_status: courierData.orderStatus || 'Shipped',
+            tracking_number: courierData.trackingNumber,
+          }).eq('id', orderId);
+        } catch {
+          if (courierData.orderStatus) {
+            void updateOrderStatusInSupabase(orderId, courierData.orderStatus);
+          }
+        }
+      });
     }
     addToast('success', 'Courier Consignment Booked', `Booked with ${courierData.courierName}. Tracking: ${courierData.trackingNumber}`);
   };

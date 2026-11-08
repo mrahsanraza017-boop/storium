@@ -84,9 +84,98 @@ export async function checkRunCourierStatus(): Promise<CourierGatewayStatus> {
   };
 }
 
+export interface RunCourierVendor {
+  id: string;
+  name: string;
+  tag: string;
+  description: string;
+  color?: string;
+}
+
+export const RUN_COURIER_VENDORS: RunCourierVendor[] = [
+  {
+    id: 'auto',
+    name: 'RUN Smart Route (Auto)',
+    tag: 'Recommended',
+    description: 'Automatic algorithm routes parcel via the fastest & most economical courier partner for destination city',
+    color: '#D4AF37',
+  },
+  {
+    id: 'trax',
+    name: 'Trax Logistics',
+    tag: 'Popular COD',
+    description: 'Nationwide e-commerce Cash on Delivery with real-time SMS updates and high customer reach',
+    color: '#F97316',
+  },
+  {
+    id: 'postex',
+    name: 'PostEx',
+    tag: 'Digital COD & Next-Day',
+    description: 'Fast fulfillment with instant digital COD settlement and strong urban last-mile delivery',
+    color: '#10B981',
+  },
+  {
+    id: 'leopard',
+    name: 'Leopards Courier',
+    tag: 'Nationwide & Rural',
+    description: 'Extensive delivery network covering remote tehsils, villages, and all major cities across Pakistan',
+    color: '#EAB308',
+  },
+  {
+    id: 'tcs',
+    name: 'TCS Express',
+    tag: 'Priority Aviation',
+    description: 'Pakistan premier aviation and express highway network for high-priority luxury consignments',
+    color: '#EF4444',
+  },
+  {
+    id: 'callcourier',
+    name: 'Call Courier',
+    tag: 'Commercial & COD',
+    description: 'Established COD and parcel logistics partner with high coverage across Punjab, Sindh, and KPK',
+    color: '#3B82F6',
+  },
+  {
+    id: 'mnp',
+    name: 'M&P Express Logistics',
+    tag: 'Established Network',
+    description: 'Muller & Phipps secure nationwide road network with transit parcel insurance',
+    color: '#06B6D4',
+  },
+  {
+    id: 'rider',
+    name: 'Rider Logistics',
+    tag: 'Tech Last-Mile',
+    description: 'E-commerce focused courier with doorstep verification and digital proof of delivery',
+    color: '#A855F7',
+  },
+  {
+    id: 'daewoo',
+    name: 'Daewoo FastEx',
+    tag: 'Intercity Bus Cargo',
+    description: 'Same-day / next-day intercity cargo transit along motorway express routes',
+    color: '#6366F1',
+  },
+  {
+    id: 'swyft',
+    name: 'Swyft Logistics',
+    tag: 'E-Commerce Tech',
+    description: 'Tech-enabled parcel shipping with rapid sorting hub dispatches',
+    color: '#14B8A6',
+  },
+  {
+    id: 'run',
+    name: 'RUN Dedicated Fleet',
+    tag: 'Direct Transit',
+    description: 'Direct dedicated consignment handling via RUN Couriers central hub network',
+    color: '#E5C378',
+  },
+];
+
 /**
  * Books an order parcel with RUN Couriers (portal.runcourier.com).
  * Uses /api/courier-book.php with real merchant credentials (Client: 1000003434).
+ * Supports selecting specific couriers (Trax, PostEx, Leopards, TCS, etc.) via RUN platform.
  */
 export async function bookWithRunCouriers(
   order: Order,
@@ -96,6 +185,8 @@ export async function bookWithRunCouriers(
     specialInstruction?: string;
     collectionAmount?: string;
     origin?: string;
+    apiVendor?: string;
+    courierName?: string;
   }
 ): Promise<CourierBookingResult> {
   const collectionAmount = options?.collectionAmount !== undefined
@@ -107,6 +198,10 @@ export async function bookWithRunCouriers(
   const productDescription = order.items
     .map((item) => `${item.productName} [Qty: ${item.quantity}]`)
     .join(', ');
+
+  const apiVendor = options?.apiVendor || 'auto';
+  const vendorObj = RUN_COURIER_VENDORS.find((v) => v.id === apiVendor);
+  const chosenCourier = options?.courierName || (vendorObj && vendorObj.id !== 'auto' ? `${vendorObj.name} (via RUN Couriers)` : 'RUN Couriers');
 
   const payload = {
     orderId: order.id,
@@ -122,6 +217,11 @@ export async function bookWithRunCouriers(
     weight: options?.weight || 0.5,
     pieces: options?.pieces || 1,
     specialInstruction: options?.specialInstruction || 'Fragile Luxury Timepiece - Handle with Care',
+    apiVendor,
+    api_vendor: apiVendor,
+    vendor: apiVendor,
+    courierName: chosenCourier,
+    courier_name: chosenCourier,
   };
 
   try {
@@ -134,20 +234,21 @@ export async function bookWithRunCouriers(
     const data = await res.json().catch(() => null);
 
     if (res.ok && data?.success && data?.tracking_no) {
+      const actualCourier = data.courier || chosenCourier;
       return {
         success: true,
-        courier: 'RUN Couriers',
+        courier: actualCourier,
         tracking_no: String(data.tracking_no),
         invoice_link: data.invoice_link || `https://portal.runcourier.com/invoicehtml.php?order_id=${data.booking_id || ''}&booking=1`,
         booking_id: data.booking_id,
-        message: data.message || `Consignment ${data.tracking_no} booked successfully with RUN Couriers`,
+        message: data.message || `Consignment ${data.tracking_no} booked successfully with ${actualCourier}`,
       };
     }
 
     if (data && !data.success) {
       return {
         success: false,
-        courier: 'RUN Couriers',
+        courier: chosenCourier,
         tracking_no: '',
         invoice_link: '',
         error: data.error || data.message || 'RUN Couriers rejected booking request',
@@ -157,7 +258,7 @@ export async function bookWithRunCouriers(
     console.warn('[RUN Couriers] Booking call failed:', err);
     return {
       success: false,
-      courier: 'RUN Couriers',
+      courier: chosenCourier,
       tracking_no: '',
       invoice_link: '',
       error: `Network error reaching courier gateway: ${err.message || 'Server offline'}. Please ensure api/ is uploaded to your live domain.`,
@@ -166,7 +267,7 @@ export async function bookWithRunCouriers(
 
   return {
     success: false,
-    courier: 'RUN Couriers',
+    courier: chosenCourier,
     tracking_no: '',
     invoice_link: '',
     error: 'Unknown response received from RUN Couriers booking API',

@@ -96,7 +96,9 @@ function runCourierDevPlugin() {
                   product_description: parsed.productDescription || 'STORIUM Luxury Goods',
                   special_instruction: parsed.specialInstruction || 'Fragile - Luxury Timepiece. Handle with Care.',
                   order_id: parsed.orderId || '',
-                  api_vendor: 'auto',
+                  api_vendor: parsed.apiVendor || parsed.api_vendor || parsed.vendor || 'auto',
+                  vendor: parsed.apiVendor || parsed.api_vendor || parsed.vendor || 'auto',
+                  courier_vendor: parsed.apiVendor || parsed.api_vendor || parsed.vendor || 'auto',
                 };
 
                 const response = await fetch(`${RUN_CONFIG.base_api_url}/CreateOrder.php`, {
@@ -114,15 +116,17 @@ function runCourierDevPlugin() {
 
                 res.setHeader('Content-Type', 'application/json');
                 const trackingNo = result?.tracking_no ? String(result.tracking_no) : (result?.id ? String(result.id) : '');
+                const chosenCourier = parsed.courierName || parsed.courier_name || (payload.api_vendor !== 'auto' ? `${payload.api_vendor.toUpperCase()} (via RUN Couriers)` : 'RUN Couriers');
                 if (trackingNo) {
                   res.end(
                     JSON.stringify({
                       success: true,
-                      courier: 'RUN Couriers',
+                      courier: chosenCourier,
+                      api_vendor: payload.api_vendor,
                       tracking_no: trackingNo,
                       invoice_link: `https://portal.runcourier.com/admin/booking/view_awb/${trackingNo}`,
                       booking_id: result.id,
-                      message: result.message || 'Parcel booked successfully on RUN Couriers',
+                      message: result.message || `Parcel booked successfully with ${chosenCourier}`,
                     })
                   );
                 } else {

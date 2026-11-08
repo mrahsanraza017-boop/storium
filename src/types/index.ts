@@ -99,6 +99,7 @@ export interface Order {
   orderStatus: 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   trackingNumber?: string;
   courierName?: string;
+  courierVendor?: string;
   courierInvoiceUrl?: string;
   courierBookingId?: number | string;
   rgTransactionRef?: string;
