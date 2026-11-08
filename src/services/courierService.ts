@@ -15,6 +15,7 @@ export interface TrackingHistoryItem {
   tracking_no: string;
   status: string;
   created: string;
+  location?: string;
 }
 
 export interface CourierTrackingResult {
@@ -125,8 +126,8 @@ export const RUN_COURIER_VENDORS: RunCourierVendor[] = [
     id: 'tcs',
     name: 'TCS Express',
     tag: 'Priority Aviation',
-    description: 'Pakistan premier aviation and express highway network for high-priority luxury consignments',
     color: '#EF4444',
+    description: 'Pakistan premier aviation and express highway network for high-priority luxury consignments',
   },
   {
     id: 'callcourier',
@@ -305,6 +306,7 @@ export async function trackRunCourier(trackingNo: string): Promise<CourierTracki
           tracking_no: String(h.tracking_no || cleanNo),
           status: rawStatus,
           created: String(h.created || h.status_date || new Date().toISOString().replace('T', ' ').slice(0, 19)),
+          location: h.location || h.station || h.city || undefined,
         };
       });
 
@@ -352,11 +354,13 @@ export async function trackRunCourier(trackingNo: string): Promise<CourierTracki
         tracking_no: cleanNo,
         status: 'Showroom Parcel Packed & Handed to Concierge Dispatch',
         created: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        location: 'Renala Khurd Hub',
       },
       {
         tracking_no: cleanNo,
         status: 'Departed Anwar Shahid Colony Renala Khurd Fulfillment Hub',
         created: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        location: 'Renala Khurd, Okara',
       },
     ],
   };
