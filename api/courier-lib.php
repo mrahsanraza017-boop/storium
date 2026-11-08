@@ -91,6 +91,8 @@ if (!function_exists('courier_create_order')) {
             'special_instruction' => (string) ($params['special_instruction'] ?? 'Fragile - Luxury Watch. Handle with Care.'),
             'order_id'            => (string) ($params['order_id'] ?? ''),
             'api_vendor'          => (string) ($params['api_vendor'] ?? $config['api_vendor']),
+            'vendor'              => (string) ($params['api_vendor'] ?? $params['vendor'] ?? $config['api_vendor']),
+            'courier_vendor'      => (string) ($params['api_vendor'] ?? $params['courier_vendor'] ?? $config['api_vendor']),
         );
 
         $ch = curl_init($url);

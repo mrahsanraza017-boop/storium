@@ -42,6 +42,8 @@ $orderId = trim((string) ($body['orderId'] ?? $body['order_id'] ?? ''));
 $weight = (float) ($body['weight'] ?? 0.5);
 $pieces = (int) ($body['pieces'] ?? 1);
 $specialInstruction = trim((string) ($body['specialInstruction'] ?? 'Fragile - Luxury Timepiece. Handle with Care.'));
+$apiVendor = trim((string) ($body['apiVendor'] ?? $body['api_vendor'] ?? $body['vendor'] ?? 'auto'));
+$courierName = trim((string) ($body['courierName'] ?? $body['courier_name'] ?? ''));
 
 if ($receiverAddress === '') {
     courier_json_response(array('success' => false, 'error' => 'Receiver shipping address is required for courier booking'), 400);
@@ -65,6 +67,9 @@ $params = array(
     'weight'              => $weight > 0 ? $weight : 0.5,
     'pieces'              => $pieces > 0 ? $pieces : 1,
     'special_instruction' => $specialInstruction,
+    'api_vendor'          => $apiVendor !== '' ? $apiVendor : 'auto',
+    'vendor'              => $apiVendor !== '' ? $apiVendor : 'auto',
+    'courier_name'        => $courierName,
 );
 
 $result = courier_create_order($params);
@@ -77,10 +82,13 @@ if (!$result['success']) {
     ), 502);
 }
 
+$resolvedCourier = $courierName !== '' ? $courierName : ($apiVendor !== 'auto' ? ucwords($apiVendor) . ' (via RUN Couriers)' : 'RUN Couriers');
+
 // Success response
 courier_json_response(array(
     'success'       => true,
-    'courier'       => 'RUN Couriers',
+    'courier'       => $resolvedCourier,
+    'api_vendor'    => $apiVendor,
     'tracking_no'   => $result['tracking_no'],
     'invoice_link'  => $result['invoice_link'],
     'booking_id'    => $result['id'],
@@ -89,5 +97,7 @@ courier_json_response(array(
         'order_id'          => $orderId,
         'destination'       => $destination,
         'collection_amount' => $collectionAmount,
+        'api_vendor'        => $apiVendor,
+        'courier'           => $resolvedCourier,
     ),
 ));
