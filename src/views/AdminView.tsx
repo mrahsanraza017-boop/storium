@@ -79,6 +79,7 @@ export const AdminView: React.FC = () => {
     updateProduct,
     deleteProduct,
     updateOrderStatus,
+    updateOrderPaymentStatus,
     updateOrderCourierBooking,
     deleteOrder,
     deleteOrdersByNumber,
@@ -1356,8 +1357,26 @@ export const AdminView: React.FC = () => {
                         <td className="p-4 font-bold text-[#D4AF37]">
                           Rs. {o.total.toLocaleString()}
                         </td>
-                        <td className="p-4 uppercase text-[10px]">
-                          {o.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Debit Card'}
+                        <td className="p-4">
+                          <span className="uppercase text-[10px] block text-[#CBD0DC]">
+                            {o.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Debit Card'}
+                          </span>
+                          <select
+                            aria-label={`Payment status for order ${o.orderNumber}`}
+                            value={o.paymentStatus || 'pending'}
+                            onChange={(e) => updateOrderPaymentStatus(o.orderNumber, e.target.value as any)}
+                            className={`mt-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                              o.paymentStatus === 'paid'
+                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                                : o.paymentStatus === 'failed'
+                                ? 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                                : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                            }`}
+                          >
+                            <option value="pending" className="bg-[#121316] text-amber-300">Pending</option>
+                            <option value="paid" className="bg-[#121316] text-emerald-300">Paid</option>
+                            <option value="failed" className="bg-[#121316] text-rose-300">Failed</option>
+                          </select>
                         </td>
                         <td className="p-4">
                           <select
@@ -1593,6 +1612,36 @@ export const AdminView: React.FC = () => {
                       <span className="text-[#D4AF37]">
                         Rs. {selectedOrderDetails.total.toLocaleString()}
                       </span>
+                    </div>
+
+                    {/* Payment Status Control */}
+                    <div className="p-3 rounded-xl bg-[#0B0C0E] border border-[#262930] flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <span className="text-[#8E929E] block text-[10px] uppercase font-semibold">Payment Status:</span>
+                        <span className="text-[#F5F5F7] font-medium">
+                          {selectedOrderDetails.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Debit / Prepaid Card'}
+                        </span>
+                      </div>
+                      <select
+                        aria-label="Change Order Payment Status"
+                        value={selectedOrderDetails.paymentStatus || 'pending'}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value as Order['paymentStatus'];
+                          await updateOrderPaymentStatus(selectedOrderDetails.orderNumber, newStatus);
+                          setSelectedOrderDetails((prev) => prev ? { ...prev, paymentStatus: newStatus } : null);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                          selectedOrderDetails.paymentStatus === 'paid'
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                            : selectedOrderDetails.paymentStatus === 'failed'
+                            ? 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                            : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                        }`}
+                      >
+                        <option value="pending" className="bg-[#121316] text-amber-300">Pending</option>
+                        <option value="paid" className="bg-[#121316] text-emerald-300">Paid (Verified)</option>
+                        <option value="failed" className="bg-[#121316] text-rose-300">Failed</option>
+                      </select>
                     </div>
 
                     <div className="pt-3 border-t border-[#262930] flex justify-end">

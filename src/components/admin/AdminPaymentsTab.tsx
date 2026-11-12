@@ -6,21 +6,36 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  ShieldCheck,
   ExternalLink,
-  Filter,
-  DollarSign,
-  ArrowUpRight,
+  RefreshCw,
+  Save,
+  Check,
+  Mail,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order } from '../../types';
 
 export const AdminPaymentsTab: React.FC = () => {
-  const { orders, markOrderPaid, addToast } = useStore();
+  const {
+    orders,
+    markOrderPaid,
+    updateOrderPaymentStatus,
+    syncWithSupabase,
+    isSupabaseSyncing,
+    addToast,
+    sendConfirmationEmail,
+  } = useStore();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [gatewayFilter, setGatewayFilter] = useState<'all' | 'rapid' | 'safepay' | 'cod'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'failed'>('all');
   const [selectedTxOrder, setSelectedTxOrder] = useState<Order | null>(null);
+
+  // Modal editing state
+  const [editStatus, setEditStatus] = useState<Order['paymentStatus']>('pending');
+  const [editTxRef, setEditTxRef] = useState('');
+  const [isSavingTx, setIsSavingTx] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   // Compute Volume Statistics
   const stats = useMemo(() => {
@@ -29,6 +44,7 @@ export const AdminPaymentsTab: React.FC = () => {
     let codVolume = 0;
     let paidCount = 0;
     let pendingCount = 0;
+    let failedCount = 0;
 
     orders.forEach((o) => {
       totalVolume += o.total || 0;
@@ -39,10 +55,11 @@ export const AdminPaymentsTab: React.FC = () => {
       }
 
       if (o.paymentStatus === 'paid') paidCount++;
+      else if (o.paymentStatus === 'failed') failedCount++;
       else pendingCount++;
     });
 
-    return { totalVolume, cardVolume, codVolume, paidCount, pendingCount };
+    return { totalVolume, cardVolume, codVolume, paidCount, pendingCount, failedCount };
   }, [orders]);
 
   // Filtered Orders
@@ -60,7 +77,7 @@ export const AdminPaymentsTab: React.FC = () => {
       // Status match
       if (statusFilter !== 'all') {
         if (statusFilter === 'paid' && o.paymentStatus !== 'paid') return false;
-        if (statusFilter === 'pending' && o.paymentStatus !== 'pending') return false;
+        if (statusFilter === 'pending' && (o.paymentStatus && o.paymentStatus !== 'pending')) return false;
         if (statusFilter === 'failed' && o.paymentStatus !== 'failed') return false;
       }
 
@@ -77,8 +94,79 @@ export const AdminPaymentsTab: React.FC = () => {
     });
   }, [orders, gatewayFilter, statusFilter, searchTerm]);
 
+  const handleOpenTxModal = (order: Order) => {
+    setSelectedTxOrder(order);
+    setEditStatus(order.paymentStatus || 'pending');
+    setEditTxRef(order.rgTransactionRef || '');
+  };
+
+  const handleInlineStatusChange = async (order: Order, newStatus: Order['paymentStatus']) => {
+    setUpdatingOrderId(order.orderNumber);
+    try {
+      await updateOrderPaymentStatus(order.orderNumber, newStatus);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const handleQuickSettle = async (order: Order) => {
+    setUpdatingOrderId(order.orderNumber);
+    try {
+      await updateOrderPaymentStatus(order.orderNumber, 'paid');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const handleSaveTxModal = async () => {
+    if (!selectedTxOrder) return;
+    setIsSavingTx(true);
+    try {
+      await updateOrderPaymentStatus(selectedTxOrder.orderNumber, editStatus, {
+        rgTransactionRef: editTxRef.trim() || undefined,
+      });
+      setSelectedTxOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              paymentStatus: editStatus,
+              rgTransactionRef: editTxRef.trim() || undefined,
+            }
+          : null
+      );
+    } finally {
+      setIsSavingTx(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* Top Banner with Supabase Cloud Sync */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#121316] border border-[#262930]">
+        <div>
+          <h2 className="text-base font-bold text-[#F5F5F7] font-serif-luxury flex items-center gap-2">
+            <span>Payment Settlement &amp; Transactions</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono font-normal">
+              Cloud Synced
+            </span>
+          </h2>
+          <p className="text-xs text-[#8E929E] mt-0.5">
+            Real-time reconciliation for Debit Card, SafePay, and RUN Couriers Cash on Delivery orders.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => syncWithSupabase()}
+          disabled={isSupabaseSyncing}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-[#CBD0DC] hover:text-[#F5F5F7] border border-[#262930] text-xs font-semibold cursor-pointer transition-colors shadow-sm self-start sm:self-auto"
+          title="Force refresh orders and payments from Supabase"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSupabaseSyncing ? 'animate-spin text-[#D4AF37]' : 'text-[#8E929E]'}`} />
+          <span>{isSupabaseSyncing ? 'Syncing...' : 'Sync Cloud Orders'}</span>
+        </button>
+      </div>
+
       {/* Header and Volume Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="p-5 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
@@ -108,7 +196,7 @@ export const AdminPaymentsTab: React.FC = () => {
           <div className="text-2xl sm:text-3xl font-bold font-serif-luxury text-[#F5F5F7]">
             Rs. {stats.codVolume.toLocaleString()}
           </div>
-          <span className="text-[11px] text-[#8E929E]">Collected via RUN Couriers</span>
+          <span className="text-[11px] text-[#8E929E]">Collected via RUN Couriers Logistics</span>
         </div>
 
         <div className="p-5 rounded-2xl bg-[#121316] border border-[#262930] space-y-2">
@@ -119,7 +207,7 @@ export const AdminPaymentsTab: React.FC = () => {
             {stats.paidCount} / {orders.length}
           </div>
           <span className="text-[11px] text-amber-400 font-mono">
-            {stats.pendingCount} pending settlement
+            {stats.pendingCount} pending settlement {stats.failedCount > 0 ? `• ${stats.failedCount} failed` : ''}
           </span>
         </div>
       </div>
@@ -189,6 +277,14 @@ export const AdminPaymentsTab: React.FC = () => {
             >
               Pending
             </button>
+            <button
+              onClick={() => setStatusFilter('failed')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                statusFilter === 'failed' ? 'bg-rose-500/20 text-rose-400' : 'text-[#8E929E]'
+              }`}
+            >
+              Failed
+            </button>
           </div>
         </div>
 
@@ -216,7 +312,7 @@ export const AdminPaymentsTab: React.FC = () => {
               <th className="p-4">Amount</th>
               <th className="p-4">Payment Status</th>
               <th className="p-4">Settlement Date</th>
-              <th className="p-4 text-right">Verification</th>
+              <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#262930]">
@@ -228,7 +324,11 @@ export const AdminPaymentsTab: React.FC = () => {
               </tr>
             ) : (
               filteredOrders.map((order) => {
-                const isPaid = order.paymentStatus === 'paid';
+                const currentStatus = order.paymentStatus || 'pending';
+                const isPaid = currentStatus === 'paid';
+                const isFailed = currentStatus === 'failed';
+                const isBusy = updatingOrderId === order.orderNumber;
+
                 return (
                   <tr key={order.id} className="hover:bg-[#181A1F] transition-colors">
                     <td className="p-4">
@@ -264,41 +364,54 @@ export const AdminPaymentsTab: React.FC = () => {
                       Rs. {order.total.toLocaleString()}
                     </td>
                     <td className="p-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      {/* Interactive Payment Status Selector */}
+                      <select
+                        aria-label={`Payment status for order ${order.orderNumber}`}
+                        value={currentStatus}
+                        disabled={isBusy}
+                        onChange={(e) => handleInlineStatusChange(order, e.target.value as Order['paymentStatus'])}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer focus:outline-none ${
                           isPaid
-                            ? 'bg-emerald-500/20 text-emerald-300'
-                            : 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                            : isFailed
+                            ? 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                            : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
                         }`}
                       >
-                        {isPaid ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                        {isPaid ? 'PAID' : 'PENDING'}
-                      </span>
+                        <option value="pending" className="bg-[#121316] text-amber-300">
+                          PENDING
+                        </option>
+                        <option value="paid" className="bg-[#121316] text-emerald-300">
+                          PAID (Verified)
+                        </option>
+                        <option value="failed" className="bg-[#121316] text-rose-300">
+                          FAILED
+                        </option>
+                      </select>
                     </td>
                     <td className="p-4 font-mono text-[11px] text-[#8E929E]">
                       {order.paidAt
                         ? new Date(order.paidAt).toLocaleDateString()
                         : new Date(order.date).toLocaleDateString()}
                     </td>
-                    <td className="p-4 text-right">
-                      {!isPaid ? (
+                    <td className="p-4 text-right space-x-2">
+                      {!isPaid && (
                         <button
-                          onClick={() => {
-                            markOrderPaid(order.orderNumber);
-                            addToast('success', 'Marked as Paid', `Order #${order.orderNumber} marked as verified paid.`);
-                          }}
-                          className="px-3 py-1 rounded-lg bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-[11px] font-bold transition-all cursor-pointer"
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleQuickSettle(order)}
+                          className="px-3 py-1 rounded-lg bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
                         >
-                          Verify &amp; Settle
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedTxOrder(order)}
-                          className="px-2.5 py-1 rounded-lg bg-[#181A1F] hover:bg-[#20232A] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] text-[11px] transition-all cursor-pointer"
-                        >
-                          View Receipt
+                          {isBusy ? 'Saving...' : 'Verify & Settle'}
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTxModal(order)}
+                        className="px-2.5 py-1 rounded-lg bg-[#181A1F] hover:bg-[#20232A] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] text-[11px] transition-all cursor-pointer"
+                      >
+                        {isPaid ? 'Receipt / Details' : 'Details'}
+                      </button>
                     </td>
                   </tr>
                 );
@@ -308,15 +421,16 @@ export const AdminPaymentsTab: React.FC = () => {
         </table>
       </div>
 
-      {/* Transaction Details Modal */}
+      {/* Transaction Details & Edit Modal */}
       {selectedTxOrder && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#121316] border border-[#262930] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262930] pb-3">
               <h3 className="font-bold font-serif-luxury text-[#F5F5F7] text-base">
-                Payment Verification
+                Payment Verification &amp; Reconciliation
               </h3>
               <button
+                type="button"
                 onClick={() => setSelectedTxOrder(null)}
                 className="text-[#8E929E] hover:text-[#F5F5F7] text-sm"
               >
@@ -324,28 +438,59 @@ export const AdminPaymentsTab: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-2 text-xs">
+            <div className="space-y-3 text-xs">
               <div className="flex justify-between py-1 border-b border-[#262930]/40">
                 <span className="text-[#8E929E]">Order Number:</span>
                 <span className="font-mono text-[#D4AF37] font-bold">#{selectedTxOrder.orderNumber}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#262930]/40">
                 <span className="text-[#8E929E]">Customer:</span>
-                <span className="text-[#F5F5F7]">{selectedTxOrder.customer.fullName}</span>
+                <span className="text-[#F5F5F7]">{selectedTxOrder.customer.fullName} ({selectedTxOrder.customer.city})</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#262930]/40">
                 <span className="text-[#8E929E]">Payment Method:</span>
-                <span className="text-[#F5F5F7] uppercase">{selectedTxOrder.paymentMethod}</span>
+                <span className="text-[#F5F5F7] uppercase font-semibold">
+                  {selectedTxOrder.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Debit / Credit Card'}
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#262930]/40">
-                <span className="text-[#8E929E]">Transaction Ref:</span>
-                <span className="font-mono text-[#E8E8EC]">{selectedTxOrder.rgTransactionRef || 'N/A (Standard COD/Card)'}</span>
+                <span className="text-[#8E929E]">Order Total:</span>
+                <span className="font-mono font-bold text-emerald-400">
+                  Rs. {selectedTxOrder.total.toLocaleString()}
+                </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#262930]/40">
-                <span className="text-[#8E929E]">Paid Amount:</span>
-                <span className="font-mono font-bold text-emerald-400">Rs. {selectedTxOrder.total.toLocaleString()}</span>
+
+              {/* Editable Payment Status */}
+              <div className="pt-2 space-y-1.5">
+                <label className="text-[#8E929E] block font-semibold text-[11px] uppercase tracking-wider">
+                  Payment Status
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as Order['paymentStatus'])}
+                  className="w-full py-2 px-3 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
+                >
+                  <option value="pending">Pending (Unsettled / Unverified)</option>
+                  <option value="paid">Paid (Verified in Bank or Gateway)</option>
+                  <option value="failed">Failed (Declined or Disputed)</option>
+                </select>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#262930]/40">
+
+              {/* Editable Transaction Reference */}
+              <div className="space-y-1.5">
+                <label className="text-[#8E929E] block font-semibold text-[11px] uppercase tracking-wider">
+                  Transaction Reference / Slip ID
+                </label>
+                <input
+                  type="text"
+                  value={editTxRef}
+                  onChange={(e) => setEditTxRef(e.target.value)}
+                  placeholder="e.g. Bank Ref, EasyPaisa, JazzCash, or SafePay Tracker"
+                  className="w-full py-2 px-3 rounded-xl bg-[#0B0C0E] border border-[#262930] text-xs text-[#F5F5F7] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+
+              <div className="flex justify-between py-1 border-t border-[#262930]/40 text-[11px]">
                 <span className="text-[#8E929E]">Settlement Timestamp:</span>
                 <span className="font-mono text-[#8E929E]">
                   {selectedTxOrder.paidAt || selectedTxOrder.date}
@@ -353,12 +498,45 @@ export const AdminPaymentsTab: React.FC = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => setSelectedTxOrder(null)}
-              className="w-full py-2.5 rounded-xl bg-[#D4AF37] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider hover:bg-[#E5C378] transition-all cursor-pointer"
-            >
-              Close
-            </button>
+            {/* Modal Actions */}
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleSaveTxModal}
+                disabled={isSavingTx}
+                className="flex-1 py-2.5 rounded-xl bg-[#D4AF37] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider hover:bg-[#E5C378] transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSavingTx ? 'Saving to Cloud...' : 'Save & Sync Cloud'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTxOrder(null)}
+                className="py-2.5 px-4 rounded-xl bg-[#181A1F] text-[#8E929E] hover:text-[#F5F5F7] border border-[#262930] text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {editStatus === 'paid' && (
+              <button
+                type="button"
+                onClick={async () => {
+                  addToast('info', 'Sending Receipt...', `Sending paid receipt to ${selectedTxOrder.customer.email}`);
+                  const res = await sendConfirmationEmail(selectedTxOrder);
+                  if (res.success) {
+                    addToast('success', 'Email Sent', `Payment receipt sent to ${selectedTxOrder.customer.email}`);
+                  } else {
+                    addToast('error', 'Send Failed', res.error || 'Could not send payment receipt.');
+                  }
+                }}
+                className="w-full py-2 rounded-xl bg-[#181A1F] hover:bg-[#20232A] text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email Verified Receipt to Customer</span>
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -622,6 +622,61 @@ export async function updateOrderStatusInSupabase(orderId: string, status: Order
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true, data };
 }
 
+export async function updateOrderPaymentStatusInSupabase(
+  orderIdentifier: string,
+  paymentStatus: Order['paymentStatus'],
+  extra?: { paidAt?: string; rgTransactionRef?: string }
+): Promise<SupabaseSyncResult> {
+  try {
+    const supabase = await getSupabase();
+    const updatePayload: Record<string, any> = {
+      payment_status: paymentStatus,
+    };
+    if (paymentStatus === 'paid') {
+      updatePayload.paid_at = extra?.paidAt || new Date().toISOString();
+    } else if (paymentStatus === 'failed') {
+      updatePayload.payment_failed_at = new Date().toISOString();
+    }
+    if (extra?.rgTransactionRef !== undefined) {
+      updatePayload.rg_transaction_ref = extra.rgTransactionRef;
+    }
+
+    // Try by order_number first
+    const byNumber = await supabase
+      .from('orders')
+      .update(updatePayload)
+      .eq('order_number', orderIdentifier)
+      .select();
+
+    if (!byNumber.error && byNumber.data && byNumber.data.length > 0) {
+      return { success: true, data: byNumber.data };
+    }
+
+    // Fallback try by id
+    const byId = await supabase
+      .from('orders')
+      .update(updatePayload)
+      .eq('id', orderIdentifier)
+      .select();
+
+    if (!byId.error && byId.data && byId.data.length > 0) {
+      return { success: true, data: byId.data };
+    }
+
+    if (byNumber.error) {
+      return { success: false, error: byNumber.error.message, isPolicyError: byNumber.error.code === '42501' };
+    }
+    if (byId.error) {
+      return { success: false, error: byId.error.message, isPolicyError: byId.error.code === '42501' };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.warn('updateOrderPaymentStatusInSupabase error:', err);
+    return { success: false, error: err?.message || 'Unknown network error' };
+  }
+}
+
 export async function updateInquiryStatusInSupabase(inquiryId: string, status: ContactInquiry['status']): Promise<SupabaseSyncResult> {
   const supabase = await getSupabase();
   const { data, error } = await supabase.from('contacts').update({ status }).eq('id', inquiryId).select();

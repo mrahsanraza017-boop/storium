@@ -269,9 +269,29 @@ export const AdminBusinessSettingsTab: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div>
+            <div className="space-y-1.5">
               <label className={labelClass} htmlFor="set-gateway">Payment Gateway Name</label>
-              <input id="set-gateway" className={inputClass} value={form.paymentGatewayName} onChange={(e) => set('paymentGatewayName', e.target.value)} placeholder="Online Payment Gateway" />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="set-gateway"
+                  className={inputClass}
+                  value={form.paymentGatewayName}
+                  onChange={(e) => set('paymentGatewayName', e.target.value)}
+                  placeholder="Online Payment Gateway"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = form.paymentGatewayName.trim() || 'Online Payment Gateway';
+                    updateBusinessSettings({ paymentGatewayName: name });
+                    addToast('success', 'Payment Gateway Saved', `Gateway name updated to "${name}".`);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E5C378] text-[#0B0C0E] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Gateway</span>
+                </button>
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-[#0B0C0E] border border-[#262930] space-y-3">

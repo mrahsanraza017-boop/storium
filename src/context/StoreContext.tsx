@@ -35,6 +35,7 @@ import {
   upsertProductToSupabase,
   deleteProductFromSupabase,
   updateOrderStatusInSupabase,
+  updateOrderPaymentStatusInSupabase,
   deleteOrderFromSupabase,
   updateInquiryStatusInSupabase,
   upsertReviewToSupabase,
@@ -133,6 +134,11 @@ interface StoreContextType {
     }
   ) => void;
   markOrderPaid: (orderNumber: string) => void;
+  updateOrderPaymentStatus: (
+    orderIdentifier: string,
+    status: Order['paymentStatus'],
+    extra?: { paidAt?: string; rgTransactionRef?: string }
+  ) => Promise<{ success: boolean; error?: string }>;
   deleteOrder: (orderNumber: string) => Promise<void>;
   deleteOrdersByNumber: (orderNumbers: string[]) => Promise<void>;
   sendConfirmationEmail: (order: Order) => Promise<{ success: boolean; message?: string; error?: string; method?: string }>;
@@ -1955,24 +1961,62 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
 
-  // Marks an order as paid locally. The cloud copy is updated server-side
-  // so it stays authoritative for admins.
-  const markOrderPaid = (orderNumber: string) => {
-    if (!orderNumber) return;
+  // Updates an order's payment status, persists to localStorage, and syncs directly to Supabase.
+  const updateOrderPaymentStatus = async (
+    orderIdentifier: string,
+    status: Order['paymentStatus'],
+    extra?: { paidAt?: string; rgTransactionRef?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!orderIdentifier) return { success: false, error: 'Order identifier required' };
+
+    const paidTimestamp = status === 'paid' ? (extra?.paidAt || new Date().toISOString()) : undefined;
+
     setOrders((prev) => {
       const updated = (prev || [])
         .filter(Boolean)
-        .map((ord) =>
-          ord && ord.orderNumber === orderNumber
-            ? { ...ord, paymentStatus: 'paid' as const, orderStatus: 'Processing' as const, paidAt: ord.paidAt || new Date().toISOString() }
-            : ord
-        );
-      const paidOrder = updated.find((o) => o && o.orderNumber === orderNumber);
-      if (paidOrder) {
-        void sendPaymentReceiptEmail(paidOrder);
+        .map((ord) => {
+          if (!ord) return ord;
+          const matches = ord.orderNumber === orderIdentifier || ord.id === orderIdentifier;
+          if (!matches) return ord;
+          return {
+            ...ord,
+            paymentStatus: status,
+            paidAt: status === 'paid' ? (paidTimestamp || ord.paidAt || new Date().toISOString()) : ord.paidAt,
+            rgTransactionRef: extra?.rgTransactionRef !== undefined ? extra.rgTransactionRef : ord.rgTransactionRef,
+            // Advance orderStatus to Processing if it was still Pending upon payment
+            orderStatus: (status === 'paid' && ord.orderStatus === 'Pending') ? ('Processing' as const) : ord.orderStatus,
+          };
+        });
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed saving orders to localStorage', e);
       }
+
+      const matchingOrder = updated.find((o) => o && (o.orderNumber === orderIdentifier || o.id === orderIdentifier));
+      if (matchingOrder && status === 'paid') {
+        void sendPaymentReceiptEmail(matchingOrder);
+      }
+
       return updated;
     });
+
+    const result = await updateOrderPaymentStatusInSupabase(orderIdentifier, status, extra);
+    if (!result.success) {
+      console.warn('Supabase payment sync notice:', result.error);
+      addToast('info', 'Local Payment Saved', `Order #${orderIdentifier} updated locally (${result.error || 'Cloud sync queued'}).`);
+    } else {
+      addToast('success', 'Payment Status Saved', `Order #${orderIdentifier} payment status is now ${status.toUpperCase()}.`);
+    }
+
+    return result;
+  };
+
+  // Marks an order as paid (convenience wrapper that syncs both locally and to Supabase)
+  const markOrderPaid = (orderNumber: string) => {
+    if (!orderNumber) return;
+    void updateOrderPaymentStatus(orderNumber, 'paid');
   };
 
   // Delete one order from local state (public + admin) and Supabase.
@@ -2536,6 +2580,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         updateOrderStatus,
         updateOrderCourierBooking,
         markOrderPaid,
+        updateOrderPaymentStatus,
         deleteOrder,
         deleteOrdersByNumber,
         sendConfirmationEmail: sendOrderConfirmationEmail,
