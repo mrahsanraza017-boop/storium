@@ -14,6 +14,7 @@ export const AdminReviewsTab: React.FC = () => {
   } = useStore();
 
   const [statusFilter, setStatusFilter] = useState<'all' | ProductReview['status']>('all');
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return reviews
@@ -23,8 +24,12 @@ export const AdminReviewsTab: React.FC = () => {
 
   const pendingCount = reviews.filter((r) => r.status === 'pending').length;
 
-  const productName = (productId: string) =>
-    products.find((p) => p.id === productId)?.name || productId;
+  const productName = (productId: string, reviewType?: string) => {
+    if (productId === 'store' || reviewType === 'store') {
+      return '🌟 STORIUM Showroom (Store Review)';
+    }
+    return products.find((p) => p.id === productId)?.name || productId;
+  };
 
   return (
     <div className="space-y-6">
@@ -82,13 +87,33 @@ export const AdminReviewsTab: React.FC = () => {
                     <td className="p-4 max-w-xs">
                       <p className="font-semibold text-[#F5F5F7]">{review.title}</p>
                       <p className="text-[11px] text-[#8E929E] line-clamp-2 mt-1">{review.body}</p>
+                      
+                      {/* Pictures attached */}
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          {review.images.map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img}
+                              alt="Review attachment"
+                              onClick={() => setSelectedPhoto(img)}
+                              className="w-9 h-9 rounded-md object-cover border border-[#262930] hover:border-[#D4AF37] cursor-pointer"
+                              title="Click to view full photo"
+                            />
+                          ))}
+                          <span className="text-[10px] text-[#8E929E] font-mono">
+                            {review.images.length} photo{review.images.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      )}
+
                       <p className="text-[10px] text-[#626673] mt-1.5">
                         {review.reviewerName}
                         {review.city ? ` · ${review.city}` : ''}
                       </p>
                     </td>
                     <td className="p-4 text-[#CBD0DC] max-w-[160px]">
-                      <span className="line-clamp-2">{productName(review.productId)}</span>
+                      <span className="line-clamp-2 font-medium">{productName(review.productId, review.reviewType)}</span>
                     </td>
                     <td className="p-4">
                       <StarRating value={review.rating} size="sm" />
@@ -159,6 +184,21 @@ export const AdminReviewsTab: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {selectedPhoto && (
+        <div
+          onClick={() => setSelectedPhoto(null)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
+        >
+          <div className="relative max-w-2xl max-h-[85vh]">
+            <img
+              src={selectedPhoto}
+              alt="Review attachment preview"
+              className="max-h-[85vh] max-w-full rounded-2xl object-contain border border-[#262930] shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

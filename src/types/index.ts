@@ -209,6 +209,7 @@ export interface CustomerUser {
 export interface ProductReview {
   id: string;
   productId: string;
+  reviewType?: 'product' | 'store';
   rating: 1 | 2 | 3 | 4 | 5;
   title: string;
   body: string;
@@ -218,6 +219,7 @@ export interface ProductReview {
   status: 'pending' | 'approved' | 'hidden';
   featuredOnHome: boolean;
   verifiedPurchase: boolean;
+  images?: string[];
   createdAt: string;
 }
 

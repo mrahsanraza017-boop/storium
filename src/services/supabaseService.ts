@@ -701,6 +701,7 @@ export async function fetchSupabaseReviews(): Promise<ProductReview[]> {
     return data.map((row: any): ProductReview => ({
       id: row.id,
       productId: row.product_id,
+      reviewType: row.review_type || (row.product_id === 'store' ? 'store' : 'product'),
       rating: Number(row.rating) as 1 | 2 | 3 | 4 | 5,
       title: row.title || '',
       body: row.body || '',
@@ -710,6 +711,7 @@ export async function fetchSupabaseReviews(): Promise<ProductReview[]> {
       status: (row.status as ProductReview['status']) || 'pending',
       featuredOnHome: Boolean(row.featured_on_home),
       verifiedPurchase: Boolean(row.verified_purchase),
+      images: Array.isArray(row.images) ? row.images : (row.images ? [row.images] : []),
       createdAt: row.created_at || new Date().toISOString(),
     }));
   } catch (err) {
@@ -723,9 +725,10 @@ export async function fetchSupabaseReviews(): Promise<ProductReview[]> {
  */
 export async function upsertReviewToSupabase(review: ProductReview): Promise<SupabaseSyncResult> {
   const supabase = await getSupabase();
-  const payload = {
+  const payload: Record<string, any> = {
     id: review.id,
     product_id: review.productId,
+    review_type: review.reviewType || (review.productId === 'store' ? 'store' : 'product'),
     user_id: review.userId || null,
     rating: review.rating,
     title: review.title,
@@ -735,15 +738,73 @@ export async function upsertReviewToSupabase(review: ProductReview): Promise<Sup
     status: review.status,
     featured_on_home: review.featuredOnHome,
     verified_purchase: review.verifiedPurchase,
+    images: review.images || [],
     created_at: review.createdAt,
   };
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('reviews')
     .upsert(payload)
     .select();
 
+  // If columns images or review_type do not exist yet on remote Supabase instance, retry gracefully
+  if (error && (error.message?.includes('images') || error.message?.includes('review_type') || error.code === 'PGRST204')) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.images;
+    delete fallbackPayload.review_type;
+    const retryRes = await supabase.from('reviews').upsert(fallbackPayload).select();
+    data = retryRes.data;
+    error = retryRes.error;
+  }
+
   return error ? { success: false, error: error.message, isPolicyError: error.code === '42501' } : { success: true, data };
+}
+
+/**
+ * Uploads a customer review photo. Compresses client-side first.
+ * Tries Supabase storage 'product-media/reviews/...'. If bucket or storage is unavailable,
+ * safely falls back to a compact WebP base64 Data URL.
+ */
+export async function uploadReviewImage(file: File): Promise<string> {
+  try {
+    const { file: compressed } = await compressImage(file, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.8,
+      mimeType: 'image/webp',
+    });
+
+    try {
+      const supabase = await getSupabase();
+      const unique = `rev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.webp`;
+      const path = `reviews/${unique}`;
+      const { error } = await supabase.storage.from('product-media').upload(path, compressed, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'image/webp',
+      });
+
+      if (!error) {
+        const { data } = supabase.storage.from('product-media').getPublicUrl(path);
+        if (data?.publicUrl) {
+          return data.publicUrl;
+        }
+      }
+    } catch (storageErr) {
+      console.warn('Supabase storage upload notice, falling back to data URL:', storageErr);
+    }
+
+    // Fallback to data URL
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+  } catch (err: any) {
+    console.warn('Image processing failed:', err);
+    throw new Error('Could not process review image: ' + (err?.message || 'unknown error'));
+  }
 }
 
 /**

@@ -4,6 +4,8 @@ import {
   Shield,
   Truck,
   Award,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductGrid } from '../components/product/ProductGrid';
@@ -30,6 +32,7 @@ export const HomeView: React.FC = () => {
   const showcaseWatches = (featuredWatches.length > 0 ? featuredWatches : showroomWatches).slice(0, 4);
   const flagshipProduct = products.find((p) => p.id === 'storium-aethelgard-chrono') || products[0];
   const featuredReviews = getFeaturedHomeReviews();
+  const [activeReviewLightbox, setActiveReviewLightbox] = React.useState<string | null>(null);
 
   const homeFaqs = [
     {
@@ -340,32 +343,72 @@ export const HomeView: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredReviews.map((review, index) => {
-                const product = getProductById(review.productId);
+                const isStoreReview = review.reviewType === 'store' || review.productId === 'store';
+                const product = !isStoreReview ? getProductById(review.productId) : null;
                 return (
                   <MotionReveal key={review.id} delay={index * 0.06}>
-                    <article className="h-full p-6 sm:p-7 rounded-2xl glass-panel flex flex-col gap-4 hover:border-[#D4AF37]/40 transition-colors">
-                      <StarRating value={review.rating} size="sm" />
+                    <article className="h-full p-6 sm:p-7 rounded-2xl glass-panel flex flex-col gap-3.5 hover:border-[#D4AF37]/40 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <StarRating value={review.rating} size="sm" />
+                        {isStoreReview ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#E5C378] text-[10px] font-semibold">
+                            <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                            Showroom Experience
+                          </span>
+                        ) : review.verifiedPurchase ? (
+                          <span className="text-[10px] uppercase font-mono tracking-wider text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded">
+                            Verified
+                          </span>
+                        ) : null}
+                      </div>
+
                       <h3 className="text-base font-bold text-white font-serif-luxury leading-snug">
                         {review.title}
                       </h3>
                       <p className="text-sm text-[#CBD0DC] leading-relaxed flex-1 luxury-text-shadow">
                         “{review.body}”
                       </p>
+
+                      {/* Customer Photos Gallery */}
+                      {review.images && review.images.length > 0 && (
+                        <div className="pt-1 flex flex-wrap gap-2">
+                          {review.images.map((imgUrl, imgIdx) => (
+                            <button
+                              key={imgIdx}
+                              type="button"
+                              onClick={() => setActiveReviewLightbox(imgUrl)}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-[#262930] hover:border-[#D4AF37] transition-all group cursor-pointer bg-[#0B0C0E]"
+                              title="Click to view full photo"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Customer photo ${imgIdx + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="pt-3 border-t border-[#262930]/80 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-[#F5F5F7] truncate">
                             {review.reviewerName}
                             {review.city ? ` · ${review.city}` : ''}
                           </p>
-                          {product && (
+                          {product ? (
                             <button
                               type="button"
                               onClick={() => navigate('product', { slug: product.slug })}
-                              className="mt-1 text-[11px] text-[#D4AF37] hover:underline truncate max-w-full"
+                              className="mt-1 text-[11px] text-[#D4AF37] hover:underline truncate max-w-full block"
                             >
                               {product.name}
                             </button>
-                          )}
+                          ) : isStoreReview ? (
+                            <span className="mt-0.5 text-[10px] text-[#8E929E] block">
+                              STORIUM Flagship Showroom Patron
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     </article>
@@ -373,6 +416,29 @@ export const HomeView: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* Lightbox Modal for Homepage Customer Photos */}
+            {activeReviewLightbox && (
+              <div
+                onClick={() => setActiveReviewLightbox(null)}
+                className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out"
+              >
+                <div className="relative max-w-2xl max-h-[85vh]">
+                  <img
+                    src={activeReviewLightbox}
+                    alt="Customer review photo enlarged"
+                    className="max-h-[85vh] max-w-full rounded-2xl object-contain border border-[#262930] shadow-2xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setActiveReviewLightbox(null)}
+                    className="absolute -top-3 -right-3 p-2 bg-[#121316] text-[#CBD0DC] hover:text-white rounded-full border border-[#262930] shadow-lg cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}

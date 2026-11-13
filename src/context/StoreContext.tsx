@@ -157,12 +157,15 @@ interface StoreContextType {
   getReviewsForProduct: (productId: string, approvedOnly?: boolean) => ProductReview[];
   getProductRatingSummary: (productId: string) => { average: number; count: number };
   getFeaturedHomeReviews: () => ProductReview[];
+  getCustomerReviews: (userIdOrEmail?: string) => ProductReview[];
   submitReview: (input: {
     productId: string;
+    reviewType?: 'product' | 'store';
     rating: 1 | 2 | 3 | 4 | 5;
     title: string;
     body: string;
     city?: string;
+    images?: string[];
   }) => { success: boolean; message?: string };
   updateReviewStatus: (reviewId: string, status: ProductReview['status']) => void;
   toggleReviewFeatured: (reviewId: string) => void;
@@ -2112,52 +2115,81 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getFeaturedHomeReviews = () =>
     reviews
-      .filter((r) => r.status === 'approved' && r.featuredOnHome)
+      .filter((r) => r.status === 'approved' && (r.featuredOnHome || r.reviewType === 'store' || r.productId === 'store'))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 6);
+      .slice(0, 8);
+
+  const getCustomerReviews = (userIdOrEmail?: string) => {
+    const targetUserId = userIdOrEmail || currentUser?.id;
+    const targetEmail = currentUser?.email?.toLowerCase();
+    const targetName = currentUser?.fullName?.toLowerCase();
+    return reviews.filter(
+      (r) =>
+        (targetUserId && r.userId === targetUserId) ||
+        (targetName && r.reviewerName?.toLowerCase() === targetName) ||
+        (targetEmail && r.userId === targetEmail)
+    );
+  };
 
   const submitReview = (input: {
     productId: string;
+    reviewType?: 'product' | 'store';
     rating: 1 | 2 | 3 | 4 | 5;
     title: string;
     body: string;
     city?: string;
+    images?: string[];
   }): { success: boolean; message?: string } => {
     if (!currentUser) {
       return { success: false, message: 'Please sign in to submit a review.' };
     }
     if (!input.title.trim() || !input.body.trim()) {
-      return { success: false, message: 'Please add a title and review text.' };
+      return { success: false, message: 'Please add a headline and detailed review description.' };
     }
     if (input.rating < 1 || input.rating > 5) {
       return { success: false, message: 'Please select a star rating.' };
     }
 
+    const isStoreReview = input.productId === 'store' || input.reviewType === 'store';
+    const cleanProductId = isStoreReview ? 'store' : input.productId;
+
     const review: ProductReview = {
-      id: 'rev-' + Date.now(),
-      productId: input.productId,
+      id: 'rev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      productId: cleanProductId,
+      reviewType: isStoreReview ? 'store' : 'product',
       rating: input.rating,
       title: input.title.trim(),
       body: input.body.trim(),
-      reviewerName: currentUser.fullName || 'STORIUM Client',
-      city: input.city?.trim() || currentUser.city || undefined,
+      reviewerName: currentUser.fullName || 'STORIUM Patron',
+      city: input.city?.trim() || currentUser.city || 'Pakistan',
       userId: currentUser.id,
       status: 'pending',
-      featuredOnHome: false,
-      verifiedPurchase: orders.some(
-        (o) =>
-          o.orderStatus === 'Delivered' &&
-          (o.customer.email === currentUser.email || Boolean(currentUser.id)) &&
-          o.items.some((item) => item.productId === input.productId)
-      ),
+      featuredOnHome: isStoreReview, // Store reviews automatically flagged for homepage showcase
+      verifiedPurchase: isStoreReview
+        ? orders.some((o) => o.customer.email === currentUser.email || o.customer.phone === currentUser.phone)
+        : orders.some(
+            (o) =>
+              (o.customer.email === currentUser.email || o.customer.phone === currentUser.phone) &&
+              o.items.some((item) => item.productId === cleanProductId)
+          ),
+      images: Array.isArray(input.images) ? input.images.filter(Boolean) : [],
       createdAt: new Date().toISOString(),
     };
 
     setReviews((prev) => [review, ...prev]);
+
     void upsertReviewToSupabase(review).then((result) => {
-      if (!result.success) console.warn('Supabase review save failed:', result.error);
+      if (!result.success) console.warn('Supabase review save notice:', result.error);
     });
-    addToast('success', 'Review Submitted', 'Thank you. Your review is pending admin approval.');
+
+    addToast(
+      'success',
+      isStoreReview ? 'Store Review Submitted' : 'Product Review Submitted',
+      isStoreReview
+        ? 'Thank you! Your showroom review and photos have been received and queued for homepage display.'
+        : 'Thank you! Your product review and pictures will appear on the product page upon moderation.'
+    );
+
     return { success: true };
   };
 
@@ -2603,6 +2635,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         getReviewsForProduct,
         getProductRatingSummary,
         getFeaturedHomeReviews,
+        getCustomerReviews,
         submitReview,
         updateReviewStatus,
         toggleReviewFeatured,
